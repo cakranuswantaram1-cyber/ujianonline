@@ -139,7 +139,7 @@
                     <label class="block text-[11px] font-semibold text-slate-400">Nama <span class="text-slate-500">(cukup satu kata: depan, tengah, atau belakang)</span>
                         <input id="s-nama" maxlength="54" class="field mt-1" placeholder="Contoh: Putra" autocomplete="off" onkeydown="if(event.key==='Enter')mulaiUjian()">
                     </label>
-                    <div id="s-jk-box" class="hidden text-[11px] font-semibold text-slate-400">Jenis Kelamin <span class="text-amber-400">(ujian ini memakai login lama: isi nama lengkap)</span>
+                    <div id="s-jk-box" class="text-[11px] font-semibold text-slate-400">Jenis Kelamin <span class="text-slate-500">(pilih sesuai diri Anda)</span>
                         <div class="grid grid-cols-2 gap-2 mt-1">
                             <button type="button" id="jk-L" onclick="pilihJK('L')" class="field text-center font-bold"><i class="fas fa-mars mr-1.5"></i>Laki-laki</button>
                             <button type="button" id="jk-P" onclick="pilihJK('P')" class="field text-center font-bold"><i class="fas fa-venus mr-1.5"></i>Perempuan</button>
@@ -1404,12 +1404,9 @@
             // Login baru: absen + satu kata nama harus cocok dengan daftar siswa; nama resmi dan JK diambil dari daftar.
             const c = cocokSiswa(u.siswa, absen, nama);
             if (!c.ok) return galat(new Error(c.pesan), 'Tidak bisa masuk');
-            nama = c.siswa.n; absen = String(c.siswa.a); jk = c.siswa.j || '';
-        } else if (!jk) {
-            // Ujian lama tanpa daftar siswa: login lama (nama lengkap + jenis kelamin)
-            $('s-jk-box').classList.remove('hidden');
-            return galat(new Error('Pilih jenis kelamin: Laki-laki atau Perempuan, lalu tekan Mulai Ujian lagi.'), 'Data belum lengkap');
+            nama = c.siswa.n; absen = String(c.siswa.a); jk = c.siswa.j || jkPilih;   // JK dari daftar kelas; bila kosong pakai pilihan siswa
         }
+        if (!jk) return galat(new Error('Pilih jenis kelamin: Laki-laki atau Perempuan, lalu tekan Mulai Ujian lagi.'), 'Data belum lengkap');
         const ok = await Swal.fire({ title: u.judul, icon: 'info', showCancelButton: true, confirmButtonText: 'Mulai Sekarang', cancelButtonText: 'Batal',
             confirmButtonColor: '#059669', cancelButtonColor: '#334155',
             html: `<p class="text-sm"><b>${r.soal.length}</b> soal &bull; <b>${u.durasi}</b> menit</p><p class="text-xs text-slate-400 mt-2">Waktu langsung berjalan setelah Anda menekan Mulai. Kerjakan dengan jujur dan selesaikan tepat waktu.</p>` });
@@ -1581,9 +1578,24 @@
         } catch (e) {}
     }
     async function mintaLanjutKerjakan() {
-        const ok = await konfirmasi('Minta Lanjut Kerjakan?',
-            'Jawaban yang sudah dikumpulkan akan tetap tersimpan sementara. Guru harus menyetujuinya di menu <b>Rilis Nilai (ACC)</b> sebelum Anda bisa melanjutkan.',
-            'Ya, Minta Lanjut');
+        const ok = await Swal.fire({
+            title: 'Minta Lanjut Kerjakan?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Minta Lanjut',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#059669',
+            cancelButtonColor: '#334155',
+            html: `<div class="text-sm text-left space-y-2">
+                <p>Jawaban yang sudah terkumpul akan disimpan sementara.</p>
+                <div class="bg-red-500/15 border border-red-500/40 rounded-xl p-3 text-red-300 font-semibold text-xs">
+                    <i class="fas fa-triangle-exclamation mr-1.5"></i>
+                    Jangan tutup atau keluar dari browser ini dulu! Tunggu di halaman ini sampai guru menyetujui, lalu refresh.
+                </div>
+            </div>`
+        });
+        const isConfirmed = ok.isConfirmed;
+        if (!isConfirmed) return;
         if (!ok) return;
         if (!recallAttemptPending) { toast('Data tidak ditemukan. Coba submit ulang.', 'error'); return; }
         const { attempt: att, hasilId } = recallAttemptPending;
@@ -1593,20 +1605,22 @@
                 // Firebase: kirim ke Firestore koleksi recall
                 await recallApi('mintaLanjut', { hasilId, kode: att.kode, nama: att.nama, absen: att.absen, judul: att.judul });
                 // Simpan juga attempt di localStorage agar bisa di-restore saat disetujui
-                try { localStorage.setItem(RECALL_KEY, JSON.stringify({ attempt: att, hasilId, status: 'menunggu' })); } catch (e) {}
+                const sisaDetik = Math.max(0, Math.ceil((att.akhir - Date.now()) / 1000));
+                try { localStorage.setItem(RECALL_KEY, JSON.stringify({ attempt: att, hasilId, status: 'menunggu', sisaDetik })); } catch (e) {}
             } else {
                 // Lokal: langsung set status menunggu di localStorage
-                localStorage.setItem(RECALL_KEY, JSON.stringify({ attempt: att, hasilId, status: 'menunggu' }));
+                const sisaDetik = Math.max(0, Math.ceil((att.akhir - Date.now()) / 1000));
+                localStorage.setItem(RECALL_KEY, JSON.stringify({ attempt: att, hasilId, status: 'menunggu', sisaDetik }));
             }
             Swal.close();
         } catch (e) { Swal.close(); galat(e, 'Gagal mengirim permintaan'); return; }
         $('btn-minta-lanjut').classList.add('hidden');
         const box = $('h-recall-box'), st = $('h-recall-status');
         box.classList.remove('hidden');
-        st.innerHTML = '<i class="fas fa-hourglass-half mr-1.5 text-amber-400"></i>Permintaan lanjut kerjakan <b class="text-amber-300">sedang menunggu persetujuan guru</b>. Minta guru membuka menu <b>Rilis Nilai (ACC)</b> dan klik tombol <b>ACC Lanjut</b>. Setelah disetujui, <b>refresh halaman ini</b> untuk melanjutkan.';
+        st.innerHTML = '<i class="fas fa-hourglass-half mr-1.5 text-amber-400"></i>Permintaan sedang <b class="text-amber-300">menunggu persetujuan guru</b>. Minta guru buka menu <b>Rilis Nilai (ACC)</b> lalu klik <b>ACC Lanjut</b>.<br><br><span class="text-red-300 font-bold"><i class="fas fa-triangle-exclamation mr-1"></i>Jangan tutup browser ini!</span> Setelah guru ACC, refresh halaman ini untuk melanjutkan.';
         toast('Permintaan terkirim. Tunggu guru menyetujui, lalu refresh halaman.', 'info');
     }
-    function selesaiUjian() { try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} pilihJK(''); $('s-jk-box').classList.add('hidden'); showView('landing'); }
+    function selesaiUjian() { try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} pilihJK(''); showView('landing'); }
 
     /* ============================================================
        GURU: DATA UJIAN
@@ -2982,6 +2996,12 @@
                 const rc = JSON.parse(rawRecall);
                 if (rc && rc.status === 'disetujui' && rc.attempt) {
                     attempt = rc.attempt;
+                    // Sesuaikan sisa waktu: pakai sisaDetik yang disimpan saat kumpulkan
+                    if (rc.sisaDetik && rc.sisaDetik > 0) {
+                        attempt.akhir = Date.now() + rc.sisaDetik * 1000;
+                    } else {
+                        attempt.akhir = Date.now() + attempt.durasi * 60000;
+                    }
                     localStorage.removeItem(RECALL_KEY);
                     saveAttempt();
                     toast('Guru sudah menyetujui. Silakan lanjutkan mengerjakan!', 'success');
@@ -2994,6 +3014,12 @@
                         const r = await recallApi('cekRecallOk', { hasilId: rc.hasilId });
                         if (r.disetujui && rc.attempt) {
                             attempt = rc.attempt;
+                            // Sesuaikan sisa waktu
+                            if (rc.sisaDetik && rc.sisaDetik > 0) {
+                                attempt.akhir = Date.now() + rc.sisaDetik * 1000;
+                            } else {
+                                attempt.akhir = Date.now() + attempt.durasi * 60000;
+                            }
                             // Hapus recall_ok dari Firestore dan localStorage
                             try { await recallApi('hapusRecallOk', { hasilId: rc.hasilId }); } catch (e) {}
                             localStorage.removeItem(RECALL_KEY);
