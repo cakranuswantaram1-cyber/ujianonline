@@ -86,8 +86,8 @@
 
     <!-- Splash screen -->
     <div id="splash-screen" class="fixed inset-0 bg-[#0f172a] z-[9999] flex flex-col items-center justify-center">
-        <div class="w-28 h-28 rounded-3xl overflow-hidden shadow-2xl animate-bounce mb-6 bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center text-white">
-            <img src="icons/icon-192.png" alt="Logo" class="w-full h-full object-cover" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'fas fa-graduation-cap text-4xl'}))">
+        <div class="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl flex items-center justify-center text-white shadow-2xl animate-bounce mb-6">
+            <i class="fas fa-graduation-cap text-4xl"></i>
         </div>
         <h1 class="text-3xl font-black text-white tracking-tight mb-2">Ujian Kelas</h1>
         <p class="text-slate-400 text-sm font-medium tracking-wide">Memuat data...</p>
@@ -97,8 +97,8 @@
     <!-- ================= BERANDA ================= -->
     <div id="view-landing" class="screen hidden fixed inset-0 z-[30] overflow-y-auto screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
         <div class="min-h-full flex flex-col items-center justify-center p-6">
-            <div class="w-28 h-28 rounded-3xl overflow-hidden shadow-2xl mb-5 bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center text-white">
-                <img src="icons/icon-192.png" alt="Logo" class="w-full h-full object-cover" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'fas fa-graduation-cap text-4xl'}))">
+            <div class="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl flex items-center justify-center text-white shadow-2xl mb-5">
+                <i class="fas fa-graduation-cap text-4xl"></i>
             </div>
             <h1 id="landing-nama" class="text-2xl font-black text-white tracking-tight text-center">Ujian Online Kelas</h1>
             <p class="text-slate-400 text-sm mt-1 mb-8 text-center">Pilih peran Anda untuk melanjutkan</p>
@@ -110,6 +110,10 @@
                 <button onclick="bukaGuru()" class="w-full bg-slate-900 border border-slate-800 hover:border-slate-600 text-slate-100 font-bold px-5 py-4 rounded-2xl transition flex items-center gap-4 text-left">
                     <i class="fas fa-chalkboard-user text-2xl w-8 text-center text-accent-400"></i>
                     <span><span class="block text-base">Saya Guru</span><span class="block text-[11px] font-medium text-slate-400">Buat ujian, impor soal, lihat nilai</span></span>
+                </button>
+                <button onclick="bukaNilai()" class="w-full bg-slate-900 border border-slate-800 hover:border-slate-600 text-slate-100 font-bold px-5 py-4 rounded-2xl transition flex items-center gap-4 text-left">
+                    <i class="fas fa-award text-2xl w-8 text-center text-amber-400"></i>
+                    <span><span class="block text-base">Lihat Nilai Saya</span><span class="block text-[11px] font-medium text-slate-400">Cek nilai ujian yang sudah dirilis guru</span></span>
                 </button>
             </div>
             <button id="btn-install-landing" onclick="installApp()" class="hidden mt-6 text-xs font-bold text-accent-400 underline"><i class="fas fa-circle-down mr-1.5"></i>Pasang di Layar Utama</button>
@@ -200,6 +204,37 @@
         </div>
     </div>
 
+    <!-- ================= SISWA: LIHAT NILAI ================= -->
+    <div id="view-nilai" class="screen hidden fixed inset-0 z-[30] overflow-y-auto screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
+        <div class="min-h-full flex flex-col items-center justify-center p-6">
+            <div class="w-full max-w-sm">
+                <button onclick="showView('landing')" class="text-xs font-bold text-slate-400 hover:text-accent-400 mb-4"><i class="fas fa-arrow-left mr-1.5"></i>Kembali</button>
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                    <div>
+                        <h2 class="text-lg font-black text-slate-100">Lihat Nilai</h2>
+                        <p class="text-[11px] text-slate-400 mt-1">Isi data sama persis seperti saat mengerjakan ujian. Nilai hanya tampil setelah disetujui guru.</p>
+                    </div>
+                    <label class="block text-[11px] font-semibold text-slate-400">Kode Ujian
+                        <input id="nl-kode" class="field mt-1 uppercase tracking-widest font-bold" placeholder="Contoh: K7M2Q" autocomplete="off" oninput="this.value=this.value.toUpperCase()">
+                    </label>
+                    <label class="block text-[11px] font-semibold text-slate-400">Nama Lengkap
+                        <input id="nl-nama" maxlength="54" class="field mt-1" placeholder="Nama sesuai saat ujian" autocomplete="off">
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="block text-[11px] font-semibold text-slate-400">Nomor Absen
+                            <input id="nl-absen" class="field mt-1" inputmode="numeric" placeholder="Contoh: 7" autocomplete="off">
+                        </label>
+                        <label class="block text-[11px] font-semibold text-slate-400">Jenis Kelamin
+                            <select id="nl-jk" class="field mt-1"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
+                        </label>
+                    </div>
+                    <button onclick="cekNilai()" class="w-full bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-sm px-4 py-3 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-magnifying-glass mr-1.5"></i>Cek Nilai</button>
+                    <div id="nl-hasil"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= GURU: MASUK ================= -->
     <div id="view-login" class="screen hidden fixed inset-0 z-[30] overflow-y-auto screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
         <div class="min-h-full flex flex-col items-center justify-center p-6">
@@ -252,13 +287,20 @@
                     <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Ujian</div>
                     <button onclick="switchTab('ujian')" id="btn-ujian" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-file-pen w-5 text-center"></i><span>Kelola Ujian</span></button>
                     <button onclick="switchTab('hasil')" id="btn-hasil" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-ranking-star w-5 text-center"></i><span>Hasil &amp; Nilai</span></button>
+                    <button onclick="switchTab('rilis')" id="btn-rilis" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-bullhorn w-5 text-center"></i><span>Rilis Nilai (ACC)</span></button>
                     <button onclick="switchTab('adu')" id="btn-adu" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-trophy w-5 text-center"></i><span>Adu L vs P</span></button>
                     <button onclick="switchTab('tim')" id="btn-tim" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-people-group w-5 text-center"></i><span>Kuis Langsung L vs P</span></button>
                     <button onclick="switchTab('bank')" id="btn-bank" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-box-archive w-5 text-center"></i><span>Bank Soal</span></button>
+                    <button onclick="switchTab('analisis')" id="btn-analisis" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-chart-line w-5 text-center"></i><span>Analisis &amp; Remedial</span></button>
                     <button onclick="timProyektor()" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-tv w-5 text-center"></i><span>Papan Skor Layar</span></button>
+                    <div class="my-2 border-t border-slate-800"></div>
+                    <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Kelas</div>
+                    <button onclick="switchTab('roster')" id="btn-roster" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-user-group w-5 text-center"></i><span>Data Siswa</span></button>
+                    <button onclick="switchTab('absensi')" id="btn-absensi" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-clipboard-user w-5 text-center"></i><span>Absensi</span></button>
                     <div class="my-2 border-t border-slate-800"></div>
                     <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Sistem</div>
                     <button onclick="switchTab('pengaturan')" id="btn-pengaturan" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-gear w-5 text-center"></i><span>Pengaturan</span></button>
+                    <button onclick="switchTab('panduan')" id="btn-panduan" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-circle-question w-5 text-center"></i><span>Panduan</span></button>
                     <!-- MENU:END -->
                     <button onclick="keluarGuru()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition"><i class="fas fa-right-from-bracket w-5 text-center"></i><span>Keluar</span></button>
                 </nav>
@@ -475,6 +517,102 @@
                         </div>
                     </section>
 
+                    <section id="tab-analisis-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="ana-kuis" onchange="renderAnalisis(false)" class="field flex-1 min-w-[12rem]"></select>
+                            <label class="flex items-center gap-2 text-[11px] font-semibold text-slate-400">KKM
+                                <input id="ana-kkm" type="number" min="1" max="100" class="field !w-20 text-center" onchange="anaSimpanKkm()"></label>
+                            <button onclick="renderAnalisis(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
+                            <button onclick="anaEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                        </div>
+                        <div id="ana-isi"></div>
+                    </section>
+
+                    <section id="tab-roster-view" class="tab-content hidden space-y-4">
+                        <div id="ros-stats" class="grid grid-cols-3 gap-4"></div>
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-user-plus text-accent-400 mr-2"></i>Tambah Siswa</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                <label class="block text-[11px] font-semibold text-slate-400 md:col-span-2">Nama Lengkap
+                                    <input id="ros-nama" maxlength="54" class="field mt-1" placeholder="Nama sesuai absen" autocomplete="off" onkeydown="if(event.key==='Enter')rosTambah()"></label>
+                                <label class="block text-[11px] font-semibold text-slate-400">No. Absen
+                                    <input id="ros-absen" class="field mt-1" inputmode="numeric" placeholder="Contoh: 7" autocomplete="off" onkeydown="if(event.key==='Enter')rosTambah()"></label>
+                                <label class="block text-[11px] font-semibold text-slate-400">Jenis Kelamin
+                                    <select id="ros-jk" class="field mt-1"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></label>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="rosTambah()" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-plus mr-1.5"></i>Tambah</button>
+                                <button onclick="$('ros-file').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-import mr-1.5"></i>Impor Excel/CSV</button>
+                                <button onclick="rosTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-download mr-1.5"></i>Template</button>
+                                <button onclick="rosEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                                <button onclick="rosHapusSemua()" class="bg-slate-800 hover:bg-slate-700 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-trash mr-1.5"></i>Kosongkan</button>
+                                <input type="file" id="ros-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="rosImpor(event)">
+                            </div>
+                            <p class="text-[11px] text-slate-500">Kolom file: <b>nama</b>, <b>absen</b>, <b>jk</b> (L/P). Data kelas ini tersimpan di perangkat guru dan dipakai oleh menu Absensi.</p>
+                        </div>
+                        <div id="ros-list"></div>
+                    </section>
+
+                    <section id="tab-absensi-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <input id="absn-tgl" type="date" style="color-scheme:dark" class="field !w-auto" onchange="renderAbsnHari()">
+                            <button onclick="absnSemuaHadir()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-check-double mr-1.5"></i>Tandai Sisanya Hadir</button>
+                        </div>
+                        <div id="absn-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
+                        <div id="absn-list"></div>
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <h3 class="text-sm font-bold text-slate-100 mr-auto"><i class="fas fa-calendar-days text-accent-400 mr-2"></i>Rekap Bulanan</h3>
+                            <input id="absn-bulan" type="month" style="color-scheme:dark" class="field !w-auto" onchange="renderAbsnRekap()">
+                            <button onclick="absnEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                        </div>
+                        <div id="absn-rekap"></div>
+                    </section>
+
+                    <section id="tab-panduan-view" class="tab-content hidden space-y-3">
+                        <details open class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-file-pen text-accent-400 mr-2"></i>Alur ujian online</summary>
+                            <ol class="mt-3 space-y-1.5 text-[12px] text-slate-400 list-decimal pl-5">
+                                <li>Buka <b class="text-slate-200">Kelola Ujian</b>, isi judul dan durasi, lalu impor soal dari Excel/CSV (atau pakai Bank Soal). Unduh template bila perlu.</li>
+                                <li>Simpan ujian. Ujian baru berstatus <b class="text-slate-200">Tutup</b>; buka saat kelas siap dimulai.</li>
+                                <li>Bagikan tautan siswa dari Pengaturan atau dari kartu ujian. Siswa memasukkan kode, nama, absen, dan jenis kelamin.</li>
+                                <li>Lihat nilai di <b class="text-slate-200">Hasil &amp; Nilai</b>. Soal esai dinilai lewat ikon mata; ikon putar-balik menghapus jawaban agar siswa bisa mengulang.</li>
+                            </ol>
+                        </details>
+                        <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-chart-line text-accent-400 mr-2"></i>Analisis &amp; Remedial</summary>
+                            <p class="mt-3 text-[12px] text-slate-400">Pilih satu kuis atau semua kuis (nilai tiap siswa dirata-rata), atur KKM, lalu lihat siswa yang tuntas dan yang perlu remedial beserta sebaran nilainya. Esai yang belum dinilai belum ikut dihitung.</p>
+                        </details>
+                        <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-clipboard-user text-accent-400 mr-2"></i>Data Siswa &amp; Absensi</summary>
+                            <p class="mt-3 text-[12px] text-slate-400">Isi daftar siswa sekali (manual atau impor Excel), lalu catat kehadiran per tanggal dengan tombol H, S, I, A. Rekap bulanan menampilkan persentase hadir dan bisa diekspor ke Excel.</p>
+                        </details>
+                        <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-shield-halved text-accent-400 mr-2"></i>Penyimpanan &amp; keamanan data</summary>
+                            <p class="mt-3 text-[12px] text-slate-400">Data ujian tersimpan di Firebase/Google Sheets (atau di perangkat bila Mode Lokal). Data Siswa, Absensi, dan KKM tersimpan di perangkat ini saja; gunakan tombol Ekspor Excel secara berkala sebagai arsip. Menghapus data browser akan menghapus data tersebut.</p>
+                        </details>
+                    </section>
+
+                    <section id="tab-rilis-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="rl-kuis" onchange="muatRilis()" class="field flex-1 min-w-[12rem]"></select>
+                            <button onclick="renderRilis(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
+                            <button onclick="rlAccSemua()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-check-double mr-1.5"></i>ACC Semua yang Sudah Dinilai</button>
+                            <button onclick="rlTarikSemua()" class="bg-slate-800 hover:bg-slate-700 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-eye-slash mr-1.5"></i>Tarik Semua</button>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Nilai yang Anda <b class="text-slate-200">ACC</b> bisa dilihat siswa lewat tombol <b class="text-slate-200">Lihat Nilai Saya</b> di beranda. Nilai esai harus dinilai dulu sebelum bisa di-ACC. Tombol <b class="text-slate-200">Tarik</b> menyembunyikan nilai lagi.</p>
+                        <div id="rl-isi"></div>
+                        <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <summary class="text-xs font-bold text-slate-100 cursor-pointer"><i class="fas fa-fire text-amber-400 mr-2"></i>Khusus Firebase: aturan (Rules) yang perlu ditambahkan sekali</summary>
+                            <p class="text-[11px] text-slate-400 mt-3">Tambahkan blok ini di dalam <span class="font-mono text-slate-300">match /databases/{database}/documents</span> pada Rules Firestore, lalu Publish. Ganti email dengan email guru yang sama seperti pada aturan lain. Siswa hanya bisa membaca satu dokumen nilai miliknya, tidak bisa melihat daftar.</p>
+                            <pre class="mt-2 bg-slate-950 border border-slate-700 rounded-xl p-3 text-[11px] text-slate-300 overflow-x-auto">match /nilai/{id} {
+  allow get: if true;
+  allow list, create, update, delete:
+    if request.auth != null
+    &amp;&amp; request.auth.token.email == "EMAIL_GURU@gmail.com";
+}</pre>
+                        </details>
+                    </section>
+
                     <!-- TAB:END -->
                 </main>
             </div>
@@ -490,8 +628,8 @@
     // Opsional: isi ID/alamat skrip di sini bila ingin tertanam permanen di aplikasi (tanpa tautan ?s=).
     const SCRIPT_DEFAULT = '';
     const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
-    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', pengaturan: 'Pengaturan' };
-    const SCREENS = ['landing', 'siswa', 'ujian', 'hasil', 'login', 'guru'];
+    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', roster: 'Data Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
+    const SCREENS = ['landing', 'siswa', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
     const ATT_KEY = APP.slug + '_attempt';
@@ -1028,6 +1166,10 @@
         if (id === 'adu') renderAdu(true);
         if (id === 'tim') { if (timView === 'soal' && !timBaca().aktif) timView = 'set'; renderTim(); }
         if (id === 'bank') renderBank();
+        if (id === 'rilis') renderRilis(true);
+        if (id === 'analisis') renderAnalisis(true);
+        if (id === 'roster') renderRoster();
+        if (id === 'absensi') renderAbsensi();
         if (id === 'pengaturan') renderPengaturan();
         document.querySelector('#view-guru main').scrollTo({ top: 0 });
     }
@@ -2070,6 +2212,373 @@
             db.settings.scriptId = id; saveDB(); cache.ujian = null;
             renderPengaturan(); toast(fbAktif(id) ? 'Terhubung ke Firebase' : 'Terhubung ke Google Sheets');
         } catch (e) { Swal.close(); galat(e, 'Koneksi gagal'); }
+    }
+
+    /* ============================================================
+       MENU TAMBAHAN: Analisis & Remedial, Data Siswa, Absensi
+       Data Data Siswa, Absensi, dan KKM disimpan di perangkat guru (localStorage), terpisah dari data lama.
+       ============================================================ */
+    const ROS_KEY = APP.slug + '_roster', ABSN_KEY = APP.slug + '_absensi', ANA_KEY = APP.slug + '_kkm';
+    const bacaJson = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v === null ? d : v; } catch (e) { return d; } };
+    const tulisJson = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast('Penyimpanan penuh atau diblokir browser', 'error'); return false; } };
+    const kosongBox = (ikon, judul, teks) => `<div class="text-center py-16 text-slate-500"><i class="fas ${ikon} text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">${esc(judul)}</p>${teks ? `<p class="text-xs mt-1">${teks}</p>` : ''}</div>`;
+    const thTabel = 'bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider';
+
+    /* ---------- Analisis & Remedial ---------- */
+    const anaCache = {};
+    let anaData = null;
+    const anaKkm = () => { const n = Number(bacaJson(ANA_KEY, 75)); return n > 0 && n <= 100 ? n : 75; };
+    function anaSimpanKkm() {
+        const n = Number($('ana-kkm').value);
+        if (!(n > 0 && n <= 100)) { $('ana-kkm').value = anaKkm(); return toast('KKM harus antara 1 dan 100', 'info'); }
+        if (tulisJson(ANA_KEY, n) && anaData) renderAnaHasil();
+        toast('KKM disimpan');
+    }
+    async function renderAnalisis(paksa) {
+        const sel = $('ana-kuis'), box = $('ana-isi');
+        $('ana-kkm').value = anaKkm();
+        let list;
+        try { list = await muatUjian(!!paksa); } catch (e) { box.innerHTML = pesanGalat(e); return; }
+        if (!list.length) { sel.innerHTML = '<option value="">(belum ada kuis)</option>'; box.innerHTML = kosongBox('fa-inbox', 'Belum ada kuis'); return; }
+        const lama = sel.value;
+        sel.innerHTML = '<option value="__semua__">Semua kuis (nilai dirata-rata per siswa)</option>' + list.map(u => `<option value="${esc(u.kode)}">${esc(u.judul)} (${esc(u.kode)})</option>`).join('');
+        if ([...sel.options].some(o => o.value === lama)) sel.value = lama;
+        const pilih = sel.value === '__semua__' ? list : list.filter(u => u.kode === sel.value);
+        box.innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>';
+        try { await Promise.all(pilih.map(async u => { if (paksa || !anaCache[u.kode]) anaCache[u.kode] = (await ambilHasil(u.kode)).hasil; })); }
+        catch (e) { box.innerHTML = pesanGalat(e); return; }
+        anaData = pilih.flatMap(u => (anaCache[u.kode] || []).map(h => Object.assign({ kuis: u.judul }, h)));
+        renderAnaHasil();
+    }
+    function anaSiswa() {
+        const m = new Map();
+        (anaData || []).forEach(h => {
+            if (nilaiKosong(h)) return;
+            const k = lkNorm(h.nama) + '|' + h.jk;
+            const x = m.get(k) || { nama: h.nama, jk: h.jk, absen: h.absen, nilai: [] };
+            x.nilai.push(Number(h.nilai_akhir)); m.set(k, x);
+        });
+        return [...m.values()].map(x => Object.assign(x, { skor: x.nilai.reduce((a, b) => a + b, 0) / x.nilai.length })).sort((a, b) => b.skor - a.skor);
+    }
+    const anaRentang = [['90 - 100', 90, Infinity, 'bg-emerald-500'], ['80 - 89', 80, 90, 'bg-sky-500'], ['70 - 79', 70, 80, 'bg-amber-500'], ['60 - 69', 60, 70, 'bg-orange-500'], ['0 - 59', 0, 60, 'bg-rose-500']];
+    function renderAnaHasil() {
+        const box = $('ana-isi'), kkm = anaKkm(), ss = anaSiswa(), menunggu = (anaData || []).filter(nilaiKosong).length;
+        if (!ss.length) { box.innerHTML = kosongBox('fa-inbox', 'Belum ada nilai untuk dianalisis', 'Bagikan tautan siswa dan buka ujiannya.'); return; }
+        const tuntas = ss.filter(x => x.skor >= kkm), remed = ss.filter(x => x.skor < kkm);
+        const rata = ss.reduce((a, x) => a + x.skor, 0) / ss.length;
+        const dist = anaRentang.map(([l, a, b, w]) => [l, ss.filter(x => x.skor >= a && x.skor < b).length, w]);
+        const maks = Math.max(...dist.map(d => d[1])) || 1;
+        const barisRemed = remed.slice().reverse().map(x => `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-3 text-center">${badgeJK(x.jk)}</td><td class="px-3 py-3 text-center font-black text-rose-400">${fmtNilai(x.skor)}</td><td class="px-3 py-3 text-center text-slate-400">${fmtNilai(kkm - x.skor)}</td></tr>`).join('');
+        const barisSemua = ss.map((x, i) => `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 text-center text-slate-400 font-bold">${i + 1}</td><td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-3 text-center">${badgeJK(x.jk)}</td><td class="px-3 py-3 text-center text-slate-400">${x.nilai.length}</td><td class="px-3 py-3 text-center font-black text-accent-400">${fmtNilai(x.skor)}</td><td class="px-3 py-3 text-center">${x.skor >= kkm ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Tuntas</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">Remedial</span>'}</td></tr>`).join('');
+        box.innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                ${statCard('fa-users', 'Peserta', ss.length)}${statCard('fa-chart-simple', 'Rata-rata Kelas', fmtNilai(rata), 'sky')}
+                ${statCard('fa-circle-check', 'Tuntas (' + Math.round(tuntas.length / ss.length * 100) + '%)', tuntas.length)}${statCard('fa-rotate-left', 'Perlu Remedial', remed.length, 'rose')}</div>
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-chart-column text-accent-400 mr-2"></i>Sebaran Nilai <span class="text-[11px] font-medium text-slate-500">(KKM ${kkm})</span></h3>
+                ${dist.map(([l, n, w]) => `<div class="flex items-center gap-3 text-[11px]"><span class="w-16 text-slate-400 font-semibold shrink-0">${l}</span><div class="flex-1 h-3 rounded-full bg-slate-800 overflow-hidden"><div class="h-full ${w}" style="width:${Math.round(n / maks * 100)}%"></div></div><span class="w-8 text-right font-black text-slate-200">${n}</span></div>`).join('')}
+            </div>
+            <h3 class="text-sm font-bold text-slate-100 pt-2"><i class="fas fa-rotate-left text-rose-400 mr-2"></i>Daftar Remedial</h3>
+            ${remed.length ? `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3">Nilai</th><th class="px-3 py-3">Kurang dari KKM</th></tr></thead><tbody class="divide-y divide-slate-800 bg-slate-900">${barisRemed}</tbody></table></div>` : '<p class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4"><i class="fas fa-circle-check mr-2"></i>Semua siswa sudah mencapai KKM.</p>'}
+            <h3 class="text-sm font-bold text-slate-100 pt-2"><i class="fas fa-list-ol text-accent-400 mr-2"></i>Semua Siswa</h3>
+            <div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3">#</th><th class="px-3 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3">Jml Kuis</th><th class="px-3 py-3">Nilai</th><th class="px-3 py-3">Status</th></tr></thead><tbody class="divide-y divide-slate-800 bg-slate-900">${barisSemua}</tbody></table></div>
+            ${menunggu ? `<p class="text-[11px] text-amber-400"><i class="fas fa-hourglass-half mr-1"></i>${menunggu} jawaban belum dihitung karena esainya belum Anda nilai.</p>` : ''}`;
+    }
+    function anaEkspor() {
+        const ss = anaSiswa(), kkm = anaKkm();
+        if (!ss.length) return toast('Belum ada data untuk diekspor', 'info');
+        const rows = [['Peringkat', 'Nama', 'JK', 'Jumlah Kuis', 'Nilai (rata-rata)', 'Status (KKM ' + kkm + ')']];
+        ss.forEach((x, i) => rows.push([i + 1, x.nama, x.jk, x.nilai.length, Math.round(x.skor * 10) / 10, x.skor >= kkm ? 'Tuntas' : 'Remedial']));
+        const tuntas = ss.filter(x => x.skor >= kkm).length, rata = ss.reduce((a, x) => a + x.skor, 0) / ss.length;
+        const ring = [['Keterangan', 'Nilai'], ['KKM', kkm], ['Peserta', ss.length], ['Rata-rata kelas', Math.round(rata * 10) / 10], ['Tuntas', tuntas], ['Perlu remedial', ss.length - tuntas]];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ring), 'Ringkasan');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Nilai Siswa');
+        XLSX.writeFile(wb, 'analisis-remedial.xlsx');
+    }
+
+    /* ---------- Data Siswa ---------- */
+    const rosBaca = () => { const d = bacaJson(ROS_KEY, []); return Array.isArray(d) ? d : []; };
+    const rosTulis = d => tulisJson(ROS_KEY, d);
+    const rosId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const rosUrut = d => d.slice().sort((a, b) => (Number(a.absen) || 9999) - (Number(b.absen) || 9999) || String(a.nama).localeCompare(String(b.nama), 'id'));
+    function renderRoster() {
+        const d = rosUrut(rosBaca()), L = d.filter(x => x.jk === 'L').length, P = d.filter(x => x.jk === 'P').length;
+        $('ros-stats').innerHTML = statCard('fa-users', 'Total Siswa', d.length) + statCard('fa-mars', 'Laki-laki', L, 'sky') + statCard('fa-venus', 'Perempuan', P, 'rose');
+        if (!d.length) { $('ros-list').innerHTML = kosongBox('fa-user-group', 'Belum ada data siswa', 'Tambah satu per satu atau impor dari Excel.'); return; }
+        $('ros-list').innerHTML = `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3">Absen</th><th class="px-3 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${d.map(x => `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 text-center text-slate-400 font-bold">${esc(x.absen) || '—'}</td><td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-3 text-center">${badgeJK(x.jk)}</td><td class="px-3 py-3 text-right"><button onclick="rosHapus('${esc(x.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus siswa"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+    }
+    function rosTambah() {
+        const nama = $('ros-nama').value.trim(), absen = $('ros-absen').value.trim(), jk = $('ros-jk').value;
+        if (!nama) return toast('Nama siswa wajib diisi', 'info');
+        const d = rosBaca();
+        if (d.some(x => lkNorm(x.nama) === lkNorm(nama))) return toast('Siswa dengan nama itu sudah ada', 'info');
+        d.push({ id: rosId(), nama, absen, jk });
+        if (!rosTulis(d)) return;
+        $('ros-nama').value = ''; $('ros-absen').value = ''; $('ros-nama').focus();
+        renderRoster(); toast('Siswa ditambahkan');
+    }
+    async function rosHapus(id) {
+        const x = rosBaca().find(s => s.id === id);
+        if (!x || !await konfirmasi('Hapus ' + x.nama + '?', 'Siswa dihapus dari daftar kelas. Catatan absensi lama tidak ikut terhapus.', 'Ya, hapus')) return;
+        if (rosTulis(rosBaca().filter(s => s.id !== id))) { renderRoster(); toast('Siswa dihapus'); }
+    }
+    async function rosHapusSemua() {
+        if (!rosBaca().length) return toast('Daftar siswa sudah kosong', 'info');
+        if (!await konfirmasi('Kosongkan daftar siswa?', 'Semua siswa pada daftar kelas dihapus. Ekspor Excel dulu bila perlu arsip.', 'Ya, kosongkan')) return;
+        if (rosTulis([])) { renderRoster(); toast('Daftar dikosongkan'); }
+    }
+    function rosImpor(ev) {
+        const file = ev.target.files[0]; ev.target.value = '';
+        if (!file) return;
+        const r = new FileReader();
+        r.onload = e => {
+            try {
+                const wb = XLSX.read(e.target.result, { type: 'array' });
+                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+                const ambil = (row, ...ks) => { const k = Object.keys(row).find(x => ks.includes(lkNorm(x))); return k ? String(row[k]).trim() : ''; };
+                const d = rosBaca(); let tambah = 0, lewat = 0;
+                rows.forEach(row => {
+                    const nama = ambil(row, 'nama', 'nama lengkap', 'nama siswa');
+                    if (!nama) return;
+                    if (d.some(x => lkNorm(x.nama) === lkNorm(nama))) { lewat++; return; }
+                    const j = lkNorm(ambil(row, 'jk', 'jenis kelamin', 'l/p', 'gender'));
+                    d.push({ id: rosId(), nama, absen: ambil(row, 'absen', 'no absen', 'nomor absen', 'no'), jk: /^(l|laki|pria)/.test(j) ? 'L' : /^(p|perempuan|wanita)/.test(j) ? 'P' : '' });
+                    tambah++;
+                });
+                if (!tambah && !lewat) return galat(new Error('Tidak ada baris yang bisa dibaca. Pastikan baris pertama berisi kolom nama, absen, jk.'), 'Impor gagal');
+                if (rosTulis(d)) { renderRoster(); toast(tambah + ' siswa ditambahkan' + (lewat ? ', ' + lewat + ' duplikat dilewati' : '')); }
+            } catch (x) { galat(new Error('File tidak bisa dibaca. Gunakan .xlsx atau .csv dengan kolom nama, absen, jk.'), 'Impor gagal'); }
+        };
+        r.readAsArrayBuffer(file);
+    }
+    function rosTemplate() {
+        const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet([['nama', 'absen', 'jk'], ['Contoh Siswa Satu', 1, 'L'], ['Contoh Siswa Dua', 2, 'P']]);
+        ws['!cols'] = [{ wch: 34 }, { wch: 8 }, { wch: 6 }];
+        XLSX.utils.book_append_sheet(wb, ws, 'Siswa');
+        XLSX.writeFile(wb, 'template-data-siswa.xlsx');
+    }
+    function rosEkspor() {
+        const d = rosUrut(rosBaca());
+        if (!d.length) return toast('Belum ada data untuk diekspor', 'info');
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['nama', 'absen', 'jk']].concat(d.map(x => [x.nama, x.absen, x.jk]))), 'Siswa');
+        XLSX.writeFile(wb, 'data-siswa.xlsx');
+    }
+
+    /* ---------- Absensi ---------- */
+    const ABSN_STATUS = { H: 'Hadir', S: 'Sakit', I: 'Izin', A: 'Alpa' };
+    const ABSN_WARNA = { H: 'bg-emerald-500 text-white', S: 'bg-amber-500 text-white', I: 'bg-sky-500 text-white', A: 'bg-rose-500 text-white' };
+    const absnBaca = () => { const d = bacaJson(ABSN_KEY, {}); return d && typeof d === 'object' && !Array.isArray(d) ? d : {}; };
+    const hariIni = () => { const t = new Date(); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); };
+    function renderAbsensi() {
+        if (!$('absn-tgl').value) $('absn-tgl').value = hariIni();
+        if (!$('absn-bulan').value) $('absn-bulan').value = $('absn-tgl').value.slice(0, 7);
+        renderAbsnHari(); renderAbsnRekap();
+    }
+    function renderAbsnHari() {
+        const tgl = $('absn-tgl').value, ros = rosUrut(rosBaca()), data = absnBaca()[tgl] || {};
+        if (!ros.length) {
+            $('absn-stats').innerHTML = '';
+            $('absn-list').innerHTML = kosongBox('fa-user-group', 'Belum ada data siswa', '<button onclick="switchTab(\'roster\')" class="font-bold text-accent-400 underline">Isi Data Siswa dulu</button>');
+            return;
+        }
+        const hit = k => ros.filter(s => data[s.id] === k).length, belum = ros.filter(s => !data[s.id]).length;
+        $('absn-stats').innerHTML = statCard('fa-circle-check', 'Hadir', hit('H')) + statCard('fa-notes-medical', 'Sakit', hit('S'), 'amber') + statCard('fa-envelope-open-text', 'Izin', hit('I'), 'sky') + statCard('fa-circle-xmark', 'Alpa', hit('A'), 'rose');
+        $('absn-list').innerHTML = `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3">Absen</th><th class="px-3 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3">Kehadiran</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${ros.map(s => `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 text-center text-slate-400 font-bold">${esc(s.absen) || '—'}</td><td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(s.nama)}</td><td class="px-3 py-3 text-center">${badgeJK(s.jk)}</td>
+                <td class="px-3 py-3"><div class="flex justify-center gap-1.5">${Object.keys(ABSN_STATUS).map(k => `<button onclick="absnSet('${esc(s.id)}','${k}')" title="${ABSN_STATUS[k]}" class="w-8 h-8 rounded-lg font-black text-[11px] transition ${data[s.id] === k ? ABSN_WARNA[k] : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">${k}</button>`).join('')}</div></td></tr>`).join('')}</tbody></table></div>
+            ${belum ? `<p class="text-[11px] text-slate-500 mt-2"><i class="fas fa-circle-info mr-1"></i>${belum} siswa belum diisi pada tanggal ini.</p>` : ''}`;
+    }
+    function absnSet(id, k) {
+        const tgl = $('absn-tgl').value;
+        if (!tgl) return toast('Pilih tanggal dulu', 'info');
+        const all = absnBaca(); all[tgl] = all[tgl] || {};
+        if (all[tgl][id] === k) delete all[tgl][id]; else all[tgl][id] = k;
+        if (!Object.keys(all[tgl]).length) delete all[tgl];
+        if (tulisJson(ABSN_KEY, all)) { renderAbsnHari(); renderAbsnRekap(); }
+    }
+    function absnSemuaHadir() {
+        const tgl = $('absn-tgl').value, ros = rosBaca();
+        if (!tgl) return toast('Pilih tanggal dulu', 'info');
+        if (!ros.length) return toast('Belum ada data siswa', 'info');
+        const all = absnBaca(); all[tgl] = all[tgl] || {};
+        ros.forEach(s => { if (!all[tgl][s.id]) all[tgl][s.id] = 'H'; });
+        if (tulisJson(ABSN_KEY, all)) { renderAbsnHari(); renderAbsnRekap(); toast('Siswa yang belum diisi ditandai hadir'); }
+    }
+    function absnHitung(bln) {
+        const ros = rosUrut(rosBaca()), all = absnBaca(), tgls = Object.keys(all).filter(t => t.startsWith(bln)).sort();
+        const baris = ros.map(s => {
+            const c = { H: 0, S: 0, I: 0, A: 0 };
+            tgls.forEach(t => { const v = all[t][s.id]; if (v && c[v] !== undefined) c[v]++; });
+            const tot = c.H + c.S + c.I + c.A;
+            return Object.assign({ s, tot, pct: tot ? Math.round(c.H / tot * 100) : null }, c);
+        });
+        return { tgls, baris };
+    }
+    function renderAbsnRekap() {
+        const bln = $('absn-bulan').value, box = $('absn-rekap');
+        if (!bln || !rosBaca().length) { box.innerHTML = ''; return; }
+        const { tgls, baris } = absnHitung(bln);
+        if (!tgls.length) { box.innerHTML = '<p class="text-[11px] text-slate-500 text-center py-6">Belum ada absensi pada bulan ini.</p>'; return; }
+        box.innerHTML = `<p class="text-[11px] text-slate-500 mb-2">${tgls.length} hari tercatat pada bulan ini.</p><div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3 text-emerald-400">H</th><th class="px-3 py-3 text-amber-400">S</th><th class="px-3 py-3 text-sky-400">I</th><th class="px-3 py-3 text-rose-400">A</th><th class="px-3 py-3">% Hadir</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${baris.map(b => `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(b.s.nama)}</td><td class="px-3 py-3 text-center">${badgeJK(b.s.jk)}</td><td class="px-3 py-3 text-center text-slate-300">${b.H}</td><td class="px-3 py-3 text-center text-slate-300">${b.S}</td><td class="px-3 py-3 text-center text-slate-300">${b.I}</td><td class="px-3 py-3 text-center text-slate-300">${b.A}</td><td class="px-3 py-3 text-center font-black ${b.pct === null ? 'text-slate-600' : b.pct < 75 ? 'text-rose-400' : 'text-emerald-400'}">${b.pct === null ? '—' : b.pct + '%'}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    function absnEkspor() {
+        const bln = $('absn-bulan').value;
+        if (!bln) return toast('Pilih bulan dulu', 'info');
+        const { tgls, baris } = absnHitung(bln);
+        if (!tgls.length) return toast('Belum ada absensi pada bulan ini', 'info');
+        const rows = [['Absen', 'Nama', 'JK', 'Hadir', 'Sakit', 'Izin', 'Alpa', '% Hadir']].concat(baris.map(b => [b.s.absen, b.s.nama, b.s.jk, b.H, b.S, b.I, b.A, b.pct === null ? '' : b.pct]));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Rekap ' + bln);
+        XLSX.writeFile(wb, 'rekap-absensi-' + bln + '.xlsx');
+    }
+
+    /* ============================================================
+       RILIS NILAI (ACC): guru menyetujui nilai, siswa melihatnya lewat "Lihat Nilai Saya".
+       Firebase: koleksi baru "nilai" (siswa hanya bisa membaca satu dokumen miliknya).
+       Mode Lokal: disimpan di data lokal. Google Sheets: butuh pembaruan skrip Apps Script.
+       ============================================================ */
+    const nlNamaPenuh = (nama, jk) => { const n = String(nama).trim(); return (jk ? n.slice(0, 54) + ' [' + jk + ']' : n).replace(/\s+/g, ' ').trim().slice(0, 60); };
+    function nilaiErr(e) {
+        if (e && e.code === 'permission-denied') return new Error('Fitur nilai belum aktif di Firebase: aturan (Rules) untuk koleksi "nilai" belum ditambahkan. Lihat petunjuk di menu Rilis Nilai (guru).');
+        return fbErr(e);
+    }
+    async function nilaiApi(aksi, b) {
+        const id = db.settings.scriptId;
+        if (!id) throw new Error('Alamat skrip belum diatur. Minta guru membagikan tautan ujian.');
+        if (lkAktif(id)) return nilaiLokal(aksi, b);
+        if (fbAktif(id)) return fbT(nilaiFB(aksi, b, id)).catch(e => { throw nilaiErr(e); });
+        throw new Error('Rilis nilai belum tersedia untuk mode Google Sheets. Skrip Apps Script perlu ditambah aksi rilis nilai, atau gunakan Firebase / Mode Lokal.');
+    }
+    async function nilaiFB(aksi, b, id) {
+        const C = await fbInit(id), fs = C.fs, D = C.db, ref = d => fs.doc(D, 'nilai', d);
+        if (aksi === 'ambil') { const s = await fs.getDoc(ref(b.docId)); return { ok: true, nilai: s.exists() ? s.data() : null }; }
+        await C.auth.authStateReady();
+        if (!C.auth.currentUser) throw new Error('PIN guru salah atau sesi habis. Masuk ulang sebagai guru.');
+        if (aksi === 'daftar') {
+            const q = await fs.getDocs(fs.query(fs.collection(D, 'nilai'), fs.where('kode', '==', b.kode)));
+            return { ok: true, daftar: q.docs.map(d => d.data()) };
+        }
+        const ids = aksi === 'rilis' ? b.items : b.ids;
+        for (let i = 0; i < ids.length; i += 400) {
+            const bt = fs.writeBatch(D);
+            ids.slice(i, i + 400).forEach(x => aksi === 'rilis' ? bt.set(ref(x.id), x) : bt.delete(ref(x)));
+            await bt.commit();
+        }
+        return { ok: true };
+    }
+    async function nilaiLokal(aksi, b) {
+        await new Promise(r => setTimeout(r, 250));
+        const d = lkBaca(); d.rilis = d.rilis || {};
+        if (aksi === 'ambil') {
+            const kode = lkKode(b.kode), n = lkNorm(b.nama), a = String(b.absen).trim();
+            const h = d.hasil.find(x => x.kode === kode && lkNorm(x.nama) === n && String(x.absen) === a);
+            return { ok: true, nilai: h && d.rilis[h.id] ? d.rilis[h.id] : null };
+        }
+        const pinSimpan = localStorage.getItem(LK_PIN);
+        if (!pinSimpan || sessionStorage.getItem(PIN_KEY) !== pinSimpan) throw new Error('PIN guru salah atau sesi habis. Masuk ulang sebagai guru.');
+        if (aksi === 'daftar') return { ok: true, daftar: Object.values(d.rilis).filter(x => x.kode === lkKode(b.kode)) };
+        if (aksi === 'rilis') b.items.forEach(x => { d.rilis[x.id] = x; });
+        else b.ids.forEach(x => { delete d.rilis[x]; });
+        lkTulis(d);
+        return { ok: true };
+    }
+
+    /* ---------- Guru: menu Rilis Nilai ---------- */
+    let rlData = null, rlRilis = {};
+    async function renderRilis(paksa) {
+        const sel = $('rl-kuis'), box = $('rl-isi');
+        let list;
+        try { list = await muatUjian(!!paksa); } catch (e) { box.innerHTML = pesanGalat(e); return; }
+        if (!list.length) { sel.innerHTML = '<option value="">(belum ada ujian)</option>'; box.innerHTML = kosongBox('fa-inbox', 'Belum ada ujian'); return; }
+        const lama = sel.value;
+        sel.innerHTML = list.map(u => `<option value="${esc(u.kode)}">${esc(u.judul)} (${esc(u.kode)})</option>`).join('');
+        if ([...sel.options].some(o => o.value === lama)) sel.value = lama;
+        await muatRilis();
+    }
+    async function muatRilis() {
+        const kode = $('rl-kuis').value;
+        if (!kode) return;
+        $('rl-isi').innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>';
+        try {
+            const [h, r] = await Promise.all([ambilHasil(kode), nilaiApi('daftar', { kode })]);
+            rlData = h; rlRilis = {}; r.daftar.forEach(x => { rlRilis[x.id] = x; });
+            renderRilisTabel();
+        } catch (e) { $('rl-isi').innerHTML = pesanGalat(e); }
+    }
+    // Dokumen yang dilihat siswa
+    function rlItem(h) {
+        const u = (cache.ujian || []).find(x => x.kode === $('rl-kuis').value);
+        return { id: String(h.id), kode: $('rl-kuis').value, judul: u ? u.judul : $('rl-kuis').value, nama: String(h.nama), absen: String(h.absen), jk: h.jk || '',
+            nilai_pg: h.nilai_pg ?? null, nilai_akhir: h.nilai_akhir ?? null, benar: h.benar ?? null, jumlah_pg: h.jumlah_pg ?? null, waktu_rilis: new Date().toISOString() };
+    }
+    const rlSiap = h => !nilaiKosong(h), rlBerubah = h => rlRilis[h.id] && rlRilis[h.id].nilai_akhir !== (h.nilai_akhir ?? null);
+    function renderRilisTabel() {
+        const hs = rlData.hasil.slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id'));
+        const ada = new Set(hs.map(h => String(h.id)));
+        const yatim = Object.values(rlRilis).filter(x => !ada.has(x.id));
+        const dirilis = hs.filter(h => rlRilis[h.id]).length;
+        $('rl-isi').innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                ${statCard('fa-users', 'Sudah Mengumpulkan', hs.length)}${statCard('fa-circle-check', 'Siap di-ACC', hs.filter(h => rlSiap(h) && !rlRilis[h.id]).length, 'sky')}
+                ${statCard('fa-bullhorn', 'Sudah Dirilis', dirilis)}${statCard('fa-hourglass-half', 'Esai Belum Dinilai', hs.filter(h => !rlSiap(h)).length, 'amber')}</div>
+            ${!hs.length && !yatim.length ? kosongBox('fa-inbox', 'Belum ada jawaban masuk') : `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3 text-left">Nama</th><th class="px-3 py-3">Absen</th><th class="px-3 py-3">JK</th><th class="px-3 py-3">Nilai Akhir</th><th class="px-3 py-3">Status Rilis</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${hs.map(h => {
+                const r = rlRilis[h.id], ubah = rlBerubah(h);
+                const status = r ? (ubah ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">Nilai berubah</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Dirilis</span>')
+                    : rlSiap(h) ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30">Siap di-ACC</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">Esai belum dinilai</span>';
+                const aksi = (r ? `<button onclick="rlTarik('${esc(h.id)}')" class="text-slate-400 hover:text-red-400 px-2 font-bold" title="Sembunyikan nilai dari siswa"><i class="fas fa-eye-slash mr-1"></i>Tarik</button>` : '')
+                    + (rlSiap(h) && (!r || ubah) ? `<button onclick="rlAcc('${esc(h.id)}')" class="bg-accent-600 hover:bg-accent-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition ml-1"><i class="fas fa-check mr-1"></i>${r ? 'Perbarui' : 'ACC'}</button>` : '');
+                return `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}</td><td class="px-3 py-3 text-center text-slate-400">${esc(h.absen)}</td><td class="px-3 py-3 text-center">${badgeJK(h.jk)}</td><td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(h.nilai_akhir)}</td><td class="px-3 py-3 text-center">${status}</td><td class="px-3 py-3 text-right whitespace-nowrap">${aksi}</td></tr>`;
+            }).join('')}${yatim.map(r => `<tr class="bg-slate-950/50"><td class="px-4 py-3 text-slate-400 whitespace-nowrap">${esc(r.nama)}</td><td class="px-3 py-3 text-center text-slate-500">${esc(r.absen)}</td><td class="px-3 py-3 text-center">${badgeJK(r.jk)}</td><td class="px-3 py-3 text-center text-slate-500">${fmtNilai(r.nilai_akhir)}</td><td class="px-3 py-3 text-center text-[10px] text-slate-500">Jawaban sudah dihapus, nilai lama masih tampil ke siswa</td><td class="px-3 py-3 text-right"><button onclick="rlTarik('${esc(r.id)}')" class="text-slate-400 hover:text-red-400 px-2 font-bold"><i class="fas fa-eye-slash mr-1"></i>Tarik</button></td></tr>`).join('')}</tbody></table></div>`}`;
+    }
+    async function rlKirim(aksi, data, pesan) {
+        loading('Memproses...');
+        try { await nilaiApi(aksi, data); Swal.close(); toast(pesan); await muatRilis(); }
+        catch (e) { Swal.close(); galat(e, 'Rilis nilai gagal'); }
+    }
+    function rlAcc(id) { const h = rlData.hasil.find(x => String(x.id) === id); if (h && rlSiap(h)) rlKirim('rilis', { items: [rlItem(h)] }, 'Nilai ' + h.nama + ' dirilis'); }
+    function rlTarik(id) { rlKirim('tarik', { ids: [id] }, 'Nilai ditarik dari siswa'); }
+    async function rlAccSemua() {
+        if (!rlData) return;
+        const items = rlData.hasil.filter(h => rlSiap(h) && (!rlRilis[h.id] || rlBerubah(h))).map(rlItem);
+        if (!items.length) return toast('Tidak ada nilai baru untuk di-ACC', 'info');
+        if (!await konfirmasi('ACC ' + items.length + ' nilai?', 'Siswa langsung bisa melihat nilainya lewat tombol Lihat Nilai Saya.', 'Ya, ACC')) return;
+        rlKirim('rilis', { items }, items.length + ' nilai dirilis');
+    }
+    async function rlTarikSemua() {
+        const ids = Object.keys(rlRilis);
+        if (!ids.length) return toast('Belum ada nilai yang dirilis', 'info');
+        if (!await konfirmasi('Tarik semua nilai?', ids.length + ' nilai pada ujian ini disembunyikan lagi dari siswa.', 'Ya, tarik')) return;
+        rlKirim('tarik', { ids }, 'Semua nilai ditarik');
+    }
+
+    /* ---------- Siswa: Lihat Nilai Saya ---------- */
+    function bukaNilai() { $('nl-hasil').innerHTML = ''; if (!$('nl-kode').value) $('nl-kode').value = $('s-kode').value; showView('nilai'); }
+    async function cekNilai() {
+        const kode = lkKode($('nl-kode').value), nama = $('nl-nama').value.trim(), absen = $('nl-absen').value.trim().slice(0, 10), jk = $('nl-jk').value;
+        if (!kode) return galat(new Error('Kode ujian wajib diisi'), 'Data belum lengkap');
+        if (!nama) return galat(new Error('Nama wajib diisi'), 'Data belum lengkap');
+        if (!absen) return galat(new Error('Nomor absen wajib diisi'), 'Data belum lengkap');
+        const penuh = nlNamaPenuh(nama, jk);
+        loading('Mencari nilai...');
+        try {
+            const r = await nilaiApi('ambil', { kode, nama: penuh, absen, docId: kode + '__' + fbSlug(penuh) + '__' + fbSlug(absen) });
+            Swal.close();
+            tampilNilaiSiswa(r.nilai);
+        } catch (e) { Swal.close(); galat(e, 'Tidak bisa memeriksa nilai'); }
+    }
+    function tampilNilaiSiswa(n) {
+        if (!n) {
+            $('nl-hasil').innerHTML = '<p class="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3"><i class="fas fa-hourglass-half mr-1"></i>Nilai belum tersedia. Mungkin guru belum menyetujuinya, atau data yang Anda isi belum sama persis dengan saat ujian (kode, nama, absen, jenis kelamin).</p>';
+            return;
+        }
+        $('nl-hasil').innerHTML = `<div class="bg-slate-950 rounded-2xl border border-slate-800 py-5 text-center">
+            <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">${esc(n.judul)}</p>
+            <p class="text-xs text-slate-400 mt-1">${esc(n.nama)}</p>
+            <p class="text-5xl font-black text-accent-400 mt-2">${fmtNilai(n.nilai_akhir)}</p>
+            ${n.jumlah_pg ? `<p class="text-xs text-slate-400 mt-2">Benar ${esc(n.benar)} dari ${esc(n.jumlah_pg)} soal pilihan ganda</p>` : ''}</div>`;
     }
 
     /* ============================================================
