@@ -69,8 +69,11 @@
             #sidebar { position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); transition: transform .25s ease; }
             #sidebar.open { transform: none; }
         }
-        #view-ujian { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-        #view-ujian textarea { -webkit-user-select: text; user-select: text; }
+        #view-ujian, #view-ujian * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; -webkit-tap-highlight-color: transparent; }
+        #view-ujian textarea { -webkit-user-select: text !important; user-select: text !important; }
+        #view-ujian *::selection { background: transparent !important; color: inherit !important; }
+        #view-ujian textarea::selection { background: rgb(var(--a500) / .35) !important; }
+        #view-ujian img { -webkit-user-drag: none; }
         /* Kuis Langsung: layar Soal pas satu layar, tanpa gulir */
         #tab-tim-view:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         #view-guru main.tim-play { display: flex; flex-direction: column; overflow: hidden; padding: .75rem !important; }
@@ -158,9 +161,15 @@
                 <h2 id="u-judul" class="text-sm font-bold text-slate-100 truncate">Ujian</h2>
                 <p class="text-[10px] text-slate-500"><span id="u-nama"></span> <span id="u-net" class="hidden ml-1 text-amber-400 font-bold"><i class="fas fa-wifi"></i> Offline</span></p>
             </div>
-            <div class="bg-slate-950/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2 shrink-0">
-                <i class="fas fa-clock text-accent-400 text-xs"></i>
-                <span id="u-timer" class="text-sm font-black font-mono text-slate-100">00:00</span>
+            <div class="flex items-center gap-2 shrink-0">
+                <div id="u-kam-box" style="display:none" class="items-center gap-1.5" title="Kamera aktif: foto Anda diambil berkala dan dilihat guru">
+                    <video id="u-kam-video" muted playsinline autoplay class="w-10 h-10 rounded-lg object-cover border border-slate-700" style="transform:scaleX(-1)"></video>
+                    <span class="text-[9px] font-black text-red-400 leading-tight"><i class="fas fa-circle animate-pulse text-[7px]"></i><br>KAMERA</span>
+                </div>
+                <div class="bg-slate-950/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2 shrink-0">
+                    <i class="fas fa-clock text-accent-400 text-xs"></i>
+                    <span id="u-timer" class="text-sm font-black font-mono text-slate-100">00:00</span>
+                </div>
             </div>
         </header>
         <main class="flex-1 overflow-y-auto p-4">
@@ -362,6 +371,16 @@
                                 <label class="flex items-center gap-2"><input id="f-acak-soal" type="checkbox" checked class="accent-emerald-500 w-4 h-4"> Acak urutan soal</label>
                                 <label class="flex items-center gap-2"><input id="f-acak-opsi" type="checkbox" checked class="accent-emerald-500 w-4 h-4"> Acak pilihan jawaban</label>
                             </div>
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-3">
+                                <label class="flex items-center gap-2 text-xs text-slate-300"><input id="f-kam" type="checkbox" class="accent-emerald-500 w-4 h-4" onchange="$('f-kam-opsi').classList.toggle('hidden', !this.checked)"> <i class="fas fa-camera text-accent-400"></i> Kamera pengawas (foto siswa berkala)</label>
+                                <div id="f-kam-opsi" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <label class="block text-[11px] font-semibold text-slate-400">Foto setiap
+                                        <select id="f-kam-detik" class="field mt-1"><option value="30">30 detik</option><option value="60" selected>60 detik</option><option value="120">2 menit</option></select></label>
+                                    <label class="block text-[11px] font-semibold text-slate-400">Bila siswa menolak kamera
+                                        <select id="f-kam-wajib" class="field mt-1"><option value="0">Ujian tetap boleh jalan</option><option value="1">Tidak boleh mulai</option></select></label>
+                                </div>
+                                <p class="text-[11px] text-slate-500">Hanya untuk koneksi Firebase. Foto kecil (sekitar 10-15 KB) dikirim berkelompok dan dilihat lewat tombol kamera di <b class="text-slate-300">Hasil &amp; Nilai</b>. Perlu Rules foto, lihat menu Panduan. Beri tahu siswa dan wali murid, dan hapus foto setelah ujian dinilai.</p>
+                            </div>
                             <div class="bg-slate-950 border border-dashed border-slate-700 rounded-xl p-4 space-y-3">
                                 <p class="text-[11px] text-slate-400">Impor soal dari file <b class="text-slate-200">Excel (.xlsx)</b> atau <b class="text-slate-200">CSV</b>. Kolom: jenis, soal, a, b, c, d, e, kunci, bobot.</p>
                                 <div class="flex flex-wrap gap-2">
@@ -387,6 +406,7 @@
                             <select id="h-kode" onchange="muatHasil()" class="field flex-1 min-w-[12rem]"></select>
                             <button onclick="muatHasil()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Muat ulang"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
                             <button onclick="ekspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                            <button onclick="hapusSemuaFoto()" class="bg-slate-800 hover:bg-slate-700 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Hapus semua foto kamera ujian ini"><i class="fas fa-camera-rotate mr-1.5"></i>Hapus Foto</button>
                         </div>
                         <div id="h-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
                         <div id="h-tabel"></div>
@@ -589,6 +609,23 @@
                             <p class="mt-3 text-[12px] text-slate-400">Isi daftar siswa sekali (manual atau impor Excel), lalu catat kehadiran per tanggal dengan tombol H, S, I, A. Rekap bulanan menampilkan persentase hadir dan bisa diekspor ke Excel.</p>
                         </details>
                         <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-camera text-accent-400 mr-2"></i>Kamera pengawas (Firebase)</summary>
+                            <ol class="mt-3 space-y-1.5 text-[12px] text-slate-400 list-decimal pl-5">
+                                <li>Tambahkan blok Rules di bawah ini di dalam <span class="font-mono text-slate-300">match /databases/{database}/documents</span>, lalu Publish. Ganti email dengan email guru yang sama seperti aturan lain.</li>
+                                <li>Saat membuat ujian, centang <b class="text-slate-200">Kamera pengawas</b>, pilih jarak foto, dan tentukan apakah siswa yang menolak kamera boleh tetap mengerjakan.</li>
+                                <li>Siswa diberi tahu saat akan mulai, dan melihat kotak kamera kecil di bagian atas layar ujian.</li>
+                                <li>Lihat foto lewat ikon kamera di <b class="text-slate-200">Hasil &amp; Nilai</b>. Tombol <b class="text-slate-200">Hapus Foto</b> menghapus foto satu ujian. Hapus foto setelah ujian dinilai.</li>
+                                <li>Foto adalah data pribadi anak. Beri tahu wali murid atau sekolah, dan jangan menyebarkan foto di luar keperluan pengawasan.</li>
+                            </ol>
+                            <pre class="mt-2 bg-slate-950 border border-slate-700 rounded-xl p-3 text-[11px] text-slate-300 overflow-x-auto">match /foto/{id} {
+  allow create: if request.resource.data.keys().hasOnly(['kode','absen','nama','waktu','fotos'])
+    &amp;&amp; request.resource.data.fotos.size() &lt;= 8;
+  allow get, list, update, delete:
+    if request.auth != null
+    &amp;&amp; request.auth.token.email == "EMAIL_GURU@gmail.com";
+}</pre>
+                        </details>
+                        <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
                             <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-shield-halved text-accent-400 mr-2"></i>Penyimpanan &amp; keamanan data</summary>
                             <p class="mt-3 text-[12px] text-slate-400">Data ujian tersimpan di Firebase/Google Sheets (atau di perangkat bila Mode Lokal). Data Siswa, Absensi, dan KKM tersimpan di perangkat ini saja; gunakan tombol Ekspor Excel secara berkala sebagai arsip. Menghapus data browser akan menghapus data tersebut.</p>
                         </details>
@@ -766,6 +803,16 @@
             const b = fs.writeBatch(D); s.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit();
         }
     }
+    const FOTO_OK = /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/;
+    async function fbHapusFoto(C, kode, absen) {
+        const { fs, db: D } = C;
+        const f = [fs.where('kode', '==', kode)]; if (absen) f.push(fs.where('absen', '==', absen));
+        const s = await fs.getDocs(fs.query(fs.collection(D, 'foto'), ...f));
+        for (let i = 0; i < s.docs.length; i += 400) {
+            const b = fs.writeBatch(D); s.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit();
+        }
+        return s.size;
+    }
     function fbHitung(items, kunci, h) {
         const pg = items.filter(q => q.jenis === 'PG'), es = items.filter(q => q.jenis === 'ESAI');
         const maksPg = pg.reduce((a, q) => a + q.bobot, 0), maksEs = es.reduce((a, q) => a + q.bobot, 0);
@@ -803,7 +850,8 @@
             if (u.status !== 'buka') throw new Error('Ujian ini belum dibuka oleh guru.');
             const ss = await fs.getDoc(ref('soal', kode));
             if (!ss.exists()) throw new Error('Soal ujian tidak ditemukan.');
-            return { ok: true, ujian: { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi, siswa: u.siswa || null },
+            return { ok: true, ujian: { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi, siswa: u.siswa || null,
+                kamera: !!u.kamera, kamera_detik: u.kamera_detik || 60, kamera_wajib: !!u.kamera_wajib },
                 soal: (ss.data().items || []).map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.opsi })) };
         }
 
@@ -833,8 +881,35 @@
             return { ok: true, tunda: true, ada_esai: adaEsai, nilai_pg: null, nilai_akhir: null, jumlah_pg: items.filter(q => q.jenis === 'PG').length, benar: null, hasil_id: docId };
         }
 
+        // Siswa mengirim foto kamera (hanya bila ujian menyalakan kamera)
+        if (action === 'fotoKirim') {
+            const kode = lkKode(b.kode); if (!kode) throw new Error('Ujian tidak ditemukan.');
+            const us = await fs.getDoc(ref('ujian', kode));
+            if (!us.exists() || !us.data().kamera) throw new Error('Ujian ini tidak memakai kamera.');
+            const absen = String(b.absen || '').trim().slice(0, 10), nama = String(b.nama || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+            const fotos = (Array.isArray(b.fotos) ? b.fotos : []).slice(0, 8)
+                .filter(f => f && FOTO_OK.test(String(f.d || '')) && String(f.d).length < 80000)
+                .map(f => ({ t: String(f.t || '').slice(0, 30), d: String(f.d) }));
+            if (!absen || !fotos.length) return { ok: true, n: 0 };
+            const id = kode + '__' + fbSlug(absen) + '__' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+            await fs.setDoc(ref('foto', id), { kode, absen, nama, waktu: new Date().toISOString(), fotos });
+            return { ok: true, n: fotos.length };
+        }
+
         // ---- semua aksi di bawah khusus guru ----
         await guru();
+
+        if (action === 'getFoto') {
+            const kode = lkKode(b.kode), absen = String(b.absen || '').trim().slice(0, 10);
+            const qs = await fs.getDocs(fs.query(col('foto'), fs.where('kode', '==', kode), fs.where('absen', '==', absen)));
+            const semua = []; qs.docs.forEach(d => (d.data().fotos || []).forEach(f => { if (f && FOTO_OK.test(String(f.d || ''))) semua.push({ t: String(f.t || ''), d: f.d }); }));
+            semua.sort((x, y) => String(x.t).localeCompare(String(y.t)));
+            return { ok: true, fotos: semua };
+        }
+
+        if (action === 'hapusFoto') {
+            return { ok: true, n: await fbHapusFoto(C, lkKode(b.kode), b.absen ? String(b.absen).trim().slice(0, 10) : null) };
+        }
 
         if (action === 'listExams') {
             const qs = await fs.getDocs(col('ujian'));
@@ -875,8 +950,10 @@
             const pg = items.filter(q => q.jenis === 'PG').length;
             // Kode yang sama diganti total; nilai lama ikut dihapus karena tidak cocok lagi dengan soal baru.
             await fbHapusHasil(C, kode);
+            try { await fbHapusFoto(C, kode, null); } catch (e) { /* Rules foto belum dipasang: abaikan */ }
             const bt = fs.writeBatch(D);
-            bt.set(ref('ujian', kode), { kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, status: 'tutup', dibuat: new Date().toISOString(), jumlah_soal: items.length, jumlah_pg: pg, jumlah_esai: items.length - pg, siswa: rapikanSiswa(b.siswa) });
+            bt.set(ref('ujian', kode), { kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi,
+                kamera: !!u.kamera, kamera_detik: [30, 60, 120].includes(Number(u.kamera_detik)) ? Number(u.kamera_detik) : 60, kamera_wajib: !!u.kamera_wajib, status: 'tutup', dibuat: new Date().toISOString(), jumlah_soal: items.length, jumlah_pg: pg, jumlah_esai: items.length - pg, siswa: rapikanSiswa(b.siswa) });
             bt.set(ref('soal', kode), { items });
             bt.set(ref('kunci', kode), { k: kunci });
             await bt.commit();
@@ -895,6 +972,7 @@
         if (action === 'deleteExam') {
             const kode = lkKode(b.kode); if (!kode) throw new Error('Ujian tidak ditemukan.');
             await fbHapusHasil(C, kode);
+            try { await fbHapusFoto(C, kode, null); } catch (e) { /* abaikan */ }
             const bt = fs.writeBatch(D); ['ujian', 'soal', 'kunci'].forEach(c => bt.delete(ref(c, kode))); await bt.commit();
             return { ok: true };
         }
@@ -1370,7 +1448,27 @@
     /* ---------- Penjagaan ujian: anti salin, dan deteksi keluar dari halaman ---------- */
     const MAKS_KELUAR = 3;
     const enUjian = () => attempt && !submitting && !$('view-ujian').classList.contains('hidden');
-    ['copy', 'cut', 'paste', 'contextmenu', 'dragstart'].forEach(ev => document.addEventListener(ev, e => { if (enUjian()) e.preventDefault(); }));
+    ['copy', 'cut', 'paste', 'contextmenu', 'dragstart'].forEach(ev => document.addEventListener(ev, e => {
+        if (!enUjian()) return;
+        e.preventDefault();
+        try { if (e.clipboardData) e.clipboardData.setData('text/plain', ''); } catch (x) {}
+    }));
+    // Pintasan keyboard untuk menyalin, pilih semua, lihat sumber, simpan, cetak, dan alat pengembang
+    document.addEventListener('keydown', e => {
+        if (!enUjian()) return;
+        const k = (e.key || '').toLowerCase(), ctrl = e.ctrlKey || e.metaKey;
+        const inTA = e.target && e.target.tagName === 'TEXTAREA';
+        if ((ctrl && ['c', 'x', 'u', 's', 'p', 'f'].includes(k)) || (ctrl && k === 'a' && !inTA) || (ctrl && k === 'insert')
+            || e.key === 'F12' || (ctrl && e.shiftKey && ['i', 'j', 'c', 'k'].includes(k))) e.preventDefault();
+    });
+    // Bila ada teks terpilih di luar kolom esai (misalnya lewat tekan-tahan di HP), langsung dibatalkan
+    document.addEventListener('selectionchange', () => {
+        if (!enUjian()) return;
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) return;
+        const a = sel.anchorNode, el = a && (a.nodeType === 1 ? a : a.parentElement);
+        if (!el || el.tagName !== 'TEXTAREA') sel.removeAllRanges();
+    });
     document.addEventListener('selectstart', e => { if (enUjian() && e.target.tagName !== 'TEXTAREA') e.preventDefault(); });
     document.addEventListener('keyup', e => { if (enUjian() && e.key === 'PrintScreen') { try { navigator.clipboard.writeText(''); } catch (x) {} } });
     document.addEventListener('visibilitychange', () => {
@@ -1380,6 +1478,56 @@
             attempt.keluar = (attempt.keluar || 0) + 1; saveAttempt();
         }
     });
+
+    /* ---------- Kamera pengawas: foto kecil berkala, dikirim berkelompok ---------- */
+    let kamStream = null, kamTimer = null, kamBuf = [], kamJalan = false, kamCtx = null;
+    async function kamMinta() {
+        if (kamStream && kamStream.active) return true;
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+            kamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }, audio: false });
+            return true;
+        } catch (e) { kamStream = null; return false; }
+    }
+    function kamJepret() {
+        const v = $('u-kam-video');
+        if (!kamStream || !v || !v.videoWidth || v.readyState < 2) return;
+        try {
+            const w = 240, h = Math.max(1, Math.round(w * v.videoHeight / v.videoWidth)), c = document.createElement('canvas');
+            c.width = w; c.height = h; c.getContext('2d').drawImage(v, 0, 0, w, h);
+            kamBuf.push({ t: new Date().toISOString(), d: c.toDataURL('image/jpeg', 0.5) });
+            if (kamBuf.length > 30) kamBuf.shift();
+            if (kamBuf.length >= 5) kamKirim();
+        } catch (e) {}
+    }
+    async function kamKirim() {
+        if (kamJalan || !kamCtx || !kamBuf.length) return;
+        kamJalan = true;
+        const paket = kamBuf.splice(0, 6);
+        try { await api('fotoKirim', { kode: kamCtx.kode, absen: kamCtx.absen, nama: kamCtx.nama, fotos: paket }); }
+        catch (e) { kamBuf = paket.concat(kamBuf).slice(-30); }   // gagal kirim: simpan lagi, coba pada giliran berikutnya
+        finally { kamJalan = false; }
+    }
+    async function kamFlush() { for (let i = 0; i < 6 && kamBuf.length && kamCtx; i++) { const n = kamBuf.length; await kamKirim(); if (kamBuf.length >= n) break; } }
+    async function kamMulai() {
+        clearInterval(kamTimer); kamTimer = null;
+        if (!attempt || !attempt.kam) { $('u-kam-box').style.display = 'none'; return; }
+        kamCtx = { kode: attempt.kode, absen: String(attempt.absen || '').trim().slice(0, 10), nama: attempt.nama };
+        if (!(await kamMinta())) { $('u-kam-box').style.display = 'none'; return; }
+        const v = $('u-kam-video');
+        if (v.srcObject !== kamStream) { v.srcObject = kamStream; try { await v.play(); } catch (e) {} }
+        $('u-kam-box').style.display = 'flex';
+        const dt = Math.max(15, Number(attempt.kam.detik) || 60) * 1000;
+        setTimeout(kamJepret, 4000);   // foto pertama segera setelah mulai
+        kamTimer = setInterval(kamJepret, dt);
+    }
+    function kamTutup() {
+        clearInterval(kamTimer); kamTimer = null; kamBuf = []; kamCtx = null;
+        try { if (kamStream) kamStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        kamStream = null;
+        const v = $('u-kam-video'); if (v) v.srcObject = null;
+        const b = $('u-kam-box'); if (b) b.style.display = 'none';
+    }
 
     let jkPilih = '';
     function pilihJK(v) {
@@ -1409,12 +1557,17 @@
         if (!jk) return galat(new Error('Pilih jenis kelamin: Laki-laki atau Perempuan, lalu tekan Mulai Ujian lagi.'), 'Data belum lengkap');
         const ok = await Swal.fire({ title: u.judul, icon: 'info', showCancelButton: true, confirmButtonText: 'Mulai Sekarang', cancelButtonText: 'Batal',
             confirmButtonColor: '#059669', cancelButtonColor: '#334155',
-            html: `<p class="text-sm"><b>${r.soal.length}</b> soal &bull; <b>${u.durasi}</b> menit</p><p class="text-xs text-slate-400 mt-2">Waktu langsung berjalan setelah Anda menekan Mulai. Kerjakan dengan jujur dan selesaikan tepat waktu.</p>` });
+            html: `<p class="text-sm"><b>${r.soal.length}</b> soal &bull; <b>${u.durasi}</b> menit</p><p class="text-xs text-slate-400 mt-2">Waktu langsung berjalan setelah Anda menekan Mulai. Kerjakan dengan jujur dan selesaikan tepat waktu.</p>`
+                + (u.kamera ? `<p class="text-xs text-amber-300 mt-3"><i class="fas fa-camera mr-1"></i>Ujian ini memakai kamera. Foto wajah Anda diambil tiap ${u.kamera_detik || 60} detik dan hanya dilihat oleh guru. Izinkan kamera saat diminta browser.</p>` : '') });
         if (!ok.isConfirmed) return;
+        if (u.kamera) {
+            const adaKam = await kamMinta();
+            if (!adaKam && u.kamera_wajib) return galat(new Error('Ujian ini mewajibkan kamera. Izinkan akses kamera di browser, lalu tekan Mulai Ujian lagi.'), 'Kamera belum diizinkan');
+        }
         let soal = r.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.jenis === 'PG' && u.acak_opsi ? acakArray(q.opsi) : q.opsi }));
         if (u.acak_soal) soal = acakArray(soal);
         const now = Date.now();
-        attempt = { kode: u.kode, judul: u.judul, nama, absen, jk, mulai: now, akhir: now + u.durasi * 60000, durasi: u.durasi, soal, jawaban: {}, idx: 0 };
+        attempt = { kode: u.kode, judul: u.judul, nama, absen, jk, mulai: now, akhir: now + u.durasi * 60000, durasi: u.durasi, soal, jawaban: {}, idx: 0, kam: u.kamera ? { detik: u.kamera_detik || 60, wajib: !!u.kamera_wajib } : null };
         saveAttempt();
         tampilUjian();
     }
@@ -1429,6 +1582,7 @@
         timerId = setInterval(tickUjian, 1000);
         tickUjian();
         renderSoal();
+        kamMulai();
     }
     function tickUjian() {
         if (!attempt) return;
@@ -1496,6 +1650,7 @@
         }
         submitting = true;
         clearInterval(timerId);
+        if (attempt.kam) { kamJepret(); clearInterval(kamTimer); kamTimer = null; }
         saveAttempt();
         if (otomatis) toast('Waktu habis. Jawaban dikirim otomatis.', 'info');
         const durasi = Math.min(Math.round((Date.now() - attempt.mulai) / 1000), attempt.durasi * 60);
@@ -1509,7 +1664,7 @@
                 break;
             } catch (e) {
                 if (/sudah mengumpulkan/i.test(e.message)) {
-                    Swal.close(); attempt = null; saveAttempt(); submitting = false;
+                    Swal.close(); kamTutup(); attempt = null; saveAttempt(); submitting = false;
                     await Swal.fire({ icon: 'info', title: 'Sudah terkirim', text: e.message, confirmButtonColor: '#059669' });
                     showView('landing'); return;
                 }
@@ -1517,6 +1672,8 @@
                     confirmButtonText: 'Kirim ulang', allowOutsideClick: false, confirmButtonColor: '#059669' });
             }
         }
+        if (kamCtx) { try { await Promise.race([kamFlush(), new Promise(r => setTimeout(r, 8000))]); } catch (e) {} }
+        kamTutup();
         // Simpan salinan attempt untuk potensi "minta lanjut kerjakan" sebelum dihapus
         const recallAttempt = Object.assign({}, attempt);
         const recallOtomatis = !!otomatis;
@@ -1620,7 +1777,7 @@
         st.innerHTML = '<i class="fas fa-hourglass-half mr-1.5 text-amber-400"></i>Permintaan sedang <b class="text-amber-300">menunggu persetujuan guru</b>. Minta guru buka menu <b>Rilis Nilai (ACC)</b> lalu klik <b>ACC Lanjut</b>.<br><br><span class="text-red-300 font-bold"><i class="fas fa-triangle-exclamation mr-1"></i>Jangan tutup browser ini!</span> Setelah guru ACC, refresh halaman ini untuk melanjutkan.';
         toast('Permintaan terkirim. Tunggu guru menyetujui, lalu refresh halaman.', 'info');
     }
-    function selesaiUjian() { try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} pilihJK(''); showView('landing'); }
+    function selesaiUjian() { try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} pilihJK(''); kamTutup(); showView('landing'); }
 
     /* ============================================================
        GURU: DATA UJIAN
@@ -1781,6 +1938,7 @@
         if (!(durasi >= 1 && durasi <= 600)) return galat(new Error('Durasi antara 1 sampai 600 menit'), 'Data belum lengkap');
         if (!soalImpor || !soalImpor.soal.length) return galat(new Error('Pilih file soal (Excel/CSV) terlebih dulu'), 'Soal belum ada');
         if (soalImpor.galat.length) return galat(new Error('Masih ada masalah pada file soal. Perbaiki lalu pilih file lagi.'), 'Soal belum benar');
+        if ($('f-kam').checked && !fbAktif(db.settings.scriptId)) return galat(new Error('Kamera pengawas hanya tersedia dengan koneksi Firebase. Matikan pilihan kamera, atau sambungkan Firebase di Pengaturan.'), 'Kamera belum bisa dipakai');
         const ada = (cache.ujian || []).find(u => u.kode === kode);
         if (ada && !await konfirmasi('Kode sudah dipakai', `Ujian "${ada.judul}" akan diganti dengan soal baru.`, 'Ya, ganti')) return;
         let sw = [];
@@ -1791,10 +1949,11 @@
         }
         loading('Menyimpan ujian...');
         try {
-            await api('saveExam', Object.assign({ ujian: { kode, judul, durasi, acak_soal: $('f-acak-soal').checked, acak_opsi: $('f-acak-opsi').checked }, soal: soalImpor.soal }, dukungSiswa() ? { siswa: sw } : {}));
+            await api('saveExam', Object.assign({ ujian: { kode, judul, durasi, acak_soal: $('f-acak-soal').checked, acak_opsi: $('f-acak-opsi').checked,
+                kamera: $('f-kam').checked, kamera_detik: Number($('f-kam-detik').value), kamera_wajib: $('f-kam-wajib').value === '1' }, soal: soalImpor.soal }, dukungSiswa() ? { siswa: sw } : {}));
             Swal.close();
             toast('Ujian tersimpan (status: Tutup)');
-            soalImpor = null; renderPreview(); $('f-judul').value = ''; acakKode();
+            soalImpor = null; renderPreview(); $('f-judul').value = ''; $('f-kam').checked = false; $('f-kam-opsi').classList.add('hidden'); acakKode();
             await muatUjian(true);
         } catch (e) { Swal.close(); galat(e, 'Gagal menyimpan'); }
     }
@@ -1819,6 +1978,7 @@
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${buka ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700/40 text-slate-400 border border-slate-600'}">${buka ? 'Dibuka' : 'Tutup'}</span>
                 </div>
                 <p class="text-[11px] text-slate-400">${u.jumlah_soal} soal (${u.jumlah_pg} PG, ${u.jumlah_esai} esai) &bull; ${u.jumlah_hasil} jawaban masuk${u.menunggu ? ` &bull; <span class="text-amber-400">${u.menunggu} esai belum dinilai</span>` : ''}</p>
+                ${u.kamera ? `<p class="text-[11px] text-slate-400"><i class="fas fa-camera mr-1"></i>Kamera pengawas: foto tiap ${u.kamera_detik || 60} detik${u.kamera_wajib ? ' (wajib)' : ''}</p>` : ''}
                 <p class="text-[11px] ${u.siswa && u.siswa.length ? 'text-slate-400' : 'text-amber-300'}"><i class="fas fa-id-card mr-1"></i>${u.siswa && u.siswa.length ? 'Login: absen + nama (' + u.siswa.length + ' siswa terdaftar)' : 'Login lama: nama lengkap + jenis kelamin (tanpa daftar siswa)'}</p>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="ubahStatus('${esc(u.kode)}','${buka ? 'tutup' : 'buka'}')" class="${buka ? 'bg-slate-800 hover:bg-slate-700 text-slate-200' : 'bg-accent-600 hover:bg-accent-500 text-white'} text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fas ${buka ? 'fa-lock' : 'fa-door-open'} mr-1.5"></i>${buka ? 'Tutup Ujian' : 'Buka Ujian'}</button>
@@ -1900,9 +2060,33 @@
                 <td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(h.nilai_akhir)}</td>
                 <td class="px-3 py-3 text-center">${badgeKeluar(h.keluar)}</td>
                 <td class="px-3 py-3 text-right whitespace-nowrap">
+                    ${d.ujian && d.ujian.kamera ? `<button onclick="lihatFoto('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Lihat foto kamera"><i class="fas fa-camera"></i></button>` : ''}
                     <button onclick="detailSiswa('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Detail / nilai esai"><i class="fas fa-eye"></i></button>
                     <button onclick="resetSiswa('${esc(h.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus agar siswa bisa mengulang"><i class="fas fa-rotate-left"></i></button>
                 </td></tr>`).join('')}</tbody></table></div>`;
+    }
+    async function lihatFoto(id) {
+        const h = hasilData.hasil.find(x => x.id === id); if (!h) return;
+        loading('Memuat foto...');
+        let r;
+        try { r = await api('getFoto', { kode: hasilKode, absen: h.absen }); Swal.close(); } catch (e) { Swal.close(); return galat(e); }
+        const fotos = (r.fotos || []).filter(f => FOTO_OK.test(String(f.d || '')));
+        const jam = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); };
+        const html = fotos.length
+            ? `<p class="text-xs text-slate-400 mb-3 text-left">${fotos.length} foto &bull; ${esc(h.nama)} (absen ${esc(h.absen)})</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto">${fotos.map(f => `<figure class="m-0"><img src="${f.d}" class="w-full rounded-lg border border-slate-700" alt="foto"><figcaption class="text-[10px] text-slate-400 mt-0.5">${esc(jam(f.t))}</figcaption></figure>`).join('')}</div>`
+            : '<p class="text-sm text-slate-400">Belum ada foto untuk siswa ini. Bisa karena kamera ditolak, atau Rules foto belum dipasang (lihat Panduan).</p>';
+        const res = await Swal.fire({ title: 'Foto kamera', html, width: 720, showDenyButton: fotos.length > 0, denyButtonText: 'Hapus foto siswa ini', denyButtonColor: '#dc2626',
+            confirmButtonText: 'Tutup', confirmButtonColor: '#334155' });
+        if (res.isDenied && await konfirmasi('Hapus foto ' + h.nama + '?', 'Semua foto kamera siswa ini untuk ujian ini dihapus permanen.', 'Ya, hapus')) {
+            loading('Menghapus...');
+            try { const x = await api('hapusFoto', { kode: hasilKode, absen: h.absen }); Swal.close(); toast(x.n + ' foto dihapus'); } catch (e) { Swal.close(); galat(e); }
+        }
+    }
+    async function hapusSemuaFoto() {
+        if (!hasilKode) return;
+        if (!await konfirmasi('Hapus semua foto ujian ' + hasilKode + '?', 'Semua foto kamera dari semua siswa untuk ujian ini dihapus permanen.', 'Ya, hapus semua')) return;
+        loading('Menghapus...');
+        try { const x = await api('hapusFoto', { kode: hasilKode }); Swal.close(); toast(x.n + ' foto dihapus'); } catch (e) { Swal.close(); galat(e); }
     }
     async function detailSiswa(id) {
         const h = hasilData.hasil.find(x => x.id === id);
