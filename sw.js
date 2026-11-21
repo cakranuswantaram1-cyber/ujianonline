@@ -2,7 +2,7 @@
 // Tidak perlu naik versi manual: file milik sendiri (index.html, manifest.json) SELALU diambil
 // dari jaringan lebih dulu, jadi perubahan langsung terbaca. Cache hanya cadangan saat offline.
 const CACHE_NAME = 'ujian-online-cache';
-const CORE = ['./', './index.html', './manifest.json'];
+const CORE = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'];
 const TIMEOUT_MS = 4000; // jaringan lambat -> pakai cadangan
 
 // Layanan data (Apps Script / Firebase) TIDAK boleh di-cache.
@@ -10,7 +10,7 @@ const BYPASS = ['script.google.com', 'script.googleusercontent.com', 'firestore.
                 'identitytoolkit.googleapis.com', 'securetoken.googleapis.com', 'firebaseinstallations.googleapis.com'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(CORE)).catch(() => {}));
+  event.waitUntil(caches.open(CACHE_NAME).then((c) => Promise.all(CORE.map((u) => c.add(u).catch(() => {})))));
   self.skipWaiting(); // versi baru langsung aktif
 });
 
