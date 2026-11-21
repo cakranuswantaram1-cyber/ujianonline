@@ -830,7 +830,7 @@
                 if (e.code === 'permission-denied') throw new Error('Anda sudah mengumpulkan ujian ini. Hubungi guru bila perlu mengulang.');
                 throw e;
             }
-            return { ok: true, tunda: true, ada_esai: adaEsai, nilai_pg: null, nilai_akhir: null, jumlah_pg: items.filter(q => q.jenis === 'PG').length, benar: null };
+            return { ok: true, tunda: true, ada_esai: adaEsai, nilai_pg: null, nilai_akhir: null, jumlah_pg: items.filter(q => q.jenis === 'PG').length, benar: null, hasil_id: docId };
         }
 
         // ---- semua aksi di bawah khusus guru ----
