@@ -542,13 +542,13 @@
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <button onclick="rosTambah()" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-plus mr-1.5"></i>Tambah</button>
-                                <button onclick="$('ros-file').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-import mr-1.5"></i>Impor Excel/CSV</button>
+                                <button onclick="$('ros-file').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-bolt mr-1.5"></i>Impor Cepat (Excel/CSV)</button>
                                 <button onclick="rosTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-download mr-1.5"></i>Template</button>
                                 <button onclick="rosEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
                                 <button onclick="rosHapusSemua()" class="bg-slate-800 hover:bg-slate-700 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-trash mr-1.5"></i>Kosongkan</button>
                                 <input type="file" id="ros-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="rosImpor(event)">
                             </div>
-                            <p class="text-[11px] text-slate-500">Kolom file: <b>nama</b>, <b>absen</b>, <b>jk</b> (L/P). Data kelas ini tersimpan di perangkat guru dan dipakai oleh menu Absensi.</p>
+                            <p class="text-[11px] text-slate-500"><b>Impor Cepat</b> membaca file Excel/CSV apa pun yang punya kolom <b>Nama Siswa</b> (atau nama), termasuk file <b>Rekap Absensi</b>. Kolom <b>No</b>/absen dan <b>jk</b> (L/P) ikut dibaca bila ada. Sebelum ditambahkan, Anda melihat pratinjau dulu. Nama yang sudah ada dilewati. Data kelas ini tersimpan di perangkat guru dan dipakai oleh menu Absensi.</p>
                         </div>
                         <div id="ros-list"></div>
                     </section>
@@ -2305,8 +2305,8 @@
         const d = rosUrut(rosBaca()), L = d.filter(x => x.jk === 'L').length, P = d.filter(x => x.jk === 'P').length;
         $('ros-stats').innerHTML = statCard('fa-users', 'Total Siswa', d.length) + statCard('fa-mars', 'Laki-laki', L, 'sky') + statCard('fa-venus', 'Perempuan', P, 'rose');
         if (!d.length) { $('ros-list').innerHTML = kosongBox('fa-user-group', 'Belum ada data siswa', 'Tambah satu per satu atau impor dari Excel.'); return; }
-        $('ros-list').innerHTML = `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3">Absen</th><th class="px-3 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
-            <tbody class="divide-y divide-slate-800 bg-slate-900">${d.map(x => `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 text-center text-slate-400 font-bold">${esc(x.absen) || '—'}</td><td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-3 text-center">${badgeJK(x.jk)}</td><td class="px-3 py-3 text-right"><button onclick="rosHapus('${esc(x.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus siswa"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+        $('ros-list').innerHTML = (d.some(x => !x.jk) ? `<p class="text-[11px] text-amber-300 mb-2"><i class="fas fa-hand-pointer mr-1"></i>${d.filter(x => !x.jk).length} siswa belum diisi jenis kelaminnya. Ketuk label <b>—</b> pada kolom JK untuk memilih L atau P.</p>` : '') + `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3">Absen</th><th class="px-3 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${d.map(x => `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 text-center text-slate-400 font-bold">${esc(x.absen) || '—'}</td><td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-3 text-center"><button onclick="rosToggleJK('${esc(x.id)}')" title="Ketuk untuk mengubah jenis kelamin">${badgeJK(x.jk)}</button></td><td class="px-3 py-3 text-right"><button onclick="rosHapus('${esc(x.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus siswa"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
     }
     function rosTambah() {
         const nama = $('ros-nama').value.trim(), absen = $('ros-absen').value.trim(), jk = $('ros-jk').value;
@@ -2328,29 +2328,55 @@
         if (!await konfirmasi('Kosongkan daftar siswa?', 'Semua siswa pada daftar kelas dihapus. Ekspor Excel dulu bila perlu arsip.', 'Ya, kosongkan')) return;
         if (rosTulis([])) { renderRoster(); toast('Daftar dikosongkan'); }
     }
-    function rosImpor(ev) {
+    // Impor cepat: CSV dibaca sebagai teks UTF-8 (BOM aman), Excel sebagai biner.
+    function rosBacaFile(file) {
+        return new Promise((ok, gagal) => {
+            const r = new FileReader(), teks = /\.(csv|txt)$/i.test(file.name);
+            r.onload = e => { try { ok(XLSX.read(e.target.result, { type: teks ? 'string' : 'array' })); } catch (x) { gagal(x); } };
+            r.onerror = () => gagal(new Error('File tidak bisa dibuka'));
+            if (teks) r.readAsText(file, 'UTF-8'); else r.readAsArrayBuffer(file);
+        });
+    }
+    // Cari baris judul yang memuat kolom nama (judul/keterangan di atasnya dilewati), lalu ambil nama, absen, dan JK bila ada.
+    function rosKandidat(wb) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '', raw: false });
+        const nk = c => lkNorm(String(c).replace(/^\ufeff/, '')), NAMA = ['nama', 'nama lengkap', 'nama siswa', 'nama peserta didik'];
+        const hi = rows.findIndex(r => r.some(c => NAMA.includes(nk(c))));
+        if (hi < 0) return null;
+        const h = rows[hi].map(nk), col = (...ks) => h.findIndex(x => ks.includes(x));
+        const cN = col(...NAMA), cA = col('absen', 'no absen', 'nomor absen', 'no', 'no.'), cJ = col('jk', 'jenis kelamin', 'l/p', 'gender');
+        const daftar = [];
+        rows.slice(hi + 1).forEach(r => {
+            const nama = String(r[cN] ?? '').replace(/\s+/g, ' ').trim();
+            if (!nama || /^(total|jumlah|rata)/i.test(nama)) return;
+            const j = cJ >= 0 ? lkNorm(r[cJ]) : '';
+            daftar.push({ nama, absen: cA >= 0 ? String(r[cA] ?? '').trim().slice(0, 10) : '', jk: /^(l|laki|pria)/.test(j) ? 'L' : /^(p|perempuan|wanita)/.test(j) ? 'P' : '' });
+        });
+        return { daftar, adaJK: cJ >= 0 };
+    }
+    async function rosImpor(ev) {
         const file = ev.target.files[0]; ev.target.value = '';
         if (!file) return;
-        const r = new FileReader();
-        r.onload = e => {
-            try {
-                const wb = XLSX.read(e.target.result, { type: 'array' });
-                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
-                const ambil = (row, ...ks) => { const k = Object.keys(row).find(x => ks.includes(lkNorm(x))); return k ? String(row[k]).trim() : ''; };
-                const d = rosBaca(); let tambah = 0, lewat = 0;
-                rows.forEach(row => {
-                    const nama = ambil(row, 'nama', 'nama lengkap', 'nama siswa');
-                    if (!nama) return;
-                    if (d.some(x => lkNorm(x.nama) === lkNorm(nama))) { lewat++; return; }
-                    const j = lkNorm(ambil(row, 'jk', 'jenis kelamin', 'l/p', 'gender'));
-                    d.push({ id: rosId(), nama, absen: ambil(row, 'absen', 'no absen', 'nomor absen', 'no'), jk: /^(l|laki|pria)/.test(j) ? 'L' : /^(p|perempuan|wanita)/.test(j) ? 'P' : '' });
-                    tambah++;
-                });
-                if (!tambah && !lewat) return galat(new Error('Tidak ada baris yang bisa dibaca. Pastikan baris pertama berisi kolom nama, absen, jk.'), 'Impor gagal');
-                if (rosTulis(d)) { renderRoster(); toast(tambah + ' siswa ditambahkan' + (lewat ? ', ' + lewat + ' duplikat dilewati' : '')); }
-            } catch (x) { galat(new Error('File tidak bisa dibaca. Gunakan .xlsx atau .csv dengan kolom nama, absen, jk.'), 'Impor gagal'); }
-        };
-        r.readAsArrayBuffer(file);
+        let k;
+        try { k = rosKandidat(await rosBacaFile(file)); }
+        catch (x) { return galat(new Error('File tidak bisa dibaca. Gunakan .xlsx atau .csv.'), 'Impor gagal'); }
+        if (!k || !k.daftar.length) return galat(new Error('Tidak ada nama siswa yang ditemukan. Pastikan ada kolom "Nama Siswa" (atau "nama") pada baris judul.'), 'Impor gagal');
+        const d = rosBaca(), ada = new Set(d.map(x => lkNorm(x.nama))), baru = []; let lewat = 0;
+        k.daftar.forEach(x => { const n = lkNorm(x.nama); if (ada.has(n)) { lewat++; return; } ada.add(n); baru.push(x); });
+        if (!baru.length) return toast('Semua ' + lewat + ' nama sudah ada di daftar', 'info');
+        const contoh = baru.slice(0, 6).map(x => esc(x.nama)).join('<br>') + (baru.length > 6 ? '<br>... dan ' + (baru.length - 6) + ' lainnya' : '');
+        const r = await Swal.fire({ title: baru.length + ' siswa siap ditambahkan', icon: 'question', showCancelButton: true, confirmButtonText: 'Tambahkan', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: `<p class="text-xs text-left leading-relaxed">${contoh}</p>${lewat ? `<p class="text-[11px] text-slate-400 mt-3 text-left">${lewat} nama dilewati karena sudah ada.</p>` : ''}${k.adaJK ? '' : '<p class="text-[11px] text-amber-300 mt-3 text-left">File ini tidak memuat jenis kelamin. Setelah impor, ketuk label JK di daftar untuk mengisinya.</p>'}` });
+        if (!r.isConfirmed) return;
+        baru.forEach(x => d.push({ id: rosId(), nama: x.nama, absen: x.absen, jk: x.jk }));
+        if (rosTulis(d)) { renderRoster(); toast(baru.length + ' siswa ditambahkan'); }
+    }
+    // Ketuk label JK di daftar: kosong, L, P, lalu kosong lagi
+    function rosToggleJK(id) {
+        const d = rosBaca(), x = d.find(s => s.id === id);
+        if (!x) return;
+        x.jk = x.jk === 'L' ? 'P' : x.jk === 'P' ? '' : 'L';
+        if (rosTulis(d)) renderRoster();
     }
     function rosTemplate() {
         const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet([['nama', 'absen', 'jk'], ['Contoh Siswa Satu', 1, 'L'], ['Contoh Siswa Dua', 2, 'P']]);
