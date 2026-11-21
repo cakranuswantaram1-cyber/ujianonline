@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Ujian Online Kelas</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#059669">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Ujian Kelas">
+    <link rel="icon" href="icons/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icons/icon-180.png">
+
+    <!-- Font & ikon -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind CDN + SweetAlert2 + SheetJS (impor/ekspor Excel & CSV) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        // Warna aksen dikendalikan variabel CSS (--a400..--a700) supaya mudah diganti satu tempat.
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {
+                fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                colors: { accent: {
+                    400: 'rgb(var(--a400) / <alpha-value>)',
+                    500: 'rgb(var(--a500) / <alpha-value>)',
+                    600: 'rgb(var(--a600) / <alpha-value>)',
+                    700: 'rgb(var(--a700) / <alpha-value>)'
+                } }
+            } }
+        }
+    </script>
+
+    <style>
+        :root { --a400: 52 211 153; --a500: 16 185 129; --a600: 5 150 105; --a700: 4 120 87; }
+        html, body { height: 100%; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b1329; color: #f8fafc;
+               padding-top: env(safe-area-inset-top); -webkit-tap-highlight-color: transparent; }
+        .sidebar-active { background: linear-gradient(135deg, rgb(var(--a600)) 0%, rgb(var(--a500)) 100%);
+                          color: #fff !important; box-shadow: 0 10px 15px -3px rgb(var(--a500) / .4); }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .modal-enter { animation: modalFadeIn .25s cubic-bezier(.4,0,.2,1); }
+        @keyframes modalFadeIn { from { opacity: 0; transform: scale(.97) translateY(5px); } to { opacity: 1; transform: none; } }
+        .tab-enter { animation: tabIn .25s ease-out; }
+        @keyframes tabIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        #splash-screen { transition: opacity .5s ease-out, visibility .5s; }
+        .fade-out { opacity: 0; visibility: hidden; }
+        .swal2-popup { background: #1e293b !important; color: #f8fafc !important; border: 1px solid #334155; }
+        .swal2-title, .swal2-html-container { color: #f8fafc !important; }
+        .field { width: 100%; background: #020617; border: 1px solid #334155; border-radius: .5rem; padding: .6rem .75rem; font-size: .8rem; color: #f1f5f9; outline: none; }
+        .field:focus { border-color: rgb(var(--a500)); box-shadow: 0 0 0 3px rgb(var(--a500) / .2); }
+        .screen-fixed { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+        /* Sidebar: geser masuk di HP, tetap tampil di layar lebar */
+        #sidebar { width: 16rem; }
+        @media (max-width: 767px) {
+            #sidebar { position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); transition: transform .25s ease; }
+            #sidebar.open { transform: none; }
+        }
+        #view-ujian { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        #view-ujian textarea { -webkit-user-select: text; user-select: text; }
+        /* Kuis Langsung: layar Soal pas satu layar, tanpa gulir */
+        #tab-tim-view:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        #view-guru main.tim-play { display: flex; flex-direction: column; overflow: hidden; padding: .75rem !important; }
+        #view-guru main.tim-play > #tab-tim-view { margin-top: 0 !important; }
+        #t-pane-soal:not(.hidden) { display: block; }
+        @media print { #view-ujian { display: none !important; } }
+        @media print { #sidebar, header, #splash-screen, .no-print { display: none !important; } body { background: #fff; color: #000; } }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="t-layar" class="hidden fixed inset-0 z-[90] bg-gradient-to-br from-[#0f172a] to-[#0b1329] overflow-y-auto screen-fixed p-6 cursor-pointer" onclick="tutupLayar()"></div>
+
+    <!-- Splash screen -->
+    <div id="splash-screen" class="fixed inset-0 bg-[#0f172a] z-[9999] flex flex-col items-center justify-center">
+        <div class="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl flex items-center justify-center text-white shadow-2xl animate-bounce mb-6">
+            <i class="fas fa-graduation-cap text-4xl"></i>
+        </div>
+        <h1 class="text-3xl font-black text-white tracking-tight mb-2">Ujian Kelas</h1>
+        <p class="text-slate-400 text-sm font-medium tracking-wide">Memuat data...</p>
+        <div class="w-48 h-1 bg-slate-800 rounded-full mt-6 overflow-hidden"><div class="h-full bg-accent-500 animate-pulse w-full"></div></div>
+    </div>
+
+    <!-- ================= BERANDA ================= -->
+    <div id="view-landing" class="screen hidden fixed inset-0 z-[30] overflow-y-auto screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
+        <div class="min-h-full flex flex-col items-center justify-center p-6">
+            <div class="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl flex items-center justify-center text-white shadow-2xl mb-5">
+                <i class="fas fa-graduation-cap text-4xl"></i>
+            </div>
+            <h1 id="landing-nama" class="text-2xl font-black text-white tracking-tight text-center">Ujian Online Kelas</h1>
+            <p class="text-slate-400 text-sm mt-1 mb-8 text-center">Pilih peran Anda untuk melanjutkan</p>
+            <div class="w-full max-w-sm space-y-3">
+                <button onclick="bukaSiswa()" class="w-full bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold px-5 py-4 rounded-2xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition flex items-center gap-4 text-left">
+                    <i class="fas fa-pen-to-square text-2xl w-8 text-center"></i>
+                    <span><span class="block text-base">Saya Siswa</span><span class="block text-[11px] font-medium opacity-80">Kerjakan ujian dengan kode dari guru</span></span>
+                </button>
+                <button onclick="bukaGuru()" class="w-full bg-slate-900 border border-slate-800 hover:border-slate-600 text-slate-100 font-bold px-5 py-4 rounded-2xl transition flex items-center gap-4 text-left">
+                    <i class="fas fa-chalkboard-user text-2xl w-8 text-center text-accent-400"></i>
+                    <span><span class="block text-base">Saya Guru</span><span class="block text-[11px] font-medium text-slate-400">Buat ujian, impor soal, lihat nilai</span></span>
+                </button>
+            </div>
+            <button id="btn-install-landing" onclick="installApp()" class="hidden mt-6 text-xs font-bold text-accent-400 underline"><i class="fas fa-circle-down mr-1.5"></i>Pasang di Layar Utama</button>
+        </div>
+    </div>
+
+    <!-- ================= SISWA: MASUK ================= -->
+    <div id="view-siswa" class="screen hidden fixed inset-0 z-[30] overflow-y-auto screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
+        <div class="min-h-full flex flex-col items-center justify-center p-6">
+            <div class="w-full max-w-sm">
+                <button onclick="showView('landing')" class="text-xs font-bold text-slate-400 hover:text-accent-400 mb-4"><i class="fas fa-arrow-left mr-1.5"></i>Kembali</button>
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                    <div>
+                        <h2 class="text-lg font-black text-slate-100">Masuk Ujian</h2>
+                        <p class="text-[11px] text-slate-400 mt-1">Isi data dengan benar. Satu siswa hanya bisa mengumpulkan sekali.</p>
+                    </div>
+                    <label class="block text-[11px] font-semibold text-slate-400">Kode Ujian
+                        <input id="s-kode" class="field mt-1 uppercase tracking-widest font-bold" placeholder="Contoh: K7M2Q" autocomplete="off" oninput="this.value=this.value.toUpperCase()">
+                    </label>
+                    <label class="block text-[11px] font-semibold text-slate-400">Nama Lengkap
+                        <input id="s-nama" maxlength="54" class="field mt-1" placeholder="Nama sesuai absen" autocomplete="off">
+                    </label>
+                    <label class="block text-[11px] font-semibold text-slate-400">Nomor Absen
+                        <input id="s-absen" class="field mt-1" inputmode="numeric" placeholder="Contoh: 7" autocomplete="off">
+                    </label>
+                    <div class="text-[11px] font-semibold text-slate-400">Jenis Kelamin
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <button type="button" id="jk-L" onclick="pilihJK('L')" class="field text-center font-bold"><i class="fas fa-mars mr-1.5"></i>Laki-laki</button>
+                            <button type="button" id="jk-P" onclick="pilihJK('P')" class="field text-center font-bold"><i class="fas fa-venus mr-1.5"></i>Perempuan</button>
+                        </div>
+                    </div>
+                    <button id="btn-mulai" onclick="mulaiUjian()" class="w-full bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-sm px-4 py-3 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-play mr-1.5"></i>Mulai Ujian</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SISWA: UJIAN ================= -->
+    <div id="view-ujian" class="screen hidden fixed inset-0 z-[40] screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329] flex flex-col">
+        <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between gap-3 shrink-0">
+            <div class="min-w-0">
+                <h2 id="u-judul" class="text-sm font-bold text-slate-100 truncate">Ujian</h2>
+                <p class="text-[10px] text-slate-500"><span id="u-nama"></span> <span id="u-net" class="hidden ml-1 text-amber-400 font-bold"><i class="fas fa-wifi"></i> Offline</span></p>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2 shrink-0">
+                <i class="fas fa-clock text-accent-400 text-xs"></i>
+                <span id="u-timer" class="text-sm font-black font-mono text-slate-100">00:00</span>
+            </div>
+        </header>
+        <main class="flex-1 overflow-y-auto p-4">
+            <div class="max-w-2xl mx-auto space-y-4">
+                <div id="u-soal"></div>
+                <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Navigasi Soal</p>
+                        <p class="text-[11px] text-slate-400">Terjawab <span id="u-progress" class="font-bold text-accent-400">0/0</span></p>
+                    </div>
+                    <div id="u-nav" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+        </main>
+        <footer class="bg-slate-900 border-t border-slate-800 p-3 shrink-0">
+            <div class="max-w-2xl mx-auto flex gap-2">
+                <button onclick="geserSoal(-1)" id="u-prev" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-3 rounded-xl transition"><i class="fas fa-chevron-left mr-1"></i>Sebelumnya</button>
+                <button onclick="geserSoal(1)" id="u-next" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-3 rounded-xl transition">Berikutnya<i class="fas fa-chevron-right ml-1"></i></button>
+                <button onclick="kumpulkan(false)" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-paper-plane mr-1"></i>Kumpulkan</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ================= SISWA: HASIL ================= -->
+    <div id="view-hasil" class="screen hidden fixed inset-0 z-[40] overflow-y-auto screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
+        <div class="min-h-full flex flex-col items-center justify-center p-6">
+            <div class="w-full max-w-sm bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl text-center space-y-4">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-accent-500/15 text-accent-400 flex items-center justify-center text-2xl"><i class="fas fa-circle-check"></i></div>
+                <div>
+                    <h2 class="text-lg font-black text-slate-100">Jawaban Terkirim</h2>
+                    <p id="h-siswa" class="text-[11px] text-slate-400 mt-1"></p>
+                </div>
+                <div class="bg-slate-950 rounded-2xl border border-slate-800 py-5">
+                    <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider" id="h-label">Nilai Pilihan Ganda</p>
+                    <p id="h-nilai" class="text-5xl font-black text-accent-400 mt-1">0</p>
+                    <p id="h-detail" class="text-xs text-slate-400 mt-2"></p>
+                </div>
+                <p id="h-esai" class="hidden text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3"><i class="fas fa-hourglass-half mr-1"></i>Soal esai akan dinilai oleh guru. Nilai akhir menyusul.</p>
+                <button onclick="selesaiUjian()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm px-4 py-3 rounded-xl transition">Selesai</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= GURU: MASUK ================= -->
+    <div id="view-login" class="screen hidden fixed inset-0 z-[30] overflow-y-auto screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
+        <div class="min-h-full flex flex-col items-center justify-center p-6">
+            <div class="w-full max-w-sm">
+                <button onclick="showView('landing')" class="text-xs font-bold text-slate-400 hover:text-accent-400 mb-4"><i class="fas fa-arrow-left mr-1.5"></i>Kembali</button>
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                    <div>
+                        <h2 class="text-lg font-black text-slate-100">Masuk Guru</h2>
+                        <p class="text-[11px] text-slate-400 mt-1">Pakai <b>Firebase</b>: tempel konfigurasi Firebase, isi email &amp; password guru. Pakai <b>Google Sheets</b>: isi alamat skrip dan PIN.</p>
+                    </div>
+                    <label class="block text-[11px] font-semibold text-slate-400">Konfigurasi Firebase / Alamat Skrip Google Sheets
+                        <input id="g-url" class="field mt-1" placeholder="Tempel firebaseConfig atau https://script.google.com/macros/s/.../exec" autocomplete="off">
+                    </label>
+                    <label class="block text-[11px] font-semibold text-slate-400">Email Guru <span class="text-slate-500">(khusus Firebase)</span>
+                        <input id="g-email" type="email" class="field mt-1" placeholder="guru@email.com" autocomplete="username">
+                    </label>
+                    <label class="block text-[11px] font-semibold text-slate-400">PIN Guru / Password Firebase
+                        <input id="g-pin" type="password" class="field mt-1" placeholder="PIN" autocomplete="off" onkeydown="if(event.key==='Enter')loginGuru()">
+                    </label>
+                    <button onclick="loginGuru()" class="w-full bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-sm px-4 py-3 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-right-to-bracket mr-1.5"></i>Masuk</button>
+                    <button onclick="masukModeLokal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-4 py-2.5 rounded-xl transition"><i class="fas fa-mobile-screen mr-1.5"></i>Belum ada Google Sheets? Pakai Mode Lokal</button>
+                    <p class="text-[11px] text-slate-500">Mode Lokal menyimpan data di perangkat ini saja. Pertama kali, PIN yang Anda ketik menjadi PIN guru.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= GURU: APLIKASI ================= -->
+    <div id="view-guru" class="screen hidden">
+    <div class="h-[100dvh] flex flex-col overflow-hidden">
+        <div class="flex-1 flex overflow-hidden relative">
+            <div id="sidebar-overlay" class="fixed inset-0 bg-slate-950/80 z-[50] hidden" onclick="toggleSidebar()"></div>
+
+            <!-- Sidebar -->
+            <aside id="sidebar" class="bg-slate-900 border-r border-slate-800 flex flex-col z-[60]">
+                <div class="p-4 border-b border-slate-800 flex flex-col gap-3 relative shrink-0">
+                    <button onclick="toggleSidebar()" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-red-400"><i class="fas fa-times text-xl"></i></button>
+                    <div class="w-10 h-10 bg-gradient-to-br from-accent-500 to-accent-700 rounded-xl flex items-center justify-center text-white shadow-lg mx-auto">
+                        <i class="fas fa-graduation-cap text-xl"></i>
+                    </div>
+                    <div class="text-center">
+                        <h1 id="side-nama" class="font-black text-[13px] text-slate-100 tracking-tight leading-tight">Memuat...</h1>
+                        <p class="text-[9px] font-bold text-accent-400 mt-1 uppercase">Panel Guru</p>
+                    </div>
+                </div>
+                <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto pb-24 text-[13px]">
+                    <!-- MENU:BEGIN (satu tombol per tab; id harus "btn-<tab>") -->
+                    <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-chart-pie w-5 text-center"></i><span>Dashboard</span></button>
+                    <div class="my-2 border-t border-slate-800"></div>
+                    <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Ujian</div>
+                    <button onclick="switchTab('ujian')" id="btn-ujian" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-file-pen w-5 text-center"></i><span>Kelola Ujian</span></button>
+                    <button onclick="switchTab('hasil')" id="btn-hasil" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-ranking-star w-5 text-center"></i><span>Hasil &amp; Nilai</span></button>
+                    <button onclick="switchTab('adu')" id="btn-adu" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-trophy w-5 text-center"></i><span>Adu L vs P</span></button>
+                    <button onclick="switchTab('tim')" id="btn-tim" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-people-group w-5 text-center"></i><span>Kuis Langsung L vs P</span></button>
+                    <button onclick="switchTab('bank')" id="btn-bank" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-box-archive w-5 text-center"></i><span>Bank Soal</span></button>
+                    <button onclick="timProyektor()" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-tv w-5 text-center"></i><span>Papan Skor Layar</span></button>
+                    <div class="my-2 border-t border-slate-800"></div>
+                    <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Sistem</div>
+                    <button onclick="switchTab('pengaturan')" id="btn-pengaturan" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-gear w-5 text-center"></i><span>Pengaturan</span></button>
+                    <!-- MENU:END -->
+                    <button onclick="keluarGuru()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition"><i class="fas fa-right-from-bracket w-5 text-center"></i><span>Keluar</span></button>
+                </nav>
+            </aside>
+
+            <!-- Konten -->
+            <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
+                <header class="bg-slate-900 px-4 py-3 flex items-center justify-between z-10 shadow-sm border-b border-slate-800 shrink-0">
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleSidebar()" class="md:hidden text-slate-300 hover:text-accent-400 bg-slate-800 hover:bg-slate-700 p-2 rounded-lg transition"><i class="fas fa-bars text-base"></i></button>
+                        <h2 id="header-title" class="text-sm font-bold text-slate-100">Dashboard</h2>
+                    </div>
+                    <div class="flex gap-3 items-center">
+                        <span id="net-badge" class="hidden text-[10px] font-bold px-2 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30"><i class="fas fa-wifi mr-1"></i>Offline</span>
+                        <div class="bg-slate-950/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-inner">
+                            <div class="w-1.5 h-1.5 rounded-full bg-accent-500"></div>
+                            <span id="live-clock" class="text-[11px] font-bold text-slate-200 font-mono tracking-wide">00:00:00</span>
+                        </div>
+                    </div>
+                </header>
+
+                <main class="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 pb-32" style="padding-bottom: calc(8rem + env(safe-area-inset-bottom))">
+                    <!-- TAB:BEGIN (satu <section> per tab; id harus "tab-<tab>-view") -->
+
+                    <section id="tab-dashboard-view" class="tab-content hidden space-y-6">
+                        <div class="bg-gradient-to-r from-accent-700/60 via-slate-900 to-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
+                            <h3 class="text-2xl font-black text-white" id="dash-title">Selamat Datang</h3>
+                            <p class="text-slate-400 text-sm mt-1">Buat ujian, bagikan tautan ke siswa, lalu lihat nilai yang masuk otomatis.</p>
+                            <div class="flex flex-wrap gap-2 mt-4">
+                                <button onclick="switchTab('ujian')" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-plus mr-1.5"></i>Buat Ujian</button>
+                                <button onclick="switchTab('hasil')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-ranking-star mr-1.5"></i>Lihat Hasil</button>
+                                <button onclick="switchTab('adu')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-trophy mr-1.5"></i>Adu L vs P</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="dash-stats"></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="dash-extra"></div>
+                    </section>
+
+                    <section id="tab-ujian-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-file-circle-plus text-accent-400 mr-2"></i>Buat Ujian Baru</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <label class="block text-[11px] font-semibold text-slate-400 md:col-span-2">Judul Ujian
+                                    <input id="f-judul" class="field mt-1" placeholder="Contoh: Ulangan Harian Bab 3 - IPA">
+                                </label>
+                                <label class="block text-[11px] font-semibold text-slate-400">Kode Ujian
+                                    <div class="flex gap-2 mt-1">
+                                        <input id="f-kode" class="field uppercase tracking-widest font-bold" maxlength="10" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+                                        <button onclick="acakKode()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 rounded-lg transition shrink-0" title="Kode acak"><i class="fas fa-dice"></i></button>
+                                    </div>
+                                </label>
+                                <label class="block text-[11px] font-semibold text-slate-400">Durasi (menit)
+                                    <input id="f-durasi" type="number" min="1" max="600" value="60" class="field mt-1">
+                                </label>
+                            </div>
+                            <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-300">
+                                <label class="flex items-center gap-2"><input id="f-acak-soal" type="checkbox" checked class="accent-emerald-500 w-4 h-4"> Acak urutan soal</label>
+                                <label class="flex items-center gap-2"><input id="f-acak-opsi" type="checkbox" checked class="accent-emerald-500 w-4 h-4"> Acak pilihan jawaban</label>
+                            </div>
+                            <div class="bg-slate-950 border border-dashed border-slate-700 rounded-xl p-4 space-y-3">
+                                <p class="text-[11px] text-slate-400">Impor soal dari file <b class="text-slate-200">Excel (.xlsx)</b> atau <b class="text-slate-200">CSV</b>. Kolom: jenis, soal, a, b, c, d, e, kunci, bobot.</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="document.getElementById('f-file').click()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-import mr-1.5"></i>Pilih File Soal</button>
+                                    <button onclick="unduhTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-download mr-1.5"></i>Unduh Template</button>
+                                    <input type="file" id="f-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="pilihFileSoal(event)">
+                                </div>
+                                <div id="f-preview"></div>
+                            </div>
+                            <button id="btn-simpan-ujian" onclick="simpanUjian()" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-cloud-arrow-up mr-1.5"></i>Simpan ke Google Sheets</button>
+                            <p class="text-[10px] text-slate-500">Ujian baru berstatus <b>Tutup</b>. Buka saat kelas siap dimulai.</p>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-slate-100">Daftar Ujian</h3>
+                            <button onclick="muatUjian(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition" title="Muat ulang"><i class="fas fa-rotate"></i></button>
+                        </div>
+                        <div id="ujian-list" class="grid grid-cols-1 xl:grid-cols-2 gap-3"></div>
+                    </section>
+
+                    <section id="tab-hasil-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="h-kode" onchange="muatHasil()" class="field flex-1 min-w-[12rem]"></select>
+                            <button onclick="muatHasil()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Muat ulang"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
+                            <button onclick="ekspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                        </div>
+                        <div id="h-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
+                        <div id="h-tabel"></div>
+                    </section>
+
+                    <section id="tab-tim-view" class="tab-content hidden">
+                        <div class="grid grid-cols-3 gap-2 mb-3 shrink-0">
+                            <button id="tn-soal" onclick="timLihat('soal')" class="text-xs font-bold px-3 py-2.5 rounded-xl border transition"><i class="fas fa-circle-question mr-1.5"></i>Soal</button>
+                            <button id="tn-set" onclick="timLihat('set')" class="text-xs font-bold px-3 py-2.5 rounded-xl border transition"><i class="fas fa-sliders mr-1.5"></i>Pengaturan</button>
+                            <button id="tn-riw" onclick="timLihat('riw')" class="text-xs font-bold px-3 py-2.5 rounded-xl border transition"><i class="fas fa-clock-rotate-left mr-1.5"></i>Riwayat</button>
+                        </div>
+                        <input type="file" id="t-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="timPilihFile(event)">
+
+                        <!-- Layar SOAL: satu layar penuh, tanpa gulir -->
+                        <div id="t-pane-soal" class="hidden flex-1 min-h-0"><div id="t-aktif" class="h-full"></div></div>
+
+                        <!-- Layar PENGATURAN -->
+                        <div id="t-pane-set" class="hidden space-y-4">
+                            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                                <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-play text-accent-400 mr-2"></i>Mulai Kuis Baru</h3>
+                                <p class="text-[11px] text-slate-400">Bacakan soal di kelas, lalu catat jawaban perempuan dan laki-laki. Data tersimpan di hape ini.</p>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <label class="block text-[11px] font-semibold text-slate-400 col-span-2">Nama Kuis<input id="t-nama" class="field mt-1" placeholder="Contoh: Kuis Fiqih Bab 2"></label>
+                                    <label class="block text-[11px] font-semibold text-slate-400">Poin/soal<input id="t-poin" type="number" min="1" value="10" class="field mt-1"></label>
+                                </div>
+                                <button onclick="timMulai()" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-play mr-1.5"></i>Mulai Kuis</button>
+                            </div>
+                            <div id="t-alat"></div>
+                        </div>
+
+                        <!-- Layar RIWAYAT -->
+                        <div id="t-pane-riw" class="hidden space-y-4">
+                            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                                <select id="t-filter" onchange="renderTimRiwayat()" class="field flex-1 min-w-[12rem]"></select>
+                                <button onclick="eksporTim()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                            </div>
+                            <div id="t-riwayat"></div>
+                            <div id="t-rincian"></div>
+                        </div>
+                    </section>
+
+                    <section id="tab-bank-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-box-archive text-accent-400 mr-2"></i>Tambah ke Bank Soal</h3>
+                            <label class="block text-[11px] font-semibold text-slate-400">Kategori / Mapel (boleh dikosongkan, nanti ditanya saat impor)
+                                <input id="b-kat" list="b-kat-list" class="field mt-1" placeholder="Contoh: Matematika" autocomplete="off"><datalist id="b-kat-list"></datalist></label>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="$('b-file').click()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-import mr-1.5"></i>Impor File Soal</button>
+                                <button onclick="bankManual()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-plus mr-1.5"></i>Soal Manual</button>
+                                <button onclick="unduhTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-download mr-1.5"></i>Template</button>
+                                <input type="file" id="b-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="bankPilihFile(event)">
+                            </div>
+                            <p class="text-[11px] text-slate-500">Setelah memilih file, Anda diminta memberi nama kategori (misalnya Matematika). Ulangi untuk mata pelajaran lain. Soal yang sama di kategori yang sama tidak akan masuk dua kali. Bila file punya kolom <b>kategori</b> (atau mapel), kolom itu yang dipakai.</p>
+                        </div>
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-layer-group text-accent-400 mr-2"></i>Kategori Tersimpan</h3>
+                            <p class="text-[11px] text-slate-400">Centang kategori yang mau dipakai. Satu centang = satu mata pelajaran. Beberapa centang = soalnya dicampur. Ketuk nama kategori untuk melihat soalnya di bawah.</p>
+                            <div id="b-kat-cek" class="space-y-2"></div>
+                            <div class="grid grid-cols-2 gap-3 items-end">
+                                <label class="block text-[11px] font-semibold text-slate-400">Jumlah soal (kosong = semua)<input id="b-jml" type="number" min="1" class="field mt-1"></label>
+                                <label class="flex items-center gap-2 text-xs text-slate-300 pb-2.5"><input id="b-acak" type="checkbox" class="accent-emerald-500 w-4 h-4"> Acak urutan soal</label>
+                            </div>
+                            <p id="b-ringkas" class="text-[11px] text-slate-400"></p>
+                            <button onclick="bankPakai()" class="w-full bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-sm px-4 py-3 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-play mr-1.5"></i>Pakai Soal Terpilih untuk Kuis</button>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="b-filter" onchange="renderBank()" class="field flex-1 min-w-[12rem]"></select>
+                            <button onclick="bankGantiNama()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Ganti nama kategori"><i class="fas fa-pen mr-1.5"></i>Ganti Nama</button>
+                            <button onclick="bankHapusDuplikat()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Hapus soal duplikat"><i class="fas fa-clone mr-1.5"></i>Hapus Duplikat</button>
+                            <button onclick="bankHapusKat()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition" title="Hapus kategori"><i class="fas fa-folder-minus mr-1.5"></i>Hapus Kategori</button>
+                            <button onclick="bankEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor / Cadangan</button>
+                        </div>
+                        <div id="b-list"></div>
+                    </section>
+
+                    <section id="tab-adu-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="a-kuis" onchange="renderAdu(false)" class="field flex-1 min-w-[12rem]"></select>
+                            <select id="a-metrik" onchange="renderAduHasil()" class="field w-auto">
+                                <option value="rata">Pembanding: Rata-rata</option><option value="max">Pembanding: Nilai tertinggi</option><option value="total">Pembanding: Total nilai</option>
+                            </select>
+                            <button onclick="renderAdu(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
+                            <button onclick="eksporAdu()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                        </div>
+                        <div id="a-isi"></div>
+                    </section>
+
+                    <section id="tab-pengaturan-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-id-card text-accent-400 mr-2"></i>Profil Aplikasi</h3>
+                            <label class="block text-[11px] font-semibold text-slate-400">Nama (tampil di panel guru)
+                                <input id="set-nama" class="field mt-1" onchange="simpanPengaturan()">
+                            </label>
+                        </div>
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-table text-accent-400 mr-2"></i>Penyimpanan Data (Firebase / Google Sheets)</h3>
+                            <p id="lokal-info" class="hidden text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">Mode Lokal aktif: soal dan nilai tersimpan di browser perangkat ini saja, dan siswa harus mengerjakan di perangkat ini. Untuk banyak perangkat, tempel alamat skrip Google Sheets di bawah lalu Simpan &amp; Uji Koneksi. Data lokal tidak ikut berpindah.</p>
+                            <label class="block text-[11px] font-semibold text-slate-400">Konfigurasi Firebase / Alamat Skrip
+                                <input id="set-url" class="field mt-1" placeholder="Tempel firebaseConfig atau alamat skrip /exec">
+                            </label>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="simpanSkrip()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-plug mr-1.5"></i>Simpan &amp; Uji Koneksi</button>
+                            </div>
+                            <p class="text-[11px] text-slate-400">Semua soal dan nilai tersimpan di spreadsheet Anda, jadi tidak perlu backup terpisah dari aplikasi. PIN guru diubah di skrip (baris <span class="font-mono text-slate-300">PIN_GURU</span>).</p>
+                        </div>
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-link text-accent-400 mr-2"></i>Tautan Siswa</h3>
+                            <p class="text-[11px] text-slate-400">Siswa cukup membuka tautan ini. Alamat skrip ikut di dalamnya, jadi siswa tidak perlu mengatur apa pun. Tautan khusus per ujian ada di Kelola Ujian.</p>
+                            <input id="set-tautan" class="field" readonly>
+                            <button onclick="salin(tautanSiswa(''))" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-copy mr-1.5"></i>Salin Tautan</button>
+                        </div>
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-palette text-accent-400 mr-2"></i>Tampilan</h3>
+                            <p class="text-[11px] text-slate-400">Pilih warna utama aplikasi di perangkat ini.</p>
+                            <div class="flex flex-wrap gap-3"><button onclick="pilihWarna('zamrud')" title="Zamrud" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(16 185 129)"></button><button onclick="pilihWarna('biru')" title="Biru" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(14 165 233)"></button><button onclick="pilihWarna('ungu')" title="Ungu" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(139 92 246)"></button><button onclick="pilihWarna('mawar')" title="Mawar" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(244 63 94)"></button><button onclick="pilihWarna('jingga')" title="Jingga" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(245 158 11)"></button><button onclick="pilihWarna('sian')" title="Sian" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(6 182 212)"></button></div>
+                        </div>
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-shield-halved text-accent-400 mr-2"></i>Cadangan Data</h3>
+                            <p class="text-[11px] text-slate-400">Simpan kuis langsung, bank soal, dan data ujian mode lokal ke satu file. Pulihkan kapan saja, misalnya saat ganti HP atau browser dibersihkan.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="cadangUnduh()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-download mr-1.5"></i>Unduh Cadangan</button>
+                                <button onclick="$('c-file').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-upload mr-1.5"></i>Pulihkan dari File</button>
+                                <input type="file" id="c-file" accept=".json,application/json" class="hidden" onchange="cadangPulihFile(event)">
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-mobile-screen text-accent-400 mr-2"></i>Aplikasi</h3>
+                            <p class="text-[11px] text-slate-400">Versi <span id="app-ver"></span></p>
+                            <button id="btn-install" onclick="installApp()" class="hidden bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-circle-down mr-1.5"></i>Pasang di Layar Utama</button>
+                        </div>
+                    </section>
+
+                    <!-- TAB:END -->
+                </main>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+    /* ============================================================
+       KONFIGURASI & DATA
+       ============================================================ */
+    const APP = { slug: 'ujian-kelas', dbKey: 'ujian-kelas_db_v1', version: '1.1.0' };
+    // Opsional: isi ID/alamat skrip di sini bila ingin tertanam permanen di aplikasi (tanpa tautan ?s=).
+    const SCRIPT_DEFAULT = '';
+    const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
+    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', pengaturan: 'Pengaturan' };
+    const SCREENS = ['landing', 'siswa', 'ujian', 'hasil', 'login', 'guru'];
+    const LABEL = ['A', 'B', 'C', 'D', 'E'];
+    const PIN_KEY = APP.slug + '_pin';
+    const ATT_KEY = APP.slug + '_attempt';
+
+    let db = loadDB();
+
+    function loadDB() {
+        let d = structuredClone(DEFAULT_DB);
+        try {
+            const raw = localStorage.getItem(APP.dbKey);
+            if (raw) { const p = JSON.parse(raw); d = Object.assign(d, p); d.settings = Object.assign({}, DEFAULT_DB.settings, p.settings); }
+        } catch (e) { console.warn('Gagal memuat data', e); }
+        if (!d.settings.scriptId && SCRIPT_DEFAULT) d.settings.scriptId = extractId(SCRIPT_DEFAULT) || '';
+        return d;
+    }
+    function saveDB() {
+        try { localStorage.setItem(APP.dbKey, JSON.stringify(db)); }
+        catch (e) { toast('Penyimpanan penuh atau diblokir browser', 'error'); }
+    }
+
+    /* ============================================================
+       UTILITAS
+       ============================================================ */
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmtWaktu = d => new Date(d).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const fmtNilai = n => (n === null || n === undefined || n === '') ? '—' : String(Math.round(Number(n) * 10) / 10).replace('.', ',');
+    const mmss = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+
+    function toast(msg, icon = 'success') {
+        Swal.mixin({ toast: true, position: 'top', showConfirmButton: false, timer: 2600, timerProgressBar: true })
+            .fire({ icon, title: msg });
+    }
+    async function konfirmasi(judul, teks, tombol = 'Ya, lanjutkan') {
+        const r = await Swal.fire({ title: judul, text: teks, icon: 'warning', showCancelButton: true,
+            confirmButtonText: tombol, cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155' });
+        return r.isConfirmed;
+    }
+    function galat(e, judul = 'Terjadi masalah') {
+        Swal.fire({ icon: 'error', title: judul, text: e && e.message ? e.message : String(e), confirmButtonColor: '#059669' });
+    }
+    function loading(teks) { Swal.fire({ title: teks, allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() }); }
+    function acakArray(a) {
+        a = a.slice();
+        for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+        return a;
+    }
+    async function salin(teks) {
+        try { await navigator.clipboard.writeText(teks); toast('Tautan disalin'); }
+        catch (e) { Swal.fire({ title: 'Salin tautan ini', input: 'text', inputValue: teks, confirmButtonColor: '#059669' }); }
+    }
+
+    /* ============================================================
+       KONEKSI KE GOOGLE SHEETS (Apps Script)
+       ============================================================ */
+    function extractId(s) {
+        s = String(s || '').trim();
+        { const f = fbIdDari(s); if (f) return f; }
+        const m = s.match(/\/macros\/s\/([A-Za-z0-9_-]+)/);
+        if (m) return m[1];
+        return /^[A-Za-z0-9_-]{20,}$/.test(s) ? s : null;
+    }
+    const scriptUrl = id => fbAktif(id) ? id : 'https://script.google.com/macros/s/' + id + '/exec';
+
+    async function api(action, data = {}, idOverride) {
+        const id = idOverride || db.settings.scriptId;
+        if (lkAktif(id)) return apiLokal(action, Object.assign({ pin: sessionStorage.getItem(PIN_KEY) }, data));
+        if (fbAktif(id)) return apiFB(action, Object.assign({}, data), id);
+        if (!id) throw new Error('Alamat skrip belum diatur. Minta guru membagikan tautan ujian.');
+        const body = Object.assign({ action }, data);
+        const pin = sessionStorage.getItem(PIN_KEY);
+        if (pin && body.pin === undefined) body.pin = pin;
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 30000);
+        let res;
+        try {
+            res = await fetch(scriptUrl(id), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), signal: ctl.signal });
+        } catch (e) {
+            throw new Error(e.name === 'AbortError' ? 'Server terlalu lama menjawab.' : 'Tidak bisa terhubung ke internet atau server.');
+        } finally { clearTimeout(t); }
+        let j;
+        try { j = await res.json(); } catch (e) { throw new Error('Jawaban server tidak dikenali. Periksa alamat skrip dan pengaturan akses (Siapa saja).'); }
+        if (!j.ok) throw new Error(j.error || 'Permintaan ditolak server');
+        return j;
+    }
+
+    /* ============================================================
+       MODE FIREBASE (Firestore + Auth) - pengganti Google Sheets
+       Alamat/ID koneksi berbentuk "FB_xxxxx" (dibuat otomatis dari konfigurasi Firebase yang ditempel guru).
+       Rencana B: siswa hanya mengirim jawaban. Kunci jawaban hanya bisa dibaca akun guru,
+       penilaian pilihan ganda dihitung di aplikasi guru saat membuka Hasil & Nilai.
+       ============================================================ */
+    const fbAktif = id => /^FB_[A-Za-z0-9_-]{16,}$/.test(String(id || ''));
+    const b64u = t => btoa(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    function fbCfg(id) { const j = id.slice(3).replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(atob(j + '='.repeat((4 - j.length % 4) % 4))); }
+    function fbIdDari(s) {
+        s = String(s || '').trim();
+        if (fbAktif(s)) return s;
+        const ambil = k => { const m = s.match(new RegExp('["\']?' + k + '["\']?\\s*:\\s*["\']([^"\']+)["\']')); return m ? m[1].trim() : ''; };
+        const a = ambil('apiKey'), p = ambil('projectId'), i = ambil('appId');
+        return (a && p && i) ? 'FB_' + b64u(JSON.stringify({ a, p, i })) : null;
+    }
+    const fbSlug = s => { const n = lkNorm(s); let h = 5381; for (let i = 0; i < n.length; i++) h = ((h << 5) + h + n.charCodeAt(i)) | 0; return (n.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'x') + '-' + (h >>> 0).toString(36); };
+    const fbT = (p, ms = 25000) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error('Tidak bisa terhubung ke internet atau server.')), ms))]);
+    function fbErr(e) {
+        if (e instanceof Error && !e.code) return e;
+        const c = e.code || '';
+        if (c === 'permission-denied') return new Error('Akses ditolak. Masuk ulang sebagai guru, atau periksa Rules Firestore.');
+        if (/unavailable|network/.test(c)) return new Error('Tidak bisa terhubung ke internet atau server.');
+        return new Error((c ? c + ': ' : '') + (e.message || e));
+    }
+    let _fbC = null;
+    async function fbInit(id) {
+        if (_fbC && _fbC.id === id) return _fbC;
+        const B = 'https://www.gstatic.com/firebasejs/10.14.1/';
+        let a, au, fs;
+        try { [a, au, fs] = await Promise.all([import(B + 'firebase-app.js'), import(B + 'firebase-auth.js'), import(B + 'firebase-firestore.js')]); }
+        catch (e) { throw new Error('Tidak bisa memuat Firebase. Periksa koneksi internet.'); }
+        const c = fbCfg(id), nama = 'ujian-' + c.p;
+        const app = a.getApps().find(x => x.name === nama) || a.initializeApp({ apiKey: c.a, projectId: c.p, appId: c.i, authDomain: c.p + '.firebaseapp.com' }, nama);
+        _fbC = { id, au, fs, auth: au.getAuth(app), db: fs.getFirestore(app) };
+        return _fbC;
+    }
+    async function fbCount(fs, q) {
+        try { return (await fs.getCountFromServer(q)).data().count; } catch (e) { return (await fs.getDocs(q)).size; }
+    }
+    async function fbHapusHasil(C, kode) {
+        const { fs, db: D } = C;
+        const s = await fs.getDocs(fs.query(fs.collection(D, 'hasil'), fs.where('kode', '==', kode)));
+        for (let i = 0; i < s.docs.length; i += 400) {
+            const b = fs.writeBatch(D); s.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit();
+        }
+    }
+    function fbHitung(items, kunci, h) {
+        const pg = items.filter(q => q.jenis === 'PG'), es = items.filter(q => q.jenis === 'ESAI');
+        const maksPg = pg.reduce((a, q) => a + q.bobot, 0), maksEs = es.reduce((a, q) => a + q.bobot, 0);
+        let poin = 0, benar = 0;
+        pg.forEach(q => { if (String((h.jawaban || {})[q.no] || '').toUpperCase() === kunci[q.no]) { poin += q.bobot; benar++; } });
+        h.poin_pg = poin; h.jumlah_pg = pg.length; h.benar = benar; h.nilai_pg = maksPg > 0 ? lkBulat(poin / maksPg * 100) : null;
+        h.skor = h.skor || {}; if (h.poin_esai === undefined) h.poin_esai = null;
+        if (!es.length) { h.nilai_akhir = h.nilai_pg; h.status_esai = ''; }
+        else if (h.status_esai === 'selesai' && h.poin_esai !== null) h.nilai_akhir = lkBulat((poin + h.poin_esai) / (maksPg + maksEs) * 100);
+        else { h.nilai_akhir = null; h.status_esai = 'menunggu'; }
+        return h;
+    }
+    function apiFB(action, b, id) { return fbT(apiFBInti(action, b, id)).catch(e => { throw fbErr(e); }); }
+    async function apiFBInti(action, b, id) {
+        const C = await fbInit(id), fs = C.fs, D = C.db, ref = (c, d) => fs.doc(D, c, d), col = c => fs.collection(D, c);
+        const guru = async () => { await C.auth.authStateReady(); if (!C.auth.currentUser) throw new Error('PIN guru salah atau sesi habis. Masuk ulang sebagai guru.'); };
+
+        if (action === 'ping') {
+            const email = String(b.email || '').trim(), pin = String(b.pin || '');
+            await fs.getDoc(ref('ujian', '_ping'));
+            if (!pin) { await C.auth.authStateReady(); return { ok: true, guru: !!C.auth.currentUser }; }
+            if (!email) throw new Error('Email guru wajib diisi untuk Firebase.');
+            try { await C.au.signInWithEmailAndPassword(C.auth, email, pin); }
+            catch (e) { if (/invalid-credential|wrong-password|user-not-found|invalid-email|too-many/.test(e.code || '')) return { ok: true, guru: false }; throw e; }
+            try { await fs.getDocs(fs.query(col('ujian'), fs.limit(1))); }
+            catch (e) { await C.au.signOut(C.auth); throw new Error('Login berhasil, tetapi email ini belum diizinkan di Rules Firestore. Periksa email guru pada Rules.'); }
+            return { ok: true, guru: true };
+        }
+
+        if (action === 'getExam') {
+            const kode = lkKode(b.kode); if (!kode) throw new Error('Kode ujian tidak ditemukan. Periksa kembali kodenya.');
+            const us = await fs.getDoc(ref('ujian', kode));
+            if (!us.exists()) throw new Error('Kode ujian tidak ditemukan. Periksa kembali kodenya.');
+            const u = us.data();
+            if (u.status !== 'buka') throw new Error('Ujian ini belum dibuka oleh guru.');
+            const ss = await fs.getDoc(ref('soal', kode));
+            if (!ss.exists()) throw new Error('Soal ujian tidak ditemukan.');
+            return { ok: true, ujian: { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi },
+                soal: (ss.data().items || []).map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.opsi })) };
+        }
+
+        if (action === 'submit') {
+            const kode = lkKode(b.kode); if (!kode) throw new Error('Ujian tidak ditemukan.');
+            const us = await fs.getDoc(ref('ujian', kode));
+            if (!us.exists()) throw new Error('Ujian tidak ditemukan.');
+            const nama = String(b.nama || '').replace(/\s+/g, ' ').trim().slice(0, 60), absen = String(b.absen || '').trim().slice(0, 10);
+            if (!nama || !absen) throw new Error('Nama dan nomor absen wajib diisi.');
+            const ss = await fs.getDoc(ref('soal', kode)); const items = ss.exists() ? (ss.data().items || []) : [];
+            const kirim = (b.jawaban && typeof b.jawaban === 'object') ? b.jawaban : {}, jaw = {};
+            items.forEach(q => {
+                let v = kirim[q.no]; if (v === undefined || v === null) return; v = String(v);
+                if (q.jenis === 'PG') { v = v.toUpperCase(); if ((q.opsi || []).some(o => o.k === v)) jaw[q.no] = v; }
+                else if (v.trim() !== '') jaw[q.no] = v.slice(0, 5000);
+            });
+            const adaEsai = items.some(q => q.jenis === 'ESAI'), docId = kode + '__' + fbSlug(nama) + '__' + fbSlug(absen);
+            try {
+                await fs.setDoc(ref('hasil', docId), { id: docId, kode, nama, absen, waktu: new Date().toISOString(),
+                    durasi: Math.max(0, Math.min(Math.round(Number(b.durasi) || 0), (us.data().durasi || 600) * 60)), jawaban: jaw, status_esai: adaEsai ? 'menunggu' : '' });
+            } catch (e) {
+                if (e.code === 'permission-denied') throw new Error('Anda sudah mengumpulkan ujian ini. Hubungi guru bila perlu mengulang.');
+                throw e;
+            }
+            return { ok: true, tunda: true, ada_esai: adaEsai, nilai_pg: null, nilai_akhir: null, jumlah_pg: items.filter(q => q.jenis === 'PG').length, benar: null };
+        }
+
+        // ---- semua aksi di bawah khusus guru ----
+        await guru();
+
+        if (action === 'listExams') {
+            const qs = await fs.getDocs(col('ujian'));
+            const daftar = await Promise.all(qs.docs.map(async d => {
+                const u = d.data();
+                const [n, m] = await Promise.all([
+                    fbCount(fs, fs.query(col('hasil'), fs.where('kode', '==', u.kode))),
+                    fbCount(fs, fs.query(col('hasil'), fs.where('kode', '==', u.kode), fs.where('status_esai', '==', 'menunggu')))]);
+                return Object.assign({}, u, { jumlah_hasil: n, menunggu: m });
+            }));
+            daftar.sort((a, b) => String(b.dibuat).localeCompare(String(a.dibuat)));
+            return { ok: true, ujian: daftar };
+        }
+
+        if (action === 'saveExam') {
+            const u = b.ujian || {}, kode = lkKode(u.kode), judul = String(u.judul || '').trim().slice(0, 150), durasi = Number(u.durasi);
+            const masuk = Array.isArray(b.soal) ? b.soal : [];
+            if (kode.length < 3) throw new Error('Kode ujian minimal 3 huruf/angka.');
+            if (!judul) throw new Error('Judul ujian wajib diisi.');
+            if (!(durasi >= 1 && durasi <= 600)) throw new Error('Durasi antara 1 sampai 600 menit.');
+            if (!masuk.length) throw new Error('Soal belum ada.');
+            if (masuk.length > 300) throw new Error('Maksimal 300 soal per ujian.');
+            const t = (v, m) => String(v ?? '').trim().slice(0, m), kunci = {};
+            const items = masuk.map((q, i) => {
+                const no = i + 1, jenis = String(q.jenis).toUpperCase() === 'ESAI' ? 'ESAI' : 'PG', teks = t(q.soal, 5000);
+                if (!teks) throw new Error('Soal nomor ' + no + ' kosong.');
+                const op = ['a', 'b', 'c', 'd', 'e'].map(c => t(q[c], 1000));
+                if (jenis === 'PG') {
+                    if (op.filter(Boolean).length < 2) throw new Error('Soal nomor ' + no + ': pilihan ganda butuh minimal 2 pilihan.');
+                    const k = t(q.kunci, 1).toUpperCase(), ix = LABEL.indexOf(k);
+                    if (ix < 0 || !op[ix]) throw new Error('Soal nomor ' + no + ': kunci jawaban tidak cocok dengan pilihan yang ada.');
+                    kunci[no] = k;
+                }
+                let bobot = Number(q.bobot); if (!(bobot > 0)) bobot = jenis === 'PG' ? 1 : 5;
+                return { no, jenis, soal: teks, bobot, opsi: jenis === 'PG' ? op.map((x, j) => x ? { k: LABEL[j], t: x } : null).filter(Boolean) : [] };
+            });
+            if (JSON.stringify(items).length > 900000) throw new Error('Soal terlalu besar untuk satu ujian. Kurangi jumlah atau panjang soal.');
+            const pg = items.filter(q => q.jenis === 'PG').length;
+            // Kode yang sama diganti total; nilai lama ikut dihapus karena tidak cocok lagi dengan soal baru.
+            await fbHapusHasil(C, kode);
+            const bt = fs.writeBatch(D);
+            bt.set(ref('ujian', kode), { kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, status: 'tutup', dibuat: new Date().toISOString(), jumlah_soal: items.length, jumlah_pg: pg, jumlah_esai: items.length - pg });
+            bt.set(ref('soal', kode), { items });
+            bt.set(ref('kunci', kode), { k: kunci });
+            await bt.commit();
+            return { ok: true };
+        }
+
+        if (action === 'setStatus') {
+            const kode = lkKode(b.kode), s = await fs.getDoc(ref('ujian', kode));
+            if (!s.exists()) throw new Error('Ujian tidak ditemukan.');
+            await fs.updateDoc(ref('ujian', kode), { status: b.status === 'buka' ? 'buka' : 'tutup' });
+            return { ok: true };
+        }
+
+        if (action === 'deleteExam') {
+            const kode = lkKode(b.kode); if (!kode) throw new Error('Ujian tidak ditemukan.');
+            await fbHapusHasil(C, kode);
+            const bt = fs.writeBatch(D); ['ujian', 'soal', 'kunci'].forEach(c => bt.delete(ref(c, kode))); await bt.commit();
+            return { ok: true };
+        }
+
+        if (action === 'getResults') {
+            const kode = lkKode(b.kode), us = await fs.getDoc(ref('ujian', kode));
+            if (!us.exists()) throw new Error('Ujian tidak ditemukan.');
+            const [ss, ks, hs] = await Promise.all([fs.getDoc(ref('soal', kode)), fs.getDoc(ref('kunci', kode)), fs.getDocs(fs.query(col('hasil'), fs.where('kode', '==', kode)))]);
+            const items = ss.exists() ? (ss.data().items || []) : [], kunci = ks.exists() ? (ks.data().k || {}) : {};
+            const hasil = hs.docs.map(d => fbHitung(items, kunci, d.data())).sort((a, b) => String(a.waktu).localeCompare(String(b.waktu)));
+            return { ok: true, ujian: us.data(), soal: items.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot })), hasil };
+        }
+
+        if (action === 'gradeEssay') {
+            const hs = await fs.getDoc(ref('hasil', String(b.id)));
+            if (!hs.exists()) throw new Error('Data siswa tidak ditemukan.');
+            const h = hs.data(), [ss, ks] = await Promise.all([fs.getDoc(ref('soal', h.kode)), fs.getDoc(ref('kunci', h.kode))]);
+            if (!ss.exists()) throw new Error('Ujian tidak ditemukan.');
+            const items = ss.data().items || [], esai = items.filter(q => q.jenis === 'ESAI');
+            if (!esai.length) throw new Error('Ujian ini tidak punya soal esai.');
+            const masuk = b.skor || {}, skor = {}; let poinEsai = 0;
+            esai.forEach(q => {
+                const v = Number(masuk[q.no]);
+                if (isNaN(v) || v < 0 || v > q.bobot) throw new Error('Nilai soal ' + q.no + ' harus antara 0 dan ' + q.bobot + '.');
+                skor[q.no] = v; poinEsai += v;
+            });
+            await fs.updateDoc(ref('hasil', String(b.id)), { skor, poin_esai: poinEsai, status_esai: 'selesai' });
+            const n = fbHitung(items, ks.exists() ? (ks.data().k || {}) : {}, Object.assign({}, h, { skor, poin_esai: poinEsai, status_esai: 'selesai' }));
+            return { ok: true, nilai_akhir: n.nilai_akhir };
+        }
+
+        if (action === 'resetStudent') {
+            const r = ref('hasil', String(b.id)), s = await fs.getDoc(r);
+            if (!s.exists()) throw new Error('Data siswa tidak ditemukan.');
+            await fs.deleteDoc(r);
+            return { ok: true };
+        }
+
+        throw new Error('Aksi tidak dikenal: ' + action);
+    }
+
+    /* ============================================================
+       MODE LOKAL (tanpa Google Sheets): data disimpan di browser perangkat ini.
+       Aktif bila alamat skrip = "LOKAL". Aturan nilai sama dengan skrip Google Sheets.
+       ============================================================ */
+    const LK_KEY = APP.slug + '_lokal', LK_PIN = APP.slug + '_lokal_pin';
+    const lkAktif = id => String(id || '') === 'LOKAL';
+    const lkKode = k => String(k ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const lkNorm = s => String(s ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const lkBulat = n => Math.round(n * 100) / 100;
+    function lkBaca() {
+        try { const d = JSON.parse(localStorage.getItem(LK_KEY) || 'null'); if (d && d.ujian && d.soal && d.hasil) return d; } catch (e) {}
+        return { ujian: [], soal: [], hasil: [] };
+    }
+    function lkTulis(d) {
+        try { localStorage.setItem(LK_KEY, JSON.stringify(d)); }
+        catch (e) { throw new Error('Penyimpanan perangkat penuh atau diblokir browser.'); }
+    }
+    function lkEx(d, kode) {
+        const u = d.ujian.find(x => x.kode === kode);
+        if (!u) return null;
+        const soal = d.soal.filter(q => q.kode === kode).sort((a, b) => a.no - b.no).map(q => ({
+            no: q.no, jenis: q.jenis, soal: q.soal,
+            opsi: q.jenis === 'PG' ? ['a', 'b', 'c', 'd', 'e'].map((c, i) => q[c] ? { k: LABEL[i], t: q[c] } : null).filter(Boolean) : [],
+            kunci: q.kunci, bobot: q.bobot
+        }));
+        return { ujian: u, soal };
+    }
+    function lkPg(ex, jaw) {
+        const r = { poin: 0, maks: 0, benar: 0, jumlah: 0 };
+        ex.soal.forEach(q => {
+            if (q.jenis !== 'PG') return;
+            r.jumlah++; r.maks += q.bobot;
+            if (String(jaw[q.no] || '').toUpperCase() === q.kunci) { r.poin += q.bobot; r.benar++; }
+        });
+        return r;
+    }
+    async function apiLokal(action, b) {
+        // Jeda singkat seperti koneksi sungguhan: tanpa ini jawaban datang sebelum jendela "loading" selesai tampil
+        // dan spinner-nya nyangkut di jendela berikutnya.
+        await new Promise(r => setTimeout(r, 250));
+        const pinSimpan = localStorage.getItem(LK_PIN);
+        const pin = String(b.pin ?? '');
+        if (action === 'ping') {
+            if (!pin) return { ok: true, guru: false };
+            if (!pinSimpan) { // pertama kali: PIN yang diketik menjadi PIN guru di perangkat ini
+                if (pin.length < 4) throw new Error('PIN lokal minimal 4 karakter.');
+                localStorage.setItem(LK_PIN, pin);
+                return { ok: true, guru: true };
+            }
+            return { ok: true, guru: pin === pinSimpan };
+        }
+        const d = lkBaca();
+
+        if (action === 'getExam') {
+            const ex = lkEx(d, lkKode(b.kode));
+            if (!ex) throw new Error('Kode ujian tidak ditemukan. Periksa kembali kodenya.');
+            if (ex.ujian.status !== 'buka') throw new Error('Ujian ini belum dibuka oleh guru.');
+            const u = ex.ujian;
+            return { ok: true, ujian: { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi },
+                soal: ex.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.opsi })) };
+        }
+
+        if (action === 'submit') {
+            const kode = lkKode(b.kode), ex = lkEx(d, kode);
+            if (!ex) throw new Error('Ujian tidak ditemukan.');
+            const nama = String(b.nama || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+            const absen = String(b.absen || '').trim().slice(0, 10);
+            if (!nama || !absen) throw new Error('Nama dan nomor absen wajib diisi.');
+            if (d.hasil.some(h => h.kode === kode && lkNorm(h.nama) === lkNorm(nama) && String(h.absen) === absen))
+                throw new Error('Anda sudah mengumpulkan ujian ini. Hubungi guru bila perlu mengulang.');
+            const kirim = (b.jawaban && typeof b.jawaban === 'object') ? b.jawaban : {};
+            const jaw = {};
+            ex.soal.forEach(q => {
+                let v = kirim[q.no];
+                if (v === undefined || v === null) return;
+                v = String(v);
+                if (q.jenis === 'PG') { v = v.toUpperCase(); if (q.opsi.some(o => o.k === v)) jaw[q.no] = v; }
+                else if (v.trim() !== '') jaw[q.no] = v.slice(0, 5000);
+            });
+            const pg = lkPg(ex, jaw);
+            const adaEsai = ex.soal.some(q => q.jenis === 'ESAI');
+            const nilaiPg = pg.maks > 0 ? lkBulat(pg.poin / pg.maks * 100) : null;
+            const nilaiAkhir = adaEsai ? null : nilaiPg;
+            d.hasil.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 10), kode, nama, absen,
+                waktu: new Date().toISOString(), durasi: Math.max(0, Math.min(Math.round(Number(b.durasi) || 0), ex.ujian.durasi * 60)),
+                jawaban: jaw, skor: {}, poin_pg: pg.poin, jumlah_pg: pg.jumlah, benar: pg.benar, nilai_pg: nilaiPg,
+                poin_esai: null, nilai_akhir: nilaiAkhir, status_esai: adaEsai ? 'menunggu' : '' });
+            lkTulis(d);
+            return { ok: true, ada_esai: adaEsai, nilai_pg: nilaiPg, nilai_akhir: nilaiAkhir, jumlah_pg: pg.jumlah, benar: pg.benar };
+        }
+
+        // ---- semua aksi di bawah khusus guru ----
+        if (!pinSimpan || pin !== pinSimpan) throw new Error('PIN guru salah atau sesi habis. Masuk ulang sebagai guru.');
+
+        if (action === 'listExams') {
+            const daftar = d.ujian.map(u => {
+                const s = d.soal.filter(q => q.kode === u.kode), h = d.hasil.filter(x => x.kode === u.kode);
+                const pg = s.filter(q => q.jenis === 'PG').length;
+                return Object.assign({}, u, { jumlah_soal: s.length, jumlah_pg: pg, jumlah_esai: s.length - pg,
+                    jumlah_hasil: h.length, menunggu: h.filter(x => x.status_esai === 'menunggu').length });
+            }).sort((a, b) => String(b.dibuat).localeCompare(String(a.dibuat)));
+            return { ok: true, ujian: daftar };
+        }
+
+        if (action === 'saveExam') {
+            const u = b.ujian || {}, kode = lkKode(u.kode), judul = String(u.judul || '').trim().slice(0, 150), durasi = Number(u.durasi);
+            const masuk = Array.isArray(b.soal) ? b.soal : [];
+            if (kode.length < 3) throw new Error('Kode ujian minimal 3 huruf/angka.');
+            if (!judul) throw new Error('Judul ujian wajib diisi.');
+            if (!(durasi >= 1 && durasi <= 600)) throw new Error('Durasi antara 1 sampai 600 menit.');
+            if (!masuk.length) throw new Error('Soal belum ada.');
+            if (masuk.length > 300) throw new Error('Maksimal 300 soal per ujian.');
+            const t = (v, m) => String(v ?? '').trim().slice(0, m);
+            const baris = masuk.map((q, i) => {
+                const no = i + 1, jenis = String(q.jenis).toUpperCase() === 'ESAI' ? 'ESAI' : 'PG', teks = t(q.soal, 5000);
+                if (!teks) throw new Error('Soal nomor ' + no + ' kosong.');
+                const op = ['a', 'b', 'c', 'd', 'e'].map(c => t(q[c], 1000));
+                let kunci = '';
+                if (jenis === 'PG') {
+                    if (op.filter(Boolean).length < 2) throw new Error('Soal nomor ' + no + ': pilihan ganda butuh minimal 2 pilihan.');
+                    kunci = t(q.kunci, 1).toUpperCase();
+                    const ix = LABEL.indexOf(kunci);
+                    if (ix < 0 || !op[ix]) throw new Error('Soal nomor ' + no + ': kunci jawaban tidak cocok dengan pilihan yang ada.');
+                }
+                let bobot = Number(q.bobot); if (!(bobot > 0)) bobot = jenis === 'PG' ? 1 : 5;
+                return { kode, no, jenis, soal: teks, a: op[0], b: op[1], c: op[2], d: op[3], e: op[4], kunci, bobot };
+            });
+            // Kode yang sama diganti total; nilai lama ikut dihapus karena tidak cocok lagi dengan soal baru.
+            d.ujian = d.ujian.filter(x => x.kode !== kode); d.soal = d.soal.filter(x => x.kode !== kode); d.hasil = d.hasil.filter(x => x.kode !== kode);
+            d.ujian.push({ kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, status: 'tutup', dibuat: new Date().toISOString() });
+            d.soal.push(...baris);
+            lkTulis(d);
+            return { ok: true };
+        }
+
+        if (action === 'setStatus') {
+            const u = d.ujian.find(x => x.kode === lkKode(b.kode));
+            if (!u) throw new Error('Ujian tidak ditemukan.');
+            u.status = b.status === 'buka' ? 'buka' : 'tutup';
+            lkTulis(d);
+            return { ok: true };
+        }
+
+        if (action === 'deleteExam') {
+            const kode = lkKode(b.kode);
+            d.ujian = d.ujian.filter(x => x.kode !== kode); d.soal = d.soal.filter(x => x.kode !== kode); d.hasil = d.hasil.filter(x => x.kode !== kode);
+            lkTulis(d);
+            return { ok: true };
+        }
+
+        if (action === 'getResults') {
+            const ex = lkEx(d, lkKode(b.kode));
+            if (!ex) throw new Error('Ujian tidak ditemukan.');
+            return { ok: true, ujian: ex.ujian, soal: ex.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot })),
+                hasil: d.hasil.filter(h => h.kode === ex.ujian.kode) };
+        }
+
+        if (action === 'gradeEssay') {
+            const h = d.hasil.find(x => x.id === String(b.id));
+            if (!h) throw new Error('Data siswa tidak ditemukan.');
+            const ex = lkEx(d, h.kode);
+            if (!ex) throw new Error('Ujian tidak ditemukan.');
+            const esai = ex.soal.filter(q => q.jenis === 'ESAI');
+            if (!esai.length) throw new Error('Ujian ini tidak punya soal esai.');
+            const masuk = b.skor || {}, skor = {};
+            let poinEsai = 0, maksEsai = 0;
+            esai.forEach(q => {
+                const v = Number(masuk[q.no]);
+                if (isNaN(v) || v < 0 || v > q.bobot) throw new Error('Nilai soal ' + q.no + ' harus antara 0 dan ' + q.bobot + '.');
+                skor[q.no] = v; poinEsai += v; maksEsai += q.bobot;
+            });
+            const maksPg = ex.soal.filter(q => q.jenis === 'PG').reduce((a, q) => a + q.bobot, 0);
+            h.skor = skor; h.poin_esai = poinEsai; h.status_esai = 'selesai';
+            h.nilai_akhir = lkBulat(((h.poin_pg || 0) + poinEsai) / (maksPg + maksEsai) * 100);
+            lkTulis(d);
+            return { ok: true, nilai_akhir: h.nilai_akhir };
+        }
+
+        if (action === 'resetStudent') {
+            const n = d.hasil.length;
+            d.hasil = d.hasil.filter(x => x.id !== String(b.id));
+            if (d.hasil.length === n) throw new Error('Data siswa tidak ditemukan.');
+            lkTulis(d);
+            return { ok: true };
+        }
+
+        throw new Error('Aksi tidak dikenal: ' + action);
+    }
+    function masukModeLokal() {
+        $('g-url').value = scriptUrl('LOKAL');
+        $('g-pin').focus();
+        toast(localStorage.getItem(LK_PIN) ? 'Ketik PIN lokal Anda, lalu tekan Masuk' : 'Buat PIN lokal (min. 4 karakter), lalu tekan Masuk', 'info');
+    }
+    // Pengaturan: tampilan khusus saat mode lokal aktif (fungsi aslinya tetap dipanggil apa adanya)
+    const renderPengaturanAsli = renderPengaturan;
+    renderPengaturan = function () {
+        renderPengaturanAsli();
+        const lokal = lkAktif(db.settings.scriptId);
+        $('lokal-info').classList.toggle('hidden', !lokal);
+        if (lokal) { $('set-url').value = ''; $('set-tautan').value = 'Mode lokal: tautan hanya berlaku di perangkat ini'; }
+    };
+
+    function tautanSiswa(kode) {
+        const base = location.origin + location.pathname;
+        return base + '?s=' + encodeURIComponent(db.settings.scriptId) + (kode ? '&kode=' + encodeURIComponent(kode) : '');
+    }
+
+    /* ============================================================
+       NAVIGASI LAYAR & TAB
+       ============================================================ */
+    function showView(name) {
+        SCREENS.forEach(s => $('view-' + s).classList.toggle('hidden', s !== name));
+        if (name !== 'ujian') window.onbeforeunload = null;
+    }
+    function toggleSidebar() {
+        $('sidebar').classList.toggle('open');
+        $('sidebar-overlay').classList.toggle('hidden');
+    }
+    function switchTab(id) {
+        if (!TABS[id]) id = 'dashboard';
+        document.querySelector('#view-guru main').classList.remove('tim-play');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        const view = $('tab-' + id + '-view');
+        view.classList.remove('hidden');
+        view.classList.remove('tab-enter'); void view.offsetWidth; view.classList.add('tab-enter');
+        document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('sidebar-active'));
+        $('btn-' + id)?.classList.add('sidebar-active');
+        $('header-title').textContent = TABS[id];
+        if (window.innerWidth < 768 && $('sidebar').classList.contains('open')) toggleSidebar();
+        try { localStorage.setItem(APP.slug + '_tab', id); } catch (e) {}
+        // Render ulang tab yang dibuka (tambahkan tab baru di sini)
+        if (id === 'dashboard') { renderDashboard(); renderDashExtra(); }
+        if (id === 'ujian') renderUjian();
+        if (id === 'hasil') renderHasil();
+        if (id === 'adu') renderAdu(true);
+        if (id === 'tim') { if (timView === 'soal' && !timBaca().aktif) timView = 'set'; renderTim(); }
+        if (id === 'bank') renderBank();
+        if (id === 'pengaturan') renderPengaturan();
+        document.querySelector('#view-guru main').scrollTo({ top: 0 });
+    }
+
+    /* ============================================================
+       BERANDA & MASUK GURU
+       ============================================================ */
+    function bukaSiswa() { showView('siswa'); }
+    function bukaGuru() {
+        if (sessionStorage.getItem(PIN_KEY) && db.settings.scriptId) { masukPanelGuru(); return; }
+        $('g-url').value = db.settings.scriptId ? scriptUrl(db.settings.scriptId) : '';
+        $('g-pin').value = '';
+        try { $('g-email').value = localStorage.getItem(APP.slug + '_email') || ''; } catch (e) {}
+        showView('login');
+    }
+    async function loginGuru() {
+        const id = extractId($('g-url').value);
+        const pin = $('g-pin').value.trim();
+        if (!id) { galat(new Error('Isian belum benar. Tempel konfigurasi Firebase (berisi apiKey, projectId, appId) atau alamat "Aplikasi web" Apps Script (berakhiran /exec).'), 'Koneksi'); return; }
+        if (!pin) { galat(new Error('PIN wajib diisi'), 'PIN'); return; }
+        loading('Memeriksa...');
+        try {
+            const email = $('g-email').value.trim();
+            const r = await api('ping', { pin, email }, id);
+            Swal.close();
+            if (!r.guru) { galat(new Error(fbAktif(id) ? 'Email atau password salah' : 'PIN salah'), 'Tidak bisa masuk'); return; }
+            db.settings.scriptId = id; saveDB();
+            sessionStorage.setItem(PIN_KEY, fbAktif(id) ? 'fb' : pin);
+            if (fbAktif(id)) { try { localStorage.setItem(APP.slug + '_email', email); } catch (e) {} }
+            masukPanelGuru();
+        } catch (e) { Swal.close(); galat(e, 'Gagal terhubung'); }
+    }
+    function masukPanelGuru() {
+        showView('guru');
+        let tab = 'dashboard';
+        try { tab = localStorage.getItem(APP.slug + '_tab') || 'dashboard'; } catch (e) {}
+        switchTab(tab);
+    }
+    function keluarGuru() {
+        sessionStorage.removeItem(PIN_KEY);
+        try { if (_fbC) _fbC.au.signOut(_fbC.auth); } catch (e) {}
+        cache.ujian = null; hasilData = null;
+        showView('landing');
+    }
+
+    /* ============================================================
+       SISWA: MULAI, KERJAKAN, KUMPULKAN
+       ============================================================ */
+    let attempt = loadAttempt(), timerId = null, submitting = false, saveTimer = null;
+
+    function loadAttempt() { try { return JSON.parse(localStorage.getItem(ATT_KEY) || 'null'); } catch (e) { return null; } }
+    function saveAttempt() {
+        try { if (attempt) localStorage.setItem(ATT_KEY, JSON.stringify(attempt)); else localStorage.removeItem(ATT_KEY); } catch (e) {}
+    }
+
+    /* ---------- Penjagaan ujian: anti salin, dan deteksi keluar dari halaman ---------- */
+    const MAKS_KELUAR = 3;
+    const enUjian = () => attempt && !submitting && !$('view-ujian').classList.contains('hidden');
+    ['copy', 'cut', 'paste', 'contextmenu', 'dragstart'].forEach(ev => document.addEventListener(ev, e => { if (enUjian()) e.preventDefault(); }));
+    document.addEventListener('selectstart', e => { if (enUjian() && e.target.tagName !== 'TEXTAREA') e.preventDefault(); });
+    document.addEventListener('keyup', e => { if (enUjian() && e.key === 'PrintScreen') { try { navigator.clipboard.writeText(''); } catch (x) {} } });
+    document.addEventListener('visibilitychange', () => {
+        if (!enUjian()) return;
+        if (document.visibilityState === 'hidden') {
+            attempt.keluar = (attempt.keluar || 0) + 1; saveAttempt();
+            if (attempt.keluar >= MAKS_KELUAR) kumpulkan('keluar');
+        } else if (attempt.keluar && attempt.diingatkan !== attempt.keluar) {
+            attempt.diingatkan = attempt.keluar; saveAttempt();
+            Swal.fire({ icon: 'warning', title: 'Jangan tinggalkan halaman ujian', text: `Anda sudah keluar ${attempt.keluar} dari ${MAKS_KELUAR} kali. Setelah ${MAKS_KELUAR} kali, jawaban dikirim otomatis.`, confirmButtonColor: '#059669' });
+        }
+    });
+
+    let jkPilih = '';
+    function pilihJK(v) {
+        jkPilih = v;
+        ['L', 'P'].forEach(c => { const b = $('jk-' + c), on = c === v;
+            b.style.background = on ? 'rgb(var(--a500) / .2)' : ''; b.style.borderColor = on ? 'rgb(var(--a500))' : ''; b.style.color = on ? '#fff' : ''; });
+    }
+    async function mulaiUjian() {
+        const kode = $('s-kode').value.trim().toUpperCase();
+        const nama = $('s-nama').value.trim();
+        const absen = $('s-absen').value.trim();
+        if (!kode) return galat(new Error('Kode ujian wajib diisi'), 'Data belum lengkap');
+        if (!nama) return galat(new Error('Nama wajib diisi'), 'Data belum lengkap');
+        if (!absen) return galat(new Error('Nomor absen wajib diisi'), 'Data belum lengkap');
+        if (!jkPilih) return galat(new Error('Pilih jenis kelamin: Laki-laki atau Perempuan'), 'Data belum lengkap');
+        loading('Mengambil soal...');
+        let r;
+        try { r = await api('getExam', { kode }); } catch (e) { Swal.close(); return galat(e, 'Tidak bisa masuk ujian'); }
+        Swal.close();
+        const u = r.ujian;
+        const ok = await Swal.fire({ title: u.judul, icon: 'info', showCancelButton: true, confirmButtonText: 'Mulai Sekarang', cancelButtonText: 'Batal',
+            confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: `<p class="text-sm"><b>${r.soal.length}</b> soal &bull; <b>${u.durasi}</b> menit</p><p class="text-xs text-slate-400 mt-2">Waktu langsung berjalan setelah Anda menekan Mulai. Jangan menutup halaman ini dan jangan berpindah aplikasi atau tab: keluar ${MAKS_KELUAR} kali, jawaban dikirim otomatis.</p>` });
+        if (!ok.isConfirmed) return;
+        let soal = r.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.jenis === 'PG' && u.acak_opsi ? acakArray(q.opsi) : q.opsi }));
+        if (u.acak_soal) soal = acakArray(soal);
+        const now = Date.now();
+        attempt = { kode: u.kode, judul: u.judul, nama, absen, jk: jkPilih, mulai: now, akhir: now + u.durasi * 60000, durasi: u.durasi, soal, jawaban: {}, idx: 0 };
+        saveAttempt();
+        tampilUjian();
+    }
+
+    function tampilUjian() {
+        showView('ujian');
+        $('u-judul').textContent = attempt.judul;
+        $('u-nama').textContent = attempt.nama + ' • absen ' + attempt.absen;
+        window.onbeforeunload = e => { e.preventDefault(); e.returnValue = ''; return ''; };
+        try { if (document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
+        clearInterval(timerId);
+        timerId = setInterval(tickUjian, 1000);
+        tickUjian();
+        renderSoal();
+    }
+    function tickUjian() {
+        if (!attempt) return;
+        const sisa = Math.max(0, Math.ceil((attempt.akhir - Date.now()) / 1000));
+        const el = $('u-timer');
+        el.textContent = mmss(sisa);
+        el.className = 'text-sm font-black font-mono ' + (sisa <= 60 ? 'text-red-400 animate-pulse' : sisa <= 300 ? 'text-amber-400' : 'text-slate-100');
+        if (sisa <= 0 && !submitting) kumpulkan(true);
+    }
+    const terjawab = q => { const v = attempt.jawaban[q.no]; return v !== undefined && String(v).trim() !== ''; };
+
+    function renderSoal() {
+        const q = attempt.soal[attempt.idx];
+        const n = attempt.soal.length;
+        const jaw = attempt.jawaban[q.no];
+        let isi;
+        if (q.jenis === 'PG') {
+            isi = q.opsi.map((o, i) => {
+                const sel = jaw === o.k;
+                return `<button onclick="pilihJawaban(${q.no},'${o.k}')" class="w-full text-left flex gap-3 items-start p-3 rounded-xl border transition ${sel ? 'border-accent-500 bg-accent-500/15 text-white' : 'border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500'}">
+                    <span class="w-7 h-7 shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${sel ? 'bg-accent-500 text-white' : 'bg-slate-800 text-slate-400'}">${LABEL[i]}</span>
+                    <span class="text-sm pt-0.5 whitespace-pre-wrap break-words min-w-0">${esc(o.t)}</span></button>`;
+            }).join('');
+            isi = `<div class="space-y-2">${isi}</div>`;
+        } else {
+            isi = `<textarea rows="9" class="field" placeholder="Tulis jawaban Anda di sini..." oninput="isiEsai(${q.no}, this.value)">${esc(jaw || '')}</textarea>`;
+        }
+        $('u-soal').innerHTML = `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-accent-400">Soal ${attempt.idx + 1} dari ${n}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${q.jenis === 'PG' ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'}">${q.jenis === 'PG' ? 'Pilihan Ganda' : 'Esai'}</span>
+            </div>
+            <p class="text-sm text-slate-100 whitespace-pre-wrap break-words leading-relaxed">${esc(q.soal)}</p>
+            ${isi}</div>`;
+        $('u-prev').disabled = attempt.idx === 0;
+        $('u-prev').classList.toggle('opacity-40', attempt.idx === 0);
+        $('u-next').disabled = attempt.idx === n - 1;
+        $('u-next').classList.toggle('opacity-40', attempt.idx === n - 1);
+        renderNav();
+    }
+    function renderNav() {
+        $('u-nav').innerHTML = attempt.soal.map((q, i) => {
+            const cur = i === attempt.idx, ans = terjawab(q);
+            return `<button onclick="goSoal(${i})" class="w-10 h-10 rounded-xl text-xs font-black transition ${cur ? 'ring-2 ring-accent-400 ' : ''}${ans ? 'bg-accent-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">${i + 1}</button>`;
+        }).join('');
+        $('u-progress').textContent = attempt.soal.filter(terjawab).length + '/' + attempt.soal.length;
+    }
+    function pilihJawaban(no, k) { attempt.jawaban[no] = k; saveAttempt(); renderSoal(); }
+    function isiEsai(no, v) {
+        attempt.jawaban[no] = v; renderNav();
+        clearTimeout(saveTimer); saveTimer = setTimeout(saveAttempt, 400);
+    }
+    function goSoal(i) { attempt.idx = i; saveAttempt(); renderSoal(); $('view-ujian').querySelector('main').scrollTo({ top: 0 }); }
+    function geserSoal(d) {
+        const i = attempt.idx + d;
+        if (i >= 0 && i < attempt.soal.length) goSoal(i);
+    }
+
+    async function kumpulkan(otomatis) {
+        if (submitting || !attempt) return;
+        if (!otomatis) {
+            const kosong = attempt.soal.filter(q => !terjawab(q)).length;
+            const ok = await konfirmasi('Kumpulkan sekarang?', kosong ? `Masih ada ${kosong} soal yang belum dijawab. Setelah dikumpulkan, jawaban tidak bisa diubah.` : 'Setelah dikumpulkan, jawaban tidak bisa diubah.', 'Ya, kumpulkan');
+            if (!ok) return;
+        }
+        submitting = true;
+        clearInterval(timerId);
+        saveAttempt();
+        if (otomatis) toast(otomatis === 'keluar' ? 'Terlalu sering meninggalkan halaman. Jawaban dikirim otomatis.' : 'Waktu habis. Jawaban dikirim otomatis.', 'info');
+        const durasi = Math.min(Math.round((Date.now() - attempt.mulai) / 1000), attempt.durasi * 60);
+        let hasil;
+        while (true) {
+            try {
+                loading('Mengirim jawaban...');
+                hasil = await api('submit', { kode: attempt.kode, nama: attempt.jk ? attempt.nama.slice(0, 54) + ' [' + attempt.jk + ']' : attempt.nama, absen: attempt.absen, jawaban: attempt.jawaban, durasi });
+                Swal.close();
+                break;
+            } catch (e) {
+                if (/sudah mengumpulkan/i.test(e.message)) {
+                    Swal.close(); attempt = null; saveAttempt(); submitting = false;
+                    await Swal.fire({ icon: 'info', title: 'Sudah terkirim', text: e.message, confirmButtonColor: '#059669' });
+                    showView('landing'); return;
+                }
+                await Swal.fire({ icon: 'error', title: 'Belum terkirim', text: e.message + ' Jawaban Anda aman di perangkat ini. Periksa internet lalu coba lagi.',
+                    confirmButtonText: 'Kirim ulang', allowOutsideClick: false, confirmButtonColor: '#059669' });
+            }
+        }
+        tampilHasil(hasil);
+        attempt = null; saveAttempt(); submitting = false;
+    }
+    function tampilHasil(r) {
+        $('h-siswa').textContent = attempt.nama + ' • ' + attempt.judul;
+        if (r.tunda) {
+            $('h-label').textContent = 'Jawaban Terkirim';
+            $('h-nilai').textContent = '✓';
+            $('h-detail').textContent = 'Nilai akan diumumkan oleh guru.';
+            $('h-esai').classList.add('hidden');
+            showView('hasil'); return;
+        }
+        $('h-label').textContent = r.ada_esai ? 'Nilai Pilihan Ganda' : 'Nilai Anda';
+        $('h-nilai').textContent = fmtNilai(r.ada_esai ? r.nilai_pg : r.nilai_akhir);
+        $('h-detail').textContent = r.jumlah_pg ? `Benar ${r.benar} dari ${r.jumlah_pg} soal pilihan ganda` : '';
+        $('h-esai').classList.toggle('hidden', !r.ada_esai);
+        showView('hasil');
+    }
+    function selesaiUjian() { try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} pilihJK(''); showView('landing'); }
+
+    /* ============================================================
+       GURU: DATA UJIAN
+       ============================================================ */
+    const cache = { ujian: null };
+    let hasilData = null, soalImpor = null, hasilKode = '';
+
+    async function muatUjian(paksa) {
+        if (cache.ujian && !paksa) return cache.ujian;
+        const r = await api('listExams');
+        cache.ujian = r.ujian;
+        if (paksa) renderDaftarUjian();
+        return cache.ujian;
+    }
+
+    /* ---------- Dashboard ---------- */
+    function statCard(ikon, label, nilai, warna = 'accent') {
+        const w = { accent: 'text-accent-400 bg-accent-500/10', amber: 'text-amber-400 bg-amber-500/10', sky: 'text-sky-400 bg-sky-500/10', rose: 'text-rose-400 bg-rose-500/10' }[warna];
+        return `<div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-sm hover:-translate-y-0.5 transition">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center ${w} mb-3"><i class="fas ${ikon}"></i></div>
+            <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">${esc(label)}</p>
+            <h4 class="text-xl font-black text-slate-100 mt-1">${esc(nilai)}</h4></div>`;
+    }
+    async function renderDashboard() {
+        $('dash-title').textContent = 'Selamat Datang di ' + db.settings.nama;
+        $('dash-stats').innerHTML = '<div class="col-span-full text-center py-6 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>';
+        try {
+            const list = await muatUjian(true);
+            const sum = f => list.reduce((a, u) => a + f(u), 0);
+            $('dash-stats').innerHTML =
+                statCard('fa-file-pen', 'Total Ujian', list.length) +
+                statCard('fa-door-open', 'Ujian Dibuka', list.filter(u => u.status === 'buka').length, 'sky') +
+                statCard('fa-inbox', 'Jawaban Masuk', sum(u => u.jumlah_hasil), 'accent') +
+                statCard('fa-hourglass-half', 'Esai Belum Dinilai', sum(u => u.menunggu), 'amber');
+        } catch (e) {
+            $('dash-stats').innerHTML = `<div class="col-span-full bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl p-4"><i class="fas fa-triangle-exclamation mr-2"></i>${esc(e.message)} <button onclick="renderDashboard()" class="font-bold underline ml-2">Coba lagi</button></div>`;
+        }
+    }
+
+    /* ---------- Buat ujian & impor soal ---------- */
+    function acakKode() {
+        const abj = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $('f-kode').value = Array.from({ length: 5 }, () => abj[Math.floor(Math.random() * abj.length)]).join('');
+    }
+    function renderUjian() {
+        if (!$('f-kode').value) acakKode();
+        renderDaftarUjian();
+        muatUjian(true).catch(e => { $('ujian-list').innerHTML = pesanGalat(e); });
+    }
+    function pesanGalat(e) {
+        return `<div class="col-span-full bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl p-4"><i class="fas fa-triangle-exclamation mr-2"></i>${esc(e.message)}</div>`;
+    }
+
+    function unduhTemplate() {
+        const rows = [
+            ['jenis', 'soal', 'a', 'b', 'c', 'd', 'e', 'kunci', 'bobot'],
+            ['PG', 'Ibu kota Indonesia adalah ...', 'Surabaya', 'Jakarta', 'Bandung', 'Medan', '', 'B', 1],
+            ['PG', 'Hasil dari 7 x 8 adalah ...', '54', '56', '58', '64', '', 'B', 1],
+            ['ESAI', 'Jelaskan secara singkat proses fotosintesis.', '', '', '', '', '', '', 5]
+        ];
+        const petunjuk = [
+            ['PETUNJUK PENGISIAN'],
+            ['jenis: tulis PG (pilihan ganda) atau ESAI. Bila kosong, baris dianggap PG jika ada pilihan jawaban.'],
+            ['soal: teks pertanyaan.'],
+            ['a sampai e: pilihan jawaban (minimal a dan b). Kolom e boleh dikosongkan. Kosongkan semua untuk ESAI.'],
+            ['kunci: huruf jawaban benar (A sampai E). Kosongkan untuk ESAI.'],
+            ['bobot: nilai soal (boleh kosong). Standar: PG = 1, ESAI = 5.'],
+            ['Data soal dibaca dari lembar pertama (Soal). Jangan ubah nama kolom di baris pertama.']
+        ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!cols'] = [{ wch: 8 }, { wch: 50 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 8 }, { wch: 8 }];
+        XLSX.utils.book_append_sheet(wb, ws, 'Soal');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(petunjuk), 'Petunjuk');
+        XLSX.writeFile(wb, 'template-soal-ujian.xlsx');
+    }
+
+    function pilihFileSoal(ev, cb) {
+        const file = ev.target.files[0]; ev.target.value = '';
+        if (!file) return;
+        const reader = new FileReader();
+        const csv = /\.csv$/i.test(file.name);
+        reader.onerror = () => galat(new Error('File tidak bisa dibaca'));
+        reader.onload = () => {
+            try {
+                let wb;
+                if (csv) {
+                    const teks = String(reader.result).replace(/^\uFEFF/, '');
+                    const head = teks.split(/\r?\n/)[0] || '';
+                    const cnt = c => head.split(c).length - 1;
+                    const fs = [[';', cnt(';')], ['\t', cnt('\t')], [',', cnt(',')]].sort((a, b) => b[1] - a[1])[0][0];
+                    wb = XLSX.read(teks, { type: 'string', FS: fs });
+                } else {
+                    wb = XLSX.read(reader.result, { type: 'array' });
+                }
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const baris = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+                const hasil = olahSoal(baris); hasil.namaFile = file.name;
+                if (cb) { cb(hasil); return; }
+                soalImpor = hasil; renderPreview();
+            } catch (e) { if (!cb) { soalImpor = null; renderPreview(); } galat(e, 'File tidak bisa dibaca'); }
+        };
+        if (csv) reader.readAsText(file); else reader.readAsArrayBuffer(file);
+    }
+
+    function olahSoal(baris) {
+        const alias = { jenis: 'jenis', tipe: 'jenis', soal: 'soal', pertanyaan: 'soal', a: 'a', b: 'b', c: 'c', d: 'd', e: 'e',
+            opsia: 'a', opsib: 'b', opsic: 'c', opsid: 'd', opsie: 'e', pilihana: 'a', pilihanb: 'b', pilihanc: 'c', pilihand: 'd', pilihane: 'e',
+            kunci: 'kunci', kuncijawaban: 'kunci', jawaban: 'kunci', bobot: 'bobot', skor: 'bobot', poin: 'bobot', kategori: 'kategori', mapel: 'kategori' };
+        const soal = [], galatList = [];
+        baris.forEach((raw, i) => {
+            const r = {};
+            Object.keys(raw).forEach(k => { const a = alias[String(k).toLowerCase().replace(/[^a-z]/g, '')]; if (a) r[a] = String(raw[k] ?? '').trim(); });
+            if (!Object.values(r).some(v => v)) return; // baris kosong
+            const no = i + 2;
+            if (!r.soal) { galatList.push(`Baris ${no}: kolom soal kosong`); return; }
+            const opsi = ['a', 'b', 'c', 'd', 'e'].filter(k => r[k]);
+            let jenis = String(r.jenis || '').toUpperCase();
+            if (/ESAI|URAIAN/.test(jenis)) jenis = 'ESAI';
+            else if (/^PG|PILIHAN/.test(jenis)) jenis = 'PG';
+            else jenis = opsi.length >= 2 ? 'PG' : 'ESAI';
+            const q = { jenis, soal: r.soal, a: r.a || '', b: r.b || '', c: r.c || '', d: r.d || '', e: r.e || '', kunci: '', bobot: '', kategori: r.kategori || '' };
+            if (r.bobot) { const b = Number(String(r.bobot).replace(',', '.')); if (b > 0) q.bobot = b; else { galatList.push(`Baris ${no}: bobot harus angka lebih dari 0`); return; } }
+            if (jenis === 'PG') {
+                if (opsi.length < 2) { galatList.push(`Baris ${no}: soal PG butuh minimal 2 pilihan`); return; }
+                const k = String(r.kunci || '').trim().toLowerCase().charAt(0);
+                if (!k || !opsi.includes(k)) { galatList.push(`Baris ${no}: kunci "${r.kunci || ''}" tidak cocok dengan pilihan yang ada`); return; }
+                q.kunci = k.toUpperCase();
+            } else q.kunci = r.kunci || '';
+            soal.push(q);
+        });
+        if (!soal.length && !galatList.length) galatList.push('Tidak ada soal terbaca. Pastikan baris pertama berisi nama kolom (jenis, soal, a, b, c, d, e, kunci, bobot).');
+        return { soal, galat: galatList };
+    }
+
+    function renderPreview() {
+        const box = $('f-preview');
+        if (!soalImpor) { box.innerHTML = ''; return; }
+        const s = soalImpor.soal, pg = s.filter(q => q.jenis === 'PG').length, es = s.length - pg;
+        let h = `<div class="text-xs text-slate-300 space-y-2"><p><i class="fas fa-file-lines text-accent-400 mr-1.5"></i><b>${esc(soalImpor.namaFile)}</b> &mdash; ${s.length} soal terbaca (${pg} pilihan ganda, ${es} esai)</p>`;
+        if (soalImpor.galat.length) h += `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-3 space-y-1"><p class="font-bold">Perbaiki dulu ${soalImpor.galat.length} masalah ini lalu pilih file lagi:</p>${soalImpor.galat.slice(0, 8).map(g => `<p>&bull; ${esc(g)}</p>`).join('')}${soalImpor.galat.length > 8 ? `<p>...dan ${soalImpor.galat.length - 8} lainnya</p>` : ''}</div>`;
+        if (s.length && !soalImpor.galat.length) h += `<div class="bg-slate-900 border border-slate-800 rounded-xl divide-y divide-slate-800">${s.slice(0, 3).map((q, i) => `<div class="p-3"><span class="text-[10px] font-bold text-accent-400">${i + 1}. ${q.jenis}</span><p class="text-slate-200 mt-0.5 truncate">${esc(q.soal)}</p></div>`).join('')}${s.length > 3 ? `<div class="p-2 text-center text-[11px] text-slate-500">+ ${s.length - 3} soal lainnya</div>` : ''}</div>`;
+        box.innerHTML = h + '</div>';
+    }
+
+    async function simpanUjian() {
+        const judul = $('f-judul').value.trim();
+        const kode = $('f-kode').value.trim().toUpperCase();
+        const durasi = Number($('f-durasi').value);
+        if (!judul) return galat(new Error('Judul ujian wajib diisi'), 'Data belum lengkap');
+        if (kode.length < 3) return galat(new Error('Kode ujian minimal 3 huruf/angka'), 'Data belum lengkap');
+        if (!(durasi >= 1 && durasi <= 600)) return galat(new Error('Durasi antara 1 sampai 600 menit'), 'Data belum lengkap');
+        if (!soalImpor || !soalImpor.soal.length) return galat(new Error('Pilih file soal (Excel/CSV) terlebih dulu'), 'Soal belum ada');
+        if (soalImpor.galat.length) return galat(new Error('Masih ada masalah pada file soal. Perbaiki lalu pilih file lagi.'), 'Soal belum benar');
+        const ada = (cache.ujian || []).find(u => u.kode === kode);
+        if (ada && !await konfirmasi('Kode sudah dipakai', `Ujian "${ada.judul}" akan diganti dengan soal baru.`, 'Ya, ganti')) return;
+        loading('Menyimpan ujian...');
+        try {
+            await api('saveExam', { ujian: { kode, judul, durasi, acak_soal: $('f-acak-soal').checked, acak_opsi: $('f-acak-opsi').checked }, soal: soalImpor.soal });
+            Swal.close();
+            toast('Ujian tersimpan (status: Tutup)');
+            soalImpor = null; renderPreview(); $('f-judul').value = ''; acakKode();
+            await muatUjian(true);
+        } catch (e) { Swal.close(); galat(e, 'Gagal menyimpan'); }
+    }
+
+    /* ---------- Daftar ujian ---------- */
+    function renderDaftarUjian() {
+        const box = $('ujian-list');
+        const list = cache.ujian;
+        if (!list) { box.innerHTML = '<div class="col-span-full text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>'; return; }
+        if (!list.length) {
+            box.innerHTML = `<div class="col-span-full text-center py-16 text-slate-500"><i class="fas fa-inbox text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">Belum ada ujian</p><p class="text-xs mt-1">Isi formulir di atas untuk membuat ujian pertama.</p></div>`;
+            return;
+        }
+        box.innerHTML = list.map(u => {
+            const buka = u.status === 'buka';
+            return `<div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h4 class="text-sm font-bold text-slate-100 truncate">${esc(u.judul)}</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Kode <span class="font-mono font-black text-accent-400 tracking-widest">${esc(u.kode)}</span> &bull; ${u.durasi} menit</p>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${buka ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700/40 text-slate-400 border border-slate-600'}">${buka ? 'Dibuka' : 'Tutup'}</span>
+                </div>
+                <p class="text-[11px] text-slate-400">${u.jumlah_soal} soal (${u.jumlah_pg} PG, ${u.jumlah_esai} esai) &bull; ${u.jumlah_hasil} jawaban masuk${u.menunggu ? ` &bull; <span class="text-amber-400">${u.menunggu} esai belum dinilai</span>` : ''}</p>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="ubahStatus('${esc(u.kode)}','${buka ? 'tutup' : 'buka'}')" class="${buka ? 'bg-slate-800 hover:bg-slate-700 text-slate-200' : 'bg-accent-600 hover:bg-accent-500 text-white'} text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fas ${buka ? 'fa-lock' : 'fa-door-open'} mr-1.5"></i>${buka ? 'Tutup Ujian' : 'Buka Ujian'}</button>
+                    <button onclick="salin(tautanSiswa('${esc(u.kode)}'))" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-link mr-1.5"></i>Tautan Siswa</button>
+                    <button onclick="lihatHasil('${esc(u.kode)}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-ranking-star mr-1.5"></i>Hasil</button>
+                    <button onclick="hapusUjian('${esc(u.kode)}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold px-3 py-2 rounded-xl transition" title="Hapus"><i class="fas fa-trash-can"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+    async function ubahStatus(kode, status) {
+        loading('Menyimpan...');
+        try { await api('setStatus', { kode, status }); Swal.close(); toast(status === 'buka' ? 'Ujian dibuka' : 'Ujian ditutup'); await muatUjian(true); }
+        catch (e) { Swal.close(); galat(e); }
+    }
+    async function hapusUjian(kode) {
+        if (!await konfirmasi('Hapus ujian ' + kode + '?', 'Soal dan semua nilai siswa untuk ujian ini ikut terhapus dari penyimpanan.', 'Ya, hapus')) return;
+        loading('Menghapus...');
+        try { await api('deleteExam', { kode }); Swal.close(); toast('Ujian dihapus'); if (hasilKode === kode) { hasilKode = ''; hasilData = null; } await muatUjian(true); }
+        catch (e) { Swal.close(); galat(e); }
+    }
+    function lihatHasil(kode) { hasilKode = kode; switchTab('hasil'); }
+
+    /* ---------- Hasil & nilai ---------- */
+    async function renderHasil() {
+        const sel = $('h-kode');
+        try { await muatUjian(true); } catch (e) { $('h-tabel').innerHTML = pesanGalat(e); return; }
+        const list = cache.ujian;
+        if (!list.length) {
+            sel.innerHTML = '<option value="">(belum ada ujian)</option>';
+            $('h-stats').innerHTML = '';
+            $('h-tabel').innerHTML = `<div class="text-center py-16 text-slate-500"><i class="fas fa-inbox text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">Belum ada ujian</p></div>`;
+            return;
+        }
+        if (!list.some(u => u.kode === hasilKode)) hasilKode = list[0].kode;
+        sel.innerHTML = list.map(u => `<option value="${esc(u.kode)}" ${u.kode === hasilKode ? 'selected' : ''}>${esc(u.judul)} (${esc(u.kode)})</option>`).join('');
+        muatHasil();
+    }
+    async function muatHasil() {
+        hasilKode = $('h-kode').value;
+        if (!hasilKode) return;
+        $('h-tabel').innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>';
+        try { hasilData = await ambilHasil(hasilKode); renderTabelHasil(); }
+        catch (e) { $('h-tabel').innerHTML = pesanGalat(e); }
+    }
+    function renderTabelHasil() {
+        const d = hasilData, hs = d.hasil.slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id'));
+        const akhir = hs.filter(h => h.nilai_akhir !== null).map(h => h.nilai_akhir);
+        const rata = akhir.length ? akhir.reduce((a, b) => a + b, 0) / akhir.length : null;
+        $('h-stats').innerHTML =
+            statCard('fa-users', 'Sudah Mengumpulkan', hs.length) +
+            statCard('fa-chart-simple', 'Rata-rata', fmtNilai(rata), 'sky') +
+            statCard('fa-arrow-up', 'Tertinggi', akhir.length ? fmtNilai(Math.max(...akhir)) : '—') +
+            statCard('fa-arrow-down', 'Terendah', akhir.length ? fmtNilai(Math.min(...akhir)) : '—', 'rose');
+        if (!hs.length) {
+            $('h-tabel').innerHTML = `<div class="text-center py-16 text-slate-500"><i class="fas fa-inbox text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">Belum ada jawaban masuk</p><p class="text-xs mt-1">Bagikan tautan siswa dan buka ujiannya.</p></div>`;
+            return;
+        }
+        const badge = h => h.status_esai === 'menunggu' ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">Belum dinilai</span>'
+            : h.status_esai === 'selesai' ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Dinilai</span>'
+            : '<span class="text-slate-600">—</span>';
+        $('h-tabel').innerHTML = `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider"><tr>
+                <th class="px-4 py-3 text-left">Nama</th><th class="px-3 py-3 text-center">Absen</th><th class="px-3 py-3 text-center">JK</th><th class="px-3 py-3 text-center">Nilai PG</th><th class="px-3 py-3 text-center">Esai</th><th class="px-3 py-3 text-center">Nilai Akhir</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${hs.map(h => `<tr class="hover:bg-slate-800/60">
+                <td class="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}</td>
+                <td class="px-3 py-3 text-center text-slate-400">${esc(h.absen)}</td>
+                <td class="px-3 py-3 text-center">${badgeJK(h.jk)}</td>
+                <td class="px-3 py-3 text-center text-slate-300">${fmtNilai(h.nilai_pg)}</td>
+                <td class="px-3 py-3 text-center">${badge(h)}</td>
+                <td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(h.nilai_akhir)}</td>
+                <td class="px-3 py-3 text-right whitespace-nowrap">
+                    <button onclick="detailSiswa('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Detail / nilai esai"><i class="fas fa-eye"></i></button>
+                    <button onclick="resetSiswa('${esc(h.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus agar siswa bisa mengulang"><i class="fas fa-rotate-left"></i></button>
+                </td></tr>`).join('')}</tbody></table></div>`;
+    }
+    async function detailSiswa(id) {
+        const h = hasilData.hasil.find(x => x.id === id);
+        if (!h) return;
+        const es = hasilData.soal.filter(s => s.jenis === 'ESAI');
+        let html = `<div class="text-left space-y-3 text-xs">
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-slate-950 border border-slate-700 rounded-xl p-2"><p class="text-[10px] text-slate-500 uppercase font-bold">Nilai PG</p><p class="text-base font-black text-slate-100">${fmtNilai(h.nilai_pg)}</p></div>
+                <div class="bg-slate-950 border border-slate-700 rounded-xl p-2"><p class="text-[10px] text-slate-500 uppercase font-bold">Nilai Akhir</p><p class="text-base font-black text-accent-400">${fmtNilai(h.nilai_akhir)}</p></div>
+                <div class="bg-slate-950 border border-slate-700 rounded-xl p-2"><p class="text-[10px] text-slate-500 uppercase font-bold">Durasi</p><p class="text-base font-black text-slate-100">${mmss(h.durasi)}</p></div>
+            </div>
+            <p class="text-slate-500">Dikumpulkan ${fmtWaktu(h.waktu)}</p>`;
+        if (!es.length) html += '<p class="text-slate-400">Ujian ini tidak memiliki soal esai.</p>';
+        es.forEach(s => {
+            html += `<div class="bg-slate-950 border border-slate-700 rounded-xl p-3">
+                <p class="text-[10px] uppercase font-bold text-slate-500">Soal ${s.no} &bull; nilai maks ${s.bobot}</p>
+                <p class="text-slate-200 mt-1 whitespace-pre-wrap">${esc(s.soal)}</p>
+                <p class="text-[10px] uppercase font-bold text-slate-500 mt-3">Jawaban siswa</p>
+                <p class="text-slate-100 mt-1 whitespace-pre-wrap">${esc(h.jawaban[s.no] || '(tidak dijawab)')}</p>
+                <label class="block mt-3 text-slate-400 font-semibold">Nilai (0 sampai ${s.bobot})
+                    <input id="sk-${s.no}" type="number" min="0" max="${s.bobot}" step="0.5" value="${h.skor[s.no] ?? ''}" class="field mt-1"></label></div>`;
+        });
+        html += '</div>';
+        await Swal.fire({ title: esc(h.nama), html, width: 640, showConfirmButton: es.length > 0, confirmButtonText: 'Simpan Nilai Esai',
+            showCancelButton: true, cancelButtonText: 'Tutup', confirmButtonColor: '#059669', cancelButtonColor: '#334155', showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                const skor = {};
+                for (const s of es) {
+                    const v = Number($('sk-' + s.no).value);
+                    if (isNaN(v) || v < 0 || v > s.bobot) { Swal.showValidationMessage(`Nilai soal ${s.no} harus antara 0 dan ${s.bobot}`); return false; }
+                    skor[s.no] = v;
+                }
+                try { return await api('gradeEssay', { id, skor }); }
+                catch (e) { Swal.showValidationMessage(e.message); return false; }
+            } }).then(r => { if (r.isConfirmed) { toast('Nilai tersimpan'); muatHasil(); } });
+    }
+    async function resetSiswa(id) {
+        const h = hasilData.hasil.find(x => x.id === id);
+        if (!h || !await konfirmasi('Hapus jawaban ' + h.nama + '?', 'Jawaban dan nilainya dihapus, sehingga siswa bisa mengerjakan ulang.', 'Ya, hapus')) return;
+        loading('Menghapus...');
+        try { await api('resetStudent', { id }); Swal.close(); toast('Jawaban dihapus'); muatHasil(); }
+        catch (e) { Swal.close(); galat(e); }
+    }
+    function ekspor() {
+        if (!hasilData || !hasilData.hasil.length) return toast('Belum ada data untuk diekspor', 'info');
+        const rows = [['Nama', 'JK', 'Absen', 'Nilai PG', 'Poin PG', 'Poin Esai', 'Nilai Akhir', 'Status Esai', 'Durasi (menit)', 'Waktu Kumpul']];
+        hasilData.hasil.slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id')).forEach(h =>
+            rows.push([h.nama, h.jk || '', h.absen, h.nilai_pg, h.poin_pg, h.poin_esai ?? '', h.nilai_akhir ?? '', h.status_esai, Math.round(h.durasi / 6) / 10, h.waktu]));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Nilai');
+        XLSX.writeFile(wb, 'nilai-' + hasilData.ujian.kode + '.xlsx');
+    }
+
+    /* ============================================================
+       PENGATURAN
+       ============================================================ */
+    /* ============================================================
+       KUIS LANGSUNG LAKI-LAKI vs PEREMPUAN
+       Guru membacakan soal, lalu mencatat jawaban tiap kelompok. Data di perangkat guru (localStorage).
+       ============================================================ */
+    const TIM_KEY = APP.slug + '_tim';
+    const timBaca = () => { try { const d = JSON.parse(localStorage.getItem(TIM_KEY) || 'null'); if (d && Array.isArray(d.sesi)) return d; } catch (e) {} return { sesi: [], aktif: '' }; };
+    const timTulis = d => {
+        try { localStorage.setItem(TIM_KEY, JSON.stringify(d)); return true; }
+        catch (e) {
+            let tot = 0, besar = ['', 0];
+            try { Object.keys(localStorage).forEach(k => { const n = (k.length + String(localStorage.getItem(k)).length) * 2; tot += n; if (n > besar[1]) besar = [k, n]; }); } catch (x) {}
+            Swal.fire({ icon: 'error', title: 'Skor GAGAL disimpan', confirmButtonColor: '#059669',
+                text: 'Penyimpanan browser penuh atau diblokir, jadi soal dan poin tidak berubah.' + (tot ? ' Terpakai sekitar ' + Math.round(tot / 1024) + ' KB; terbesar: ' + besar[0] + ' (' + Math.round(besar[1] / 1024) + ' KB).' : '') + ' Hapus data aplikasi lain di alamat yang sama, atau hapus kuis lama di Riwayat, lalu coba lagi.' });
+            return false;
+        }
+    };
+    const normJ = v => String(v ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const timBenar = (s, c) => s.soal.filter(q => q['b' + c]).length;
+    const timSkor = (s, c) => timBenar(s, c) * s.poin;
+    const timMenang = s => timSkor(s, 'L') > timSkor(s, 'P') ? 'L' : timSkor(s, 'P') > timSkor(s, 'L') ? 'P' : '=';
+    const NAMA_G = { L: 'Laki-laki', P: 'Perempuan', '=': 'Seri' };
+    let timB = { L: null, P: null }, timJ = { L: '', P: '' }, timAktif = 'L';
+
+    function timMulai() {
+        const nama = $('t-nama').value.trim(), poin = Number($('t-poin').value) > 0 ? Number($('t-poin').value) : 1;
+        if (!nama) return galat(new Error('Nama kuis wajib diisi'), 'Data belum lengkap');
+        const d = timBaca(), id = Date.now().toString(36);
+        d.sesi.unshift({ id, nama, tgl: new Date().toISOString(), poin, soal: [], bank: [], selesai: false }); d.aktif = id;
+        timView = 'set'; timManual = false; timTulis(d); $('t-nama').value = ''; timB = { L: null, P: null }; timJ = { L: '', P: '' }; renderTim();
+    }
+    function timTombol() {
+        const cur = timCur(), pg = !!cur && cur.jenis === 'PG', sudah = pg && timJ.L && timJ.P, kn = pg ? normJ(cur.kunci) : '';
+        LABEL.forEach(L => {
+            const b = $('to-' + L); if (!b) return;
+            const l = timJ.L === L, p = timJ.P === L, key = sudah && kn === L.toLowerCase(), salah = sudah && (l || p) && !key;
+            b.className = 'w-full text-left flex gap-3 items-start p-3 rounded-xl border transition ' + (key ? 'border-emerald-500 bg-emerald-500/15 text-white' : salah ? 'border-rose-500/70 bg-rose-500/10 text-slate-200' : (l || p) ? 'border-accent-500 bg-accent-500/15 text-white' : 'border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500');
+            $('tl-' + L).className = 'w-7 h-7 shrink-0 rounded-lg flex items-center justify-center text-xs font-black ' + (key ? 'bg-emerald-500 text-white' : (l || p) ? 'bg-accent-500 text-white' : 'bg-slate-800 text-slate-400');
+            const chip = (t, on, cls) => on ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded ${cls}">${t}</span>` : '';
+            $('tc-' + L).innerHTML = chip('L', l, 'bg-sky-500 text-white') + chip('P', p, 'bg-rose-500 text-white');
+        });
+        [['L', 'Laki-laki', 'border-sky-500 bg-sky-500/20 text-sky-300'], ['P', 'Perempuan', 'border-rose-500 bg-rose-500/20 text-rose-300']].forEach(([c, nama, on]) => {
+            const g = $('tg-' + c); if (!g) return;
+            g.className = 'text-xs font-bold px-3 py-2.5 rounded-xl border transition ' + (timAktif === c ? on : 'border-slate-700 bg-slate-900 text-slate-400');
+            g.innerHTML = nama + (timJ[c] ? ' <span class="ml-1 px-1.5 py-0.5 rounded bg-slate-950/60 text-white">' + timJ[c] + '</span>' : '');
+        });
+        const st = $('t-status');
+        if (st) st.innerHTML = sudah ? `<span class="text-emerald-400 font-bold">Kunci: ${esc(cur.kunci)}</span> &bull; <span class="text-sky-400">Laki-laki ${timB.L ? 'benar' : 'salah'}</span> &bull; <span class="text-rose-400">Perempuan ${timB.P ? 'benar' : 'salah'}</span>` : 'Pilih jawaban untuk kedua kelompok, lalu tekan Simpan.';
+        ['L', 'P'].forEach(c => [['y', true, 'rgb(16 185 129)'], ['n', false, 'rgb(244 63 94)']].forEach(([k, v, w]) => {
+            const b = $('tb-' + c + k); if (!b) return; const on = timB[c] === v;
+            b.style.background = on ? w : ''; b.style.color = on ? '#fff' : ''; b.style.borderColor = on ? w : '';
+        }));
+    }
+    function timGiliran(c) { timAktif = c; timTombol(); }
+    function timKlik(L) {
+        timPilih(timAktif, L);
+        if (timAktif === 'L' && !timJ.P) timAktif = 'P'; else if (timAktif === 'P' && !timJ.L) timAktif = 'L';
+        timTombol();
+    }
+    function timSet(c, v) { timB[c] = v; timTombol(); }
+    function timCur() { const d = timBaca(), s = d.sesi.find(x => x.id === d.aktif); return (s && s.bank && s.bank[s.soal.length]) || null; }
+    function timAuto() {   // Benar/Salah terisi otomatis dari kunci (soal PG atau kunci manual); esai dinilai manual
+        const cur = timCur(); if (cur && cur.jenis === 'ESAI') return;
+        const k = normJ(cur ? cur.kunci : ($('t-kunci') || {}).value); if (!k) return;
+        ['L', 'P'].forEach(c => { const j = normJ(cur ? timJ[c] : $('t-j' + c).value); timB[c] = j ? j === k : null; }); timTombol();
+    }
+    function timPilih(c, h) { timJ[c] = h; timAuto(); timTombol(); }
+    async function timSimpan() {
+        const d = timBaca(), s = d.sesi.find(x => x.id === d.aktif); if (!s) return;
+        const cur0 = s.bank && s.bank[s.soal.length], pg0 = cur0 && cur0.jenis === 'PG';
+        if (timB.L === null || timB.P === null) {
+            if (!pg0 || (!timJ.L && !timJ.P && !await konfirmasi('Belum ada yang menjawab', 'Kedua kelompok belum memilih jawaban. Hitung dua-duanya salah dan lanjut?', 'Ya, lanjut'))) {
+                if (!pg0) return Swal.fire({ icon: 'info', title: 'Belum lengkap', text: 'Tandai Benar/Salah untuk kedua kelompok dulu.', confirmButtonColor: '#059669' });
+                if (!timJ.L && !timJ.P) return;
+            } else if (timJ.L || timJ.P) {
+                const kosong = !timJ.L ? 'Laki-laki' : !timJ.P ? 'Perempuan' : '';
+                if (kosong && !await konfirmasi(kosong + ' belum menjawab', 'Hitung salah untuk ' + kosong + ' dan lanjut ke soal berikutnya?', 'Ya, lanjut')) return;
+            }
+            if (timB.L === null) timB.L = false;
+            if (timB.P === null) timB.P = false;
+        }
+        const cur = s.bank && s.bank[s.soal.length], pg = cur && cur.jenis === 'PG', v = c => pg ? timJ[c] : $('t-j' + c).value.trim();
+        s.soal.push(Object.assign({ no: s.soal.length + 1, jenis: '', soal: '', kunci: cur ? cur.kunci : $('t-kunci').value.trim(), jL: v('L'), jP: v('P'), bL: timB.L, bP: timB.P },
+            cur ? { jenis: cur.jenis, soal: cur.soal, a: cur.a, b: cur.b, c: cur.c, d: cur.d, e: cur.e } : {}));
+        if (!timTulis(d)) return; const l = timB.L, p = timB.P; timB = { L: null, P: null }; timJ = { L: '', P: '' }; renderTim();
+        toast(l && p ? 'Dua-duanya benar' : l ? 'Poin untuk Laki-laki' : p ? 'Poin untuk Perempuan' : 'Dua-duanya salah', 'info');
+    }
+    function timHapusSoal(no) {
+        const d = timBaca(), s = d.sesi.find(x => x.id === d.aktif); if (!s) return;
+        s.soal = s.soal.filter(q => q.no !== no).map((q, i) => Object.assign(q, { no: i + 1 })); timTulis(d); renderTim();
+    }
+    async function timSelesai() {
+        const d = timBaca(), s = d.sesi.find(x => x.id === d.aktif); if (!s) return;
+        if (!await konfirmasi('Selesaikan kuis ini?', 'Skor akhir akan dikunci dan masuk ke riwayat.', 'Ya, selesai')) return;
+        s.selesai = true; d.aktif = ''; timTulis(d); timView = 'riw'; renderTim();
+        const m = timMenang(s);
+        Swal.fire({ icon: 'success', title: m === '=' ? 'SERI!' : NAMA_G[m] + ' menang!', text: `Laki-laki ${timSkor(s, 'L')} lawan Perempuan ${timSkor(s, 'P')}`, confirmButtonColor: '#059669' });
+    }
+    function timLanjut(id) { timView = 'soal'; const d = timBaca(); d.aktif = id; timTulis(d); timB = { L: null, P: null }; timJ = { L: '', P: '' }; renderTim(); document.querySelector('#view-guru main').scrollTo({ top: 0 }); }
+    async function timHapusSesi(id) {
+        if (!await konfirmasi('Hapus kuis ini?', 'Semua jawaban dan skornya ikut terhapus.', 'Ya, hapus')) return;
+        const d = timBaca(); d.sesi = d.sesi.filter(x => x.id !== id); if (d.aktif === id) d.aktif = ''; timTulis(d); renderTim();
+    }
+    function timBank(qs) { const d = timBaca(), s = d.sesi.find(x => x.id === d.aktif); if (!s) return; const kk = q => q.jenis + '|' + normJ(q.soal), ada = new Set((s.bank || []).map(kk)), baru = qs.filter(q => { const k = kk(q); if (ada.has(k)) return false; ada.add(k); return true; });
+        if (!baru.length) return toast('Soal itu sudah ada di kuis ini', 'info');
+        s.bank = (s.bank || []).concat(baru); timTulis(d); renderTim(); toast(baru.length + ' soal ditambahkan' + (qs.length > baru.length ? ', ' + (qs.length - baru.length) + ' dilewati karena sudah ada' : '')); }
+    function timPilihFile(ev) {
+        pilihFileSoal(ev, h => {
+            if (h.galat.length) return galat(new Error(h.galat.slice(0, 6).join('\n')), 'Perbaiki file soal');
+            timBank(h.soal.map(q => ({ jenis: q.jenis, soal: q.soal, a: q.a, b: q.b, c: q.c, d: q.d, e: q.e, kunci: q.kunci })));
+        });
+    }
+    async function formSoal() {
+        const r = await Swal.fire({ title: 'Tambah Soal', width: 560, showCancelButton: true, confirmButtonText: 'Tambah', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: `<div class="text-left space-y-2 text-xs"><select id="m-jenis" class="field"><option value="PG">Pilihan Ganda</option><option value="ESAI">Esai</option></select>
+                <textarea id="m-soal" rows="3" class="field" placeholder="Teks soal"></textarea>
+                ${['a', 'b', 'c', 'd', 'e'].map(c => `<input id="m-${c}" class="field" placeholder="Pilihan ${c.toUpperCase()}${c > 'b' ? ' (opsional)' : ''}">`).join('')}
+                <input id="m-kunci" class="field" placeholder="Kunci (huruf A-E) atau jawaban acuan untuk esai"></div>`,
+            preConfirm: () => {
+                const g = id => document.getElementById('m-' + id).value.trim(), jenis = g('jenis');
+                const q = { jenis, soal: g('soal'), a: g('a'), b: g('b'), c: g('c'), d: g('d'), e: g('e'), kunci: g('kunci') };
+                if (!q.soal) { Swal.showValidationMessage('Teks soal wajib diisi'); return false; }
+                if (jenis === 'PG') {
+                    q.kunci = q.kunci.charAt(0).toUpperCase();
+                    if (['a', 'b', 'c', 'd', 'e'].filter(k => q[k]).length < 2) { Swal.showValidationMessage('Pilihan ganda butuh minimal 2 pilihan'); return false; }
+                    if (!q.kunci || !q[q.kunci.toLowerCase()]) { Swal.showValidationMessage('Kunci harus huruf dari pilihan yang terisi'); return false; }
+                } else { q.a = q.b = q.c = q.d = q.e = ''; }
+                return q;
+            } });
+        return r.isConfirmed ? r.value : null;
+    }
+    async function timTambahManual() { const q = await formSoal(); if (q) timBank([q]); }
+    const timJTeks = (q, c) => { const j = c === 'L' ? q.jL : q.jP; return q.jenis === 'PG' && j ? j + '. ' + (q[j.toLowerCase()] || '') : (j || ''); };
+    /* ---------- Bank soal ---------- */
+    const BANK_KEY = APP.slug + '_banksoal', BANK_F = ['kategori', 'jenis', 'soal', 'a', 'b', 'c', 'd', 'e', 'kunci'];
+    const bankBaca = () => { try { const d = JSON.parse(localStorage.getItem(BANK_KEY) || '[]'); return Array.isArray(d) ? d : []; } catch (e) { return []; } };
+    const bankTulis = d => { try { localStorage.setItem(BANK_KEY, JSON.stringify(d)); } catch (e) { toast('Penyimpanan penuh atau diblokir browser', 'error'); } };
+    const bankKey = q => q.kategori + '|' + q.jenis + '|' + normJ(q.soal);
+    function bankTambah(qs, kat) {
+        const kt = String(kat || '').trim(), lama = bankBaca(), ada = new Set(lama.map(bankKey)), baru = []; let lewat = 0;
+        qs.forEach(q => {
+            const x = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), kategori: String(q.kategori || kt || 'Umum').trim(), jenis: q.jenis, soal: q.soal, a: q.a || '', b: q.b || '', c: q.c || '', d: q.d || '', e: q.e || '', kunci: q.kunci || '' };
+            const k = bankKey(x); if (ada.has(k)) { lewat++; return; } ada.add(k); baru.push(x);
+        });
+        if (baru.length) bankTulis(lama.concat(baru));
+        renderBank(); if (baru.length) { $('b-filter').value = baru[0].kategori; renderBank(); }
+        toast(baru.length ? `${baru.length} soal masuk ke "${baru[0].kategori}"` + (lewat ? `, ${lewat} dilewati karena sudah ada` : '') : `Semua ${lewat} soal sudah ada di bank`, baru.length ? 'success' : 'info');
+    }
+    async function tanyaKategori(info, awal) {
+        const kat = [...new Set(bankBaca().map(q => q.kategori))];
+        const r = await Swal.fire({ title: 'Beri nama kategori', showCancelButton: true, confirmButtonText: 'Simpan ke Bank', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: `<div class="text-left space-y-2 text-xs"><p class="text-slate-400">${esc(info)}</p><input id="kt-nama" list="kt-list" class="field" placeholder="Contoh: Matematika" value="${esc(awal || '')}" autocomplete="off"><datalist id="kt-list">${kat.map(k => `<option value="${esc(k)}">`).join('')}</datalist>${kat.length ? `<p class="text-slate-500">Kategori yang sudah ada: ${kat.map(esc).join(', ')}</p>` : ''}</div>`,
+            preConfirm: () => { const v = document.getElementById('kt-nama').value.trim(); if (!v) { Swal.showValidationMessage('Nama kategori wajib diisi'); return false; } return v; } });
+        return r.isConfirmed ? r.value : null;
+    }
+    function bankPilihFile(ev) {
+        pilihFileSoal(ev, async h => {
+            if (h.galat.length) return galat(new Error(h.galat.slice(0, 6).join('\n')), 'Perbaiki file soal');
+            let kat = $('b-kat').value.trim();
+            if (h.soal.some(q => !q.kategori)) { kat = await tanyaKategori(h.soal.length + ' soal terbaca dari ' + h.namaFile + '. Soal ini masuk ke kategori apa?', kat); if (!kat) return; }
+            $('b-kat').value = kat || ''; bankTambah(h.soal, kat);
+        });
+    }
+    async function bankManual() {
+        const q = await formSoal(); if (!q) return;
+        let kat = $('b-kat').value.trim();
+        if (!kat) { kat = await tanyaKategori('Soal ini masuk ke kategori apa?'); if (!kat) return; $('b-kat').value = kat; }
+        bankTambah([q], kat);
+    }
+    async function bankHapusDuplikat() {
+        const b = bankBaca(), ada = new Set(), unik = b.filter(q => { const k = bankKey(q); if (ada.has(k)) return false; ada.add(k); return true; }), n = b.length - unik.length;
+        if (!n) return toast('Tidak ada soal duplikat', 'info');
+        if (!await konfirmasi('Hapus ' + n + ' soal duplikat?', 'Soal dengan kategori dan teks yang sama hanya disisakan satu.', 'Ya, hapus')) return;
+        bankTulis(unik); renderBank(); toast(n + ' duplikat dihapus');
+    }
+    async function bankGantiNama() {
+        const k = $('b-filter').value; if (k === '__semua__') return toast('Pilih satu kategori dulu', 'info');
+        const r = await Swal.fire({ title: 'Ganti nama kategori', input: 'text', inputValue: k, showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155', inputValidator: v => v.trim() ? null : 'Nama wajib diisi' });
+        if (!r.isConfirmed) return;
+        const n = r.value.trim(), ada = new Set();
+        bankTulis(bankBaca().map(q => q.kategori === k ? Object.assign(q, { kategori: n }) : q).filter(q => { const x = bankKey(q); if (ada.has(x)) return false; ada.add(x); return true; }));
+        renderBank(); $('b-filter').value = n; renderBank();
+    }
+    function renderBank() {
+        const b = bankBaca(), sel = $('b-filter'), lama = sel.value, kat = [...new Set(b.map(q => q.kategori))];
+        bankKatList = kat; bankPilih = new Set([...bankPilih].filter(k => kat.includes(k)));
+        $('b-kat-cek').innerHTML = kat.length ? `<label class="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-accent-500/40"><input type="checkbox" class="accent-emerald-500 w-5 h-5 shrink-0" ${kat.every(k => bankPilih.has(k)) ? 'checked' : ''} onchange="bankPilihSemua(this.checked)"><span class="flex-1 font-bold text-sm text-slate-100">Semua kategori</span><span class="text-xs text-slate-400">${b.length} soal</span></label>`
+            + kat.map((k, i) => { const n = b.filter(q => q.kategori === k), pg = n.filter(q => q.jenis === 'PG').length;
+                return `<div class="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border ${bankPilih.has(k) ? 'border-accent-500' : 'border-slate-700'}"><input type="checkbox" class="accent-emerald-500 w-5 h-5 shrink-0" ${bankPilih.has(k) ? 'checked' : ''} onchange="bankCek(${i}, this.checked)"><button onclick="bankLihat(${i})" class="flex-1 min-w-0 text-left"><span class="block font-bold text-sm text-slate-100 truncate">${esc(k)}</span><span class="block text-[11px] text-slate-400">${pg} pilihan ganda &bull; ${n.length - pg} esai</span></button><span class="text-xs font-black text-accent-400 shrink-0">${n.length} soal</span></div>`; }).join('')
+            : '<p class="text-xs text-slate-500">Belum ada kategori. Impor file soal di atas dan beri nama kategorinya.</p>';
+        const pil = b.filter(q => bankPilih.has(q.kategori));
+        $('b-ringkas').textContent = pil.length ? 'Terpilih: ' + [...bankPilih].join(', ') + ' (' + pil.length + ' soal)' : 'Belum ada kategori yang dicentang.';
+        $('b-kat-list').innerHTML = kat.map(k => `<option value="${esc(k)}">`).join('');
+        sel.innerHTML = `<option value="__semua__">Semua kategori (${b.length} soal)</option>` + kat.map(k => `<option value="${esc(k)}">${esc(k)} (${b.filter(q => q.kategori === k).length})</option>`).join('');
+        if ([...sel.options].some(o => o.value === lama)) sel.value = lama;
+        const list = sel.value === '__semua__' ? b : b.filter(q => q.kategori === sel.value);
+        $('b-list').innerHTML = !list.length ? '<div class="text-center py-14 text-slate-500"><i class="fas fa-box-open text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">Bank soal masih kosong</p><p class="text-xs mt-1">Isi kategori di atas, lalu impor file atau tambah soal manual.</p></div>'
+            : `<div class="rounded-2xl border border-slate-800 overflow-hidden divide-y divide-slate-800 bg-slate-900">${list.map(q => `<div class="flex items-start gap-3 p-3"><div class="min-w-0 flex-1"><p class="text-[10px] font-bold uppercase tracking-wider"><span class="text-accent-400">${esc(q.kategori)}</span> <span class="text-slate-500">&bull; ${q.jenis === 'PG' ? 'Pilihan ganda' : 'Esai'}${q.kunci ? ' &bull; Kunci: ' + esc(q.kunci.slice(0, 30)) : ''}</span></p><p class="text-sm text-slate-200 mt-1 break-words" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(q.soal)}</p></div><button onclick="bankHapus('${q.id}')" class="text-slate-600 hover:text-red-400 p-2 shrink-0" title="Hapus"><i class="fas fa-trash-can"></i></button></div>`).join('')}</div>`;
+    }
+    let bankPilih = new Set(), bankKatList = [];
+    function bankCek(i, on) { const k = bankKatList[i]; if (on) bankPilih.add(k); else bankPilih.delete(k); renderBank(); }
+    function bankPilihSemua(on) { bankPilih = on ? new Set(bankKatList) : new Set(); renderBank(); }
+    function bankLihat(i) { $('b-filter').value = bankKatList[i]; renderBank(); $('b-list').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    async function bankPakai() {
+        const pil = bankBaca().filter(q => bankPilih.has(q.kategori));
+        if (!pil.length) return toast('Centang dulu kategori yang mau dipakai', 'info');
+        let qs = $('b-acak').checked ? acakArray(pil) : pil; const n = Number($('b-jml').value) || 0; if (n > 0) qs = qs.slice(0, n);
+        const soal = qs.map(q => ({ jenis: q.jenis, soal: q.soal, a: q.a, b: q.b, c: q.c, d: q.d, e: q.e, kunci: q.kunci }));
+        const d = timBaca(); let s = d.sesi.find(x => x.id === d.aktif);
+        if (s) {
+            const r = await Swal.fire({ title: 'Pakai di kuis mana?', text: 'Kuis yang sedang berjalan: ' + s.nama, showDenyButton: true, showCancelButton: true, confirmButtonText: 'Tambahkan ke kuis ini', denyButtonText: 'Mulai kuis baru', cancelButtonText: 'Batal', confirmButtonColor: '#059669', denyButtonColor: '#0ea5e9', cancelButtonColor: '#334155' });
+            if (r.isDismissed) return; if (r.isDenied) s = null;
+        }
+        if (!s) {
+            const r = await Swal.fire({ title: 'Mulai Kuis Baru', showCancelButton: true, confirmButtonText: 'Mulai', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+                html: `<div class="text-left space-y-2 text-xs"><input id="pn-nama" class="field" placeholder="Nama kuis" value="${esc([...bankPilih].join(' + '))}"><label class="block text-slate-400 font-semibold">Poin per soal<input id="pn-poin" type="number" min="1" value="10" class="field mt-1"></label></div>`,
+                preConfirm: () => { const nama = document.getElementById('pn-nama').value.trim(); if (!nama) { Swal.showValidationMessage('Nama kuis wajib diisi'); return false; } return { nama, poin: Number(document.getElementById('pn-poin').value) > 0 ? Number(document.getElementById('pn-poin').value) : 1 }; } });
+            if (!r.isConfirmed) return;
+            const id = Date.now().toString(36), dd = timBaca();
+            dd.sesi.unshift({ id, nama: r.value.nama, tgl: new Date().toISOString(), poin: r.value.poin, soal: [], bank: [], selesai: false }); dd.aktif = id; timTulis(dd);
+            timB = { L: null, P: null }; timJ = { L: '', P: '' };
+        }
+        timView = 'soal'; timBank(soal); switchTab('tim');
+    }
+    async function bankHapus(id) {
+        if (!await konfirmasi('Hapus soal ini dari bank?', '', 'Ya, hapus')) return;
+        bankTulis(bankBaca().filter(q => q.id !== id)); renderBank();
+    }
+    async function bankHapusKat() {
+        const k = $('b-filter').value; if (k === '__semua__') return toast('Pilih satu kategori dulu', 'info');
+        if (!await konfirmasi('Hapus kategori "' + k + '"?', 'Semua soal di kategori ini ikut terhapus dari bank.', 'Ya, hapus')) return;
+        bankTulis(bankBaca().filter(q => q.kategori !== k)); renderBank();
+    }
+    function bankEkspor() {
+        const b = bankBaca(); if (!b.length) return toast('Bank soal masih kosong', 'info');
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([BANK_F].concat(b.map(q => BANK_F.map(f => q[f])))), 'Soal');
+        XLSX.writeFile(wb, 'bank-soal.xlsx');
+    }
+    async function timAmbilBank() {
+        const b = bankBaca();
+        if (!b.length) return galat(new Error('Bank soal masih kosong. Isi dulu lewat menu Bank Soal.'), 'Bank soal kosong');
+        const kat = [...new Set(b.map(q => q.kategori))];
+        const r = await Swal.fire({ title: 'Ambil dari Bank Soal', showCancelButton: true, confirmButtonText: 'Ambil Soal', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: `<div class="text-left space-y-2 text-xs"><p class="text-slate-400">Centang satu kategori saja, beberapa kategori untuk dicampur, atau semuanya.</p>
+                <label class="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950 border border-accent-500/40"><input type="checkbox" class="accent-emerald-500 w-4 h-4" onchange="document.querySelectorAll('.pk-kat').forEach(x => x.checked = this.checked)"><span class="flex-1 font-bold">Semua kategori</span><span class="text-slate-500">${b.length} soal</span></label>
+                ${kat.map((k, i) => `<label class="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950 border border-slate-700"><input type="checkbox" class="pk-kat accent-emerald-500 w-4 h-4" value="${i}"><span class="flex-1">${esc(k)}</span><span class="text-slate-500">${b.filter(q => q.kategori === k).length} soal</span></label>`).join('')}
+                <label class="block text-slate-400 font-semibold">Jumlah soal (kosongkan = semua)<input id="pk-jml" type="number" min="1" class="field mt-1"></label>
+                <label class="flex items-center gap-2"><input id="pk-acak" type="checkbox" class="accent-emerald-500 w-4 h-4"> Acak urutan soal</label></div>`,
+            preConfirm: () => {
+                const pilih = [...document.querySelectorAll('.pk-kat:checked')].map(x => kat[+x.value]);
+                if (!pilih.length) { Swal.showValidationMessage('Pilih minimal satu kategori'); return false; }
+                return { pilih, jml: Number(document.getElementById('pk-jml').value) || 0, acak: document.getElementById('pk-acak').checked };
+            } });
+        if (!r.isConfirmed) return;
+        let qs = b.filter(q => r.value.pilih.includes(q.kategori));
+        if (r.value.acak) qs = acakArray(qs);
+        if (r.value.jml > 0) qs = qs.slice(0, r.value.jml);
+        timBank(qs.map(q => ({ jenis: q.jenis, soal: q.soal, a: q.a, b: q.b, c: q.c, d: q.d, e: q.e, kunci: q.kunci })));
+    }
+    /* ---------- Tema, cadangan, layar skor, ringkasan dashboard ---------- */
+    const WARNA = {'zamrud': ['52 211 153', '16 185 129', '5 150 105', '4 120 87'], 'biru': ['56 189 248', '14 165 233', '2 132 199', '3 105 161'], 'ungu': ['167 139 250', '139 92 246', '124 58 237', '109 40 217'], 'mawar': ['251 113 133', '244 63 94', '225 29 72', '190 18 60'], 'jingga': ['251 191 36', '245 158 11', '217 119 6', '180 83 9'], 'sian': ['34 211 238', '6 182 212', '8 145 178', '14 116 144']};
+    function terapkanWarna(k) { const w = WARNA[k] || WARNA.zamrud, r = document.documentElement.style; ['--a400', '--a500', '--a600', '--a700'].forEach((v, i) => r.setProperty(v, w[i])); }
+    function pilihWarna(k) { db.settings.warna = k; saveDB(); terapkanWarna(k); toast('Warna diganti'); }
+    function cadangUnduh() {
+        const data = { app: APP.slug, versi: APP.version, tgl: new Date().toISOString(), pengaturan: { nama: db.settings.nama, warna: db.settings.warna || '' }, tim: timBaca(), bank: bankBaca(), lokal: localStorage.getItem(LK_KEY) ? lkBaca() : null };
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+        a.download = 'cadangan-ujian-kelas-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
+    function cadangPulihFile(ev) {
+        const f = ev.target.files[0]; ev.target.value = ''; if (!f) return;
+        const r = new FileReader();
+        r.onload = async () => {
+            let d; try { d = JSON.parse(r.result); } catch (e) { return galat(new Error('File bukan cadangan yang valid'), 'Gagal membaca'); }
+            if (!d || d.app !== APP.slug || !d.tim || !Array.isArray(d.bank)) return galat(new Error('File ini bukan cadangan aplikasi Ujian Kelas.'), 'Gagal membaca');
+            if (!await konfirmasi('Pulihkan data?', 'Kuis langsung, bank soal' + (d.lokal ? ', dan data ujian mode lokal' : '') + ' di perangkat ini akan diganti isi cadangan.', 'Ya, pulihkan')) return;
+            try { timTulis(d.tim); bankTulis(d.bank); if (d.lokal) lkTulis(d.lokal); } catch (e) { return galat(e); }
+            if (d.pengaturan) { db.settings.nama = d.pengaturan.nama || db.settings.nama; db.settings.warna = d.pengaturan.warna || ''; saveDB(); }
+            await Swal.fire({ icon: 'success', title: 'Data dipulihkan', confirmButtonColor: '#059669' }); location.reload();
+        };
+        r.readAsText(f);
+    }
+    function renderDashExtra() {
+        const t = timBaca().sesi.filter(x => x.selesai), tot = c => t.reduce((a, x) => a + timSkor(x, c), 0);
+        $('dash-extra').innerHTML = statCard('fa-box-archive', 'Soal di Bank', bankBaca().length, 'sky') + statCard('fa-people-group', 'Kuis Langsung Selesai', t.length) + statCard('fa-mars', 'Poin Laki-laki', tot('L'), 'sky') + statCard('fa-venus', 'Poin Perempuan', tot('P'), 'rose');
+    }
+    let layarBuka = false;
+    function timProyektor() {
+        if ($('sidebar').classList.contains('open')) toggleSidebar();
+        layarBuka = true; $('t-layar').classList.remove('hidden'); renderLayar();
+        try { if (document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
+    }
+    function tutupLayar() { layarBuka = false; $('t-layar').classList.add('hidden'); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} }
+    function renderLayar() {
+        if (!layarBuka) return;
+        const d = timBaca(), s = d.sesi.find(x => x.id === d.aktif) || d.sesi[0], box = $('t-layar');
+        if (!s) { box.innerHTML = '<div class="min-h-full flex items-center justify-center text-slate-400 text-xl">Belum ada kuis. Ketuk layar untuk kembali.</div>'; return; }
+        const cur = !s.selesai && s.bank && s.bank[s.soal.length], m = timMenang(s);
+        const panel = (c, nama, ikon, tx, bg) => `<div class="rounded-3xl border p-6 text-center ${bg} ${s.selesai && m === c ? 'ring-4 ring-amber-400' : ''}"><p class="text-lg md:text-2xl font-black uppercase ${tx}"><i class="fas ${ikon} mr-2"></i>${nama}</p><p class="text-7xl md:text-9xl font-black text-white leading-none mt-3">${timSkor(s, c)}</p><p class="text-slate-400 mt-3">${timBenar(s, c)} benar</p></div>`;
+        box.innerHTML = `<div class="max-w-5xl mx-auto space-y-6"><div class="text-center"><h2 class="text-2xl md:text-4xl font-black text-white">${esc(s.nama)}</h2><p class="text-slate-400 mt-1">${s.selesai ? (m === '=' ? 'Hasil akhir: SERI' : '<span class="text-amber-400 font-black text-xl"><i class="fas fa-crown mr-1"></i>' + NAMA_G[m] + ' menang!</span>') : 'Soal terjawab: ' + s.soal.length}</p></div>
+            <div class="grid grid-cols-2 gap-4 md:gap-8">${panel('L', 'Laki-laki', 'fa-mars', 'text-sky-400', 'bg-sky-500/10 border-sky-500/30')}${panel('P', 'Perempuan', 'fa-venus', 'text-rose-400', 'bg-rose-500/10 border-rose-500/30')}</div>
+            ${cur ? `<div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 md:p-8 space-y-4"><p class="text-xs font-bold uppercase text-accent-400 tracking-wider">Soal ${s.soal.length + 1}</p><p class="text-2xl md:text-4xl font-bold text-white leading-snug whitespace-pre-wrap break-words">${esc(cur.soal)}</p>${cur.jenis === 'PG' ? '<div class="space-y-2 text-xl md:text-3xl text-slate-200">' + LABEL.filter(L => cur[L.toLowerCase()]).map(L => `<p class="flex gap-3"><b class="text-accent-400">${L}.</b><span class="break-words min-w-0">${esc(cur[L.toLowerCase()])}</span></p>`).join('') + '</div>' : ''}</div>` : ''}
+            <p class="text-center text-xs text-slate-600">Ketuk layar untuk kembali</p></div>`;
+    }
+
+    const tandaJ = b => b ? '<i class="fas fa-circle-check text-emerald-400"></i>' : '<i class="fas fa-circle-xmark text-rose-400"></i>';
+    let timView = 'set', timManual = false;
+    function timLihat(v) {
+        timView = v;
+        ['soal', 'set', 'riw'].forEach(k => {
+            $('t-pane-' + k).classList.toggle('hidden', k !== v);
+            const on = k === v, b = $('tn-' + k);
+            b.className = 'text-xs font-bold px-3 py-2.5 rounded-xl border transition ' + (on ? 'border-accent-500 bg-accent-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200');
+        });
+        const main = document.querySelector('#view-guru main');
+        main.classList.toggle('tim-play', v === 'soal');
+        if (v !== 'soal') main.scrollTo({ top: 0 });
+        renderLayar();
+    }
+    const btnAlat = (fn, ikon, teks, cls) => `<button onclick="${fn}" class="${cls || 'bg-slate-800 hover:bg-slate-700 text-slate-200'} text-xs font-bold px-3 py-2.5 rounded-xl transition"><i class="fas ${ikon} mr-1.5"></i>${teks}</button>`;
+    function renderTim() {
+        const d = timBaca(), s = d.sesi.find(x => x.id === d.aktif), box = $('t-aktif');
+        const aktifSoal = $('t-pane-soal');
+        if (!s) {
+            box.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-center text-slate-500 gap-3"><i class="fas fa-circle-question text-4xl opacity-40"></i><p class="text-sm font-semibold">Belum ada kuis berjalan</p><p class="text-xs">Mulai kuis baru di menu Pengaturan.</p>' + btnAlat("timLihat('set')", 'fa-sliders', 'Buka Pengaturan', 'bg-accent-600 hover:bg-accent-500 text-white') + '</div>';
+            $('t-alat').innerHTML = '';
+            $('t-rincian').innerHTML = '';
+        } else {
+            const sk = c => timSkor(s, c), lead = sk('L') === sk('P') ? 'SERI' : (sk('L') > sk('P') ? 'Laki-laki' : 'Perempuan') + ' memimpin';
+            const cur = s.bank && s.bank[s.soal.length], M = (s.bank || []).length;
+            if (!timJ.L && !timJ.P) timAktif = 'L';
+            const pgSoal = !!cur && cur.jenis === 'PG';
+            const opsiPG = pgSoal ? LABEL.filter(L => cur[L.toLowerCase()]).map(L => `<button id="to-${L}" onclick="timKlik('${L}')" class="w-full text-left flex gap-2.5 items-center p-2.5 rounded-xl border border-slate-700 bg-slate-900 text-slate-200"><span id="tl-${L}" class="w-7 h-7 shrink-0 rounded-lg flex items-center justify-center text-xs font-black bg-slate-800 text-slate-400">${L}</span><span class="text-sm break-words min-w-0 flex-1 leading-snug">${esc(cur[L.toLowerCase()])}</span><span id="tc-${L}" class="shrink-0 flex gap-1"></span></button>`).join('') : '';
+            const teksCls = cur && cur.soal.length > 220 ? 'text-sm' : cur && cur.soal.length > 100 ? 'text-base' : 'text-lg';
+            const papan = (c, nama, tx, bg, ikon) => `<div class="rounded-2xl px-3 py-2 border ${bg} flex items-center justify-between gap-2 min-w-0"><div class="min-w-0"><p class="text-[10px] font-bold uppercase ${tx} truncate"><i class="fas ${ikon} mr-1"></i>${nama}</p><p class="text-[10px] text-slate-400">${timBenar(s, c)} benar</p></div><p class="text-3xl font-black text-slate-100 leading-none">${sk(c)}</p></div>`;
+            const blok = (c, nama, tx) => `<div class="space-y-2 min-w-0"><p class="text-[11px] font-bold ${tx}">${nama}</p>
+                <input id="t-j${c}" class="field" placeholder="Jawaban" oninput="timAuto()" autocomplete="off">
+                <div class="grid grid-cols-2 gap-2"><button id="tb-${c}y" onclick="timSet('${c}',true)" class="field text-center font-bold"><i class="fas fa-check mr-1"></i>Benar</button><button id="tb-${c}n" onclick="timSet('${c}',false)" class="field text-center font-bold"><i class="fas fa-xmark mr-1"></i>Salah</button></div></div>`;
+            const kepala = cur ? `<div class="flex items-center justify-between shrink-0"><span class="text-[10px] uppercase font-bold tracking-wider text-accent-400">Soal ${s.soal.length + 1} dari ${M}</span><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cur.jenis === 'PG' ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'}">${cur.jenis === 'PG' ? 'Pilihan Ganda' : 'Esai'}</span></div>`
+                : `<div class="shrink-0"><span class="text-[10px] uppercase font-bold tracking-wider text-accent-400">Soal ke-${s.soal.length + 1}</span>${M ? '<span class="text-[10px] text-slate-500 ml-2">(daftar soal habis, isi manual)</span>' : ''}</div>`;
+            const teks = cur ? `<p class="${teksCls} font-semibold text-slate-100 whitespace-pre-wrap break-words leading-snug shrink-0 max-h-[32%] overflow-y-auto">${esc(cur.soal)}</p>` : '';
+            const kosongTotal = !cur && !M && !timManual;
+            let tengah;
+            if (kosongTotal) tengah = `<div class="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3 px-2"><i class="fas fa-inbox text-4xl text-slate-600"></i><p class="text-sm font-bold text-slate-200">Kuis ini belum punya soal</p><p class="text-[11px] text-slate-400">Tambahkan soal dulu supaya tampil di sini.</p>
+                <div class="w-full max-w-xs space-y-2">${btnAlat('timAmbilBank()', 'fa-box-archive', 'Ambil dari Bank Soal', 'w-full bg-accent-600 hover:bg-accent-500 text-white')}${btnAlat("$('t-file').click()", 'fa-file-import', 'Impor File Soal', 'w-full bg-slate-800 hover:bg-slate-700 text-slate-200')}${btnAlat('timTambahManual()', 'fa-plus', 'Tulis Soal Manual', 'w-full bg-slate-800 hover:bg-slate-700 text-slate-200')}${btnAlat('timManual = true; renderTim()', 'fa-pen', 'Catat tanpa soal (soal dibacakan guru)', 'w-full bg-slate-800 hover:bg-slate-700 text-slate-300')}</div></div>`;
+            else if (pgSoal) tengah = `<div class="grid grid-cols-2 gap-2 shrink-0"><button id="tg-L" onclick="timGiliran('L')"></button><button id="tg-P" onclick="timGiliran('P')"></button></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 auto-rows-min content-start flex-1 min-h-0 overflow-y-auto">${opsiPG}</div>
+                <p id="t-status" class="text-[11px] text-slate-400 text-center shrink-0"></p>`;
+            else tengah = `${cur && cur.kunci ? `<p class="text-[11px] text-amber-300 shrink-0">Acuan: ${esc(cur.kunci)}</p>` : `<input id="t-kunci" class="field shrink-0" placeholder="Kunci jawaban (boleh kosong)" oninput="timAuto()" autocomplete="off">`}
+                <div class="grid grid-cols-2 gap-3 flex-1 min-h-0 overflow-y-auto content-start">${blok('L', 'Laki-laki', 'text-sky-400')}${blok('P', 'Perempuan', 'text-rose-400')}</div>`;
+            box.innerHTML = `<div class="h-full flex flex-col gap-2 min-h-0">
+                <div class="flex items-center justify-between gap-2 shrink-0">
+                    <div class="min-w-0"><h3 class="text-sm font-bold text-slate-100 truncate">${esc(s.nama)}</h3><p class="text-[10px] text-slate-400">${s.poin} poin/benar &bull; ${lead}</p></div>
+                    <div class="flex gap-2 shrink-0"><button onclick="timProyektor()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl" title="Tampil di proyektor"><i class="fas fa-tv"></i></button>
+                    <button onclick="timSelesai()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl"><i class="fas fa-flag-checkered mr-1"></i>Selesai</button></div></div>
+                <div class="grid grid-cols-2 gap-2 shrink-0">${papan('L', 'Laki-laki', 'text-sky-400', 'bg-sky-500/10 border-sky-500/30', 'fa-mars')}${papan('P', 'Perempuan', 'text-rose-400', 'bg-rose-500/10 border-rose-500/30', 'fa-venus')}</div>
+                <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex flex-col gap-2 flex-1 min-h-0">${kepala}${teks}${tengah}</div>
+                ${kosongTotal ? '' : '<button onclick="timSimpan()" class="w-full shrink-0 bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-sm px-4 py-3 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-floppy-disk mr-1.5"></i>Simpan &amp; Soal Berikutnya</button>'}</div>`;
+            timTombol();
+
+            // Pengaturan: alat soal untuk kuis berjalan
+            $('t-alat').innerHTML = `<div class="bg-slate-900 p-5 rounded-2xl border border-accent-500/40 space-y-3">
+                <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-list-check text-accent-400 mr-2"></i>Soal untuk: ${esc(s.nama)}</h3>
+                <p class="text-[11px] text-slate-400">${M} soal di daftar &bull; ${s.soal.length} sudah dijawab &bull; ${s.poin} poin per jawaban benar</p>
+                <div class="flex flex-wrap gap-2">${btnAlat("$('t-file').click()", 'fa-file-import', 'Impor Soal')}${btnAlat('unduhTemplate()', 'fa-download', 'Template')}${btnAlat('timAmbilBank()', 'fa-box-archive', 'Ambil dari Bank', 'bg-accent-600 hover:bg-accent-500 text-white')}${btnAlat('timTambahManual()', 'fa-plus', 'Soal Manual')}${btnAlat('timProyektor()', 'fa-tv', 'Papan Skor Layar')}</div>
+                ${btnAlat("timLihat('soal')", 'fa-play', 'Ke Layar Soal', 'w-full bg-gradient-to-r from-accent-600 to-accent-500 text-white')}</div>`;
+
+            // Riwayat: rincian jawaban kuis berjalan
+            const daftar = s.soal.slice().reverse().map(q => `<tr><td class="px-3 py-2 text-center text-slate-400">${q.no}</td><td class="px-3 py-2 text-slate-300 max-w-[10rem]"><p class="truncate" title="${esc(q.soal)}">${esc(q.soal) || '—'}</p>${q.kunci ? `<p class="text-[10px] text-slate-500">Kunci: ${esc(q.kunci)}</p>` : ''}</td>
+                <td class="px-3 py-2">${tandaJ(q.bL)} ${esc(timJTeks(q, 'L')) || '—'}</td><td class="px-3 py-2">${tandaJ(q.bP)} ${esc(timJTeks(q, 'P')) || '—'}</td>
+                <td class="px-3 py-2 text-center text-[10px] ${normJ(q.jL) && normJ(q.jL) === normJ(q.jP) ? 'text-amber-400' : 'text-slate-500'}">${normJ(q.jL) && normJ(q.jL) === normJ(q.jP) ? 'Sama' : 'Beda'}</td>
+                <td class="px-3 py-2 text-right"><button onclick="timHapusSoal(${q.no})" class="text-slate-600 hover:text-red-400" title="Hapus soal"><i class="fas fa-trash-can"></i></button></td></tr>`).join('');
+            $('t-rincian').innerHTML = s.soal.length ? `<h3 class="text-sm font-bold text-slate-100 pt-2">Rincian jawaban: ${esc(s.nama)}</h3><div class="overflow-x-auto rounded-xl border border-slate-800"><table class="w-full text-xs"><thead class="bg-slate-950 text-slate-500 uppercase text-[10px]"><tr><th class="px-3 py-2">#</th><th class="px-3 py-2 text-left">Soal</th><th class="px-3 py-2 text-left">Laki-laki</th><th class="px-3 py-2 text-left">Perempuan</th><th class="px-3 py-2"></th><th></th></tr></thead><tbody class="divide-y divide-slate-800">${daftar}</tbody></table></div>` : '';
+        }
+        const sel = $('t-filter'), lama = sel.value;
+        sel.innerHTML = '<option value="__semua__">Semua kuis</option>' + [...new Set(d.sesi.map(x => x.nama))].map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+        if ([...sel.options].some(o => o.value === lama)) sel.value = lama;
+        timLihat(timView);
+        renderTimRiwayat();
+    }
+    function timDaftar() { const d = timBaca(), f = $('t-filter').value; return { d, list: d.sesi.filter(x => f === '__semua__' || x.nama === f) }; }
+    function renderTimRiwayat() {
+        renderLayar();
+        const { d, list } = timDaftar(), box = $('t-riwayat');
+        if (!list.length) { box.innerHTML = '<div class="text-center py-12 text-slate-500"><i class="fas fa-inbox text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">Belum ada kuis</p><p class="text-xs mt-1">Isi nama kuis di atas lalu tekan Mulai Kuis.</p></div>'; return; }
+        const tamat = list.filter(x => x.selesai), tot = c => tamat.reduce((a, x) => a + timSkor(x, c), 0), mn = c => tamat.filter(x => timMenang(x) === c).length;
+        const rekap = tamat.length ? `<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">${statCard('fa-mars', 'Total Poin Laki-laki', tot('L'), 'sky')}${statCard('fa-venus', 'Total Poin Perempuan', tot('P'), 'rose')}${statCard('fa-trophy', 'Kuis Dimenangkan L', mn('L'), 'sky')}${statCard('fa-trophy', 'Kuis Dimenangkan P', mn('P'), 'rose')}</div>
+            <div class="bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-4 text-center text-sm font-black text-white"><i class="fas fa-trophy text-amber-400 mr-2"></i>${tot('L') === tot('P') ? 'Total poin SERI' : (tot('L') > tot('P') ? 'Laki-laki' : 'Perempuan') + ' unggul dengan ' + Math.max(tot('L'), tot('P')) + ' poin lawan ' + Math.min(tot('L'), tot('P'))}</div>` : '';
+        box.innerHTML = rekap + `<div class="overflow-x-auto rounded-2xl border border-slate-800 mt-4"><table class="w-full text-xs"><thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider"><tr><th class="px-4 py-3 text-left">Kuis</th><th class="px-3 py-3">Soal</th><th class="px-3 py-3 text-sky-400">L</th><th class="px-3 py-3 text-rose-400">P</th><th class="px-3 py-3">Pemenang</th><th class="px-3 py-3"></th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${list.map(x => `<tr><td class="px-4 py-3"><p class="font-semibold text-slate-100">${esc(x.nama)}</p><p class="text-[10px] text-slate-500">${fmtWaktu(x.tgl)}</p></td><td class="px-3 py-3 text-center text-slate-400">${x.soal.length}</td>
+                <td class="px-3 py-3 text-center font-black text-slate-100">${timSkor(x, 'L')}</td><td class="px-3 py-3 text-center font-black text-slate-100">${timSkor(x, 'P')}</td>
+                <td class="px-3 py-3 text-center">${x.selesai ? `<b class="text-amber-400">${NAMA_G[timMenang(x)]}</b>` : '<span class="text-slate-500">Berjalan</span>'}</td>
+                <td class="px-3 py-3 text-right whitespace-nowrap">${x.selesai || x.id === d.aktif ? '' : `<button onclick="timLanjut('${x.id}')" class="text-slate-400 hover:text-accent-400 px-2" title="Lanjutkan"><i class="fas fa-play"></i></button>`}<button onclick="timHapusSesi('${x.id}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus"><i class="fas fa-trash-can"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+    }
+    function eksporTim() {
+        const { list } = timDaftar(); if (!list.length) return toast('Belum ada data untuk diekspor', 'info');
+        const a = [['Kuis', 'Tanggal', 'Jumlah Soal', 'Poin/Soal', 'Skor Laki-laki', 'Skor Perempuan', 'Pemenang', 'Status']], b = [['Kuis', 'No', 'Jenis', 'Soal', 'Kunci', 'Jawaban Laki-laki', 'Laki-laki Benar?', 'Jawaban Perempuan', 'Perempuan Benar?']];
+        list.forEach(x => {
+            a.push([x.nama, x.tgl.slice(0, 10), x.soal.length, x.poin, timSkor(x, 'L'), timSkor(x, 'P'), x.selesai ? NAMA_G[timMenang(x)] : '', x.selesai ? 'Selesai' : 'Berjalan']);
+            x.soal.forEach(q => b.push([x.nama, q.no, q.jenis || '', q.soal || '', q.kunci, timJTeks(q, 'L'), q.bL ? 'Ya' : 'Tidak', timJTeks(q, 'P'), q.bP ? 'Ya' : 'Tidak']));
+        });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(a), 'Ringkasan'); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(b), 'Detail Jawaban');
+        XLSX.writeFile(wb, 'kuis-langsung-laki-perempuan.xlsx');
+    }
+
+    /* ============================================================
+       ADU LAKI-LAKI vs PEREMPUAN
+       Jenis kelamin disimpan sebagai penanda " [L]" / " [P]" di akhir nama saat siswa mengumpulkan,
+       jadi skrip Google Sheets tidak perlu diubah. Di panel guru penanda ini dibaca lalu disembunyikan.
+       ============================================================ */
+    const parseJK = h => { const m = String(h.nama).match(/^(.*?)\s*\[([LP])\]\s*$/); return m ? Object.assign({}, h, { nama: m[1], jk: m[2] }) : Object.assign({}, h, { jk: '' }); };
+    async function ambilHasil(kode) { const r = await api('getResults', { kode }); r.hasil = r.hasil.map(parseJK); return r; }
+    const badgeJK = jk => jk ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${jk === 'L' ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30' : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'}">${jk}</span>` : '<span class="text-slate-600">—</span>';
+    const nilaiKosong = h => h.nilai_akhir === null || h.nilai_akhir === undefined || h.nilai_akhir === '';
+    const aduCache = {}; let aduRows = [];
+
+    async function renderAdu(paksa) {
+        const sel = $('a-kuis'), box = $('a-isi');
+        let list;
+        try { list = await muatUjian(!!paksa); } catch (e) { box.innerHTML = pesanGalat(e); return; }
+        if (!list.length) { sel.innerHTML = '<option value="">(belum ada kuis)</option>'; box.innerHTML = '<div class="text-center py-16 text-slate-500"><i class="fas fa-inbox text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">Belum ada kuis</p></div>'; return; }
+        const lama = sel.value;
+        sel.innerHTML = '<option value="__semua__">Semua kuis</option>' + [...new Set(list.map(u => u.judul))].map(j => `<option value="${esc(j)}">${esc(j)}</option>`).join('');
+        if ([...sel.options].some(o => o.value === lama)) sel.value = lama;
+        const pilih = sel.value === '__semua__' ? list : list.filter(u => u.judul === sel.value);
+        box.innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>';
+        try { await Promise.all(pilih.map(async u => { if (paksa || !aduCache[u.kode]) aduCache[u.kode] = (await ambilHasil(u.kode)).hasil; })); }
+        catch (e) { box.innerHTML = pesanGalat(e); return; }
+        aduRows = pilih.map(u => ({ judul: u.judul, hasil: aduCache[u.kode] || [] }));
+        renderAduHasil();
+    }
+    // Satu baris per siswa: bila ikut beberapa kuis, nilainya dirata-rata supaya tidak dihitung ganda.
+    function aduSiswa() {
+        const m = new Map();
+        aduRows.forEach(r => r.hasil.forEach(h => {
+            if (nilaiKosong(h)) return;
+            const k = String(h.nama).toLowerCase().replace(/\s+/g, ' ').trim() + '|' + h.jk;
+            const x = m.get(k) || { nama: h.nama, jk: h.jk, nilai: [], kuis: [] };
+            x.nilai.push(Number(h.nilai_akhir)); x.kuis.push(r.judul); m.set(k, x);
+        }));
+        return [...m.values()].map(x => Object.assign(x, { skor: x.nilai.reduce((a, b) => a + b, 0) / x.nilai.length })).sort((a, b) => b.skor - a.skor);
+    }
+    function aduGrup(ss, c) {
+        const a = ss.filter(x => x.jk === c).map(x => x.skor), t = a.reduce((x, y) => x + y, 0);
+        return { n: a.length, rata: a.length ? t / a.length : null, max: a.length ? Math.max(...a) : null, min: a.length ? Math.min(...a) : null, total: t };
+    }
+    function renderAduHasil() {
+        const box = $('a-isi'), ss = aduSiswa(), mk = $('a-metrik').value;
+        const semua = aduRows.flatMap(r => r.hasil), tanpaJK = semua.filter(h => !h.jk).length, menunggu = semua.filter(nilaiKosong).length;
+        if (!ss.length) { box.innerHTML = '<div class="text-center py-16 text-slate-500"><i class="fas fa-inbox text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">Belum ada nilai untuk diadu</p></div>'; return; }
+        const G = { L: aduGrup(ss, 'L'), P: aduGrup(ss, 'P') }, lbl = { rata: 'Rata-rata', max: 'Nilai tertinggi', total: 'Total nilai' }[mk];
+        let verdict, menang = '';
+        if (!G.L.n || !G.P.n) verdict = `Belum bisa diadu: belum ada nilai ${!G.L.n && !G.P.n ? 'laki-laki maupun perempuan' : !G.L.n ? 'laki-laki' : 'perempuan'}.`;
+        else if (Math.abs(G.L[mk] - G.P[mk]) < 0.005) verdict = `SERI! ${lbl} sama: ${fmtNilai(G.L[mk])}`;
+        else { menang = G.L[mk] > G.P[mk] ? 'L' : 'P'; verdict = `${menang === 'L' ? 'Laki-laki' : 'Perempuan'} unggul! ${lbl}: ${fmtNilai(G[menang][mk])} lawan ${fmtNilai(G[menang === 'L' ? 'P' : 'L'][mk])}`; }
+        const maks = Math.max(G.L[mk] || 0, G.P[mk] || 0) || 1;
+        const kartu = (c, nama, ikon, tx, bg, bar) => { const d = G[c];
+            return `<div class="bg-slate-900 p-5 rounded-2xl border ${menang === c ? 'border-amber-500/70 shadow-lg shadow-amber-500/10' : 'border-slate-800'} space-y-3">
+                <div class="flex items-center justify-between"><h4 class="text-sm font-black ${tx}"><i class="fas ${ikon} mr-2"></i>${nama}</h4>${menang === c ? '<i class="fas fa-crown text-amber-400"></i>' : ''}</div>
+                <p class="text-4xl font-black text-slate-100">${fmtNilai(d[mk])}</p>
+                <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full ${bar}" style="width:${d.n ? Math.round((d[mk] || 0) / maks * 100) : 0}%"></div></div>
+                <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-400"><p>Siswa: <b class="text-slate-200">${d.n}</b></p><p>Rata-rata: <b class="text-slate-200">${fmtNilai(d.rata)}</b></p><p>Tertinggi: <b class="text-slate-200">${fmtNilai(d.max)}</b></p><p>Terendah: <b class="text-slate-200">${fmtNilai(d.min)}</b></p></div></div>`; };
+        const baris = ss.slice(0, 10).map((x, i) => `<tr class="hover:bg-slate-800/60">
+            <td class="px-4 py-3 text-center font-black ${i === 0 ? 'text-amber-400' : 'text-slate-400'}">${i === 0 ? '<i class="fas fa-crown"></i>' : i + 1}</td>
+            <td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-3 text-center">${badgeJK(x.jk)}</td>
+            <td class="px-3 py-3 text-slate-400">${x.nilai.length > 1 ? x.nilai.length + ' kuis (rata-rata)' : esc(x.kuis[0])}</td>
+            <td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(x.skor)}</td></tr>`).join('');
+        box.innerHTML = `<div class="bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-5 text-center"><i class="fas fa-trophy text-amber-400 text-2xl mb-2"></i><p class="text-base font-black text-white">${verdict}</p></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${kartu('L', 'Laki-laki', 'fa-mars', 'text-sky-400', '', 'bg-sky-500') + kartu('P', 'Perempuan', 'fa-venus', 'text-rose-400', '', 'bg-rose-500')}</div>
+            <h3 class="text-sm font-bold text-slate-100 pt-2"><i class="fas fa-ranking-star text-accent-400 mr-2"></i>10 Nilai Tertinggi</h3>
+            <div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider"><tr><th class="px-4 py-3">#</th><th class="px-3 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3 text-left">Kuis</th><th class="px-3 py-3">Nilai</th></tr></thead><tbody class="divide-y divide-slate-800 bg-slate-900">${baris}</tbody></table></div>
+            ${tanpaJK ? `<p class="text-[11px] text-slate-500"><i class="fas fa-circle-info mr-1"></i>${tanpaJK} jawaban lama belum punya data jenis kelamin, jadi tidak ikut dihitung di adu L vs P.</p>` : ''}
+            ${menunggu ? `<p class="text-[11px] text-amber-400"><i class="fas fa-hourglass-half mr-1"></i>${menunggu} jawaban belum dihitung karena esainya belum Anda nilai.</p>` : ''}`;
+    }
+    function eksporAdu() {
+        const ss = aduSiswa();
+        if (!ss.length) return toast('Belum ada data untuk diekspor', 'info');
+        const rows = [['Peringkat', 'Nama', 'JK', 'Jumlah Kuis', 'Nilai (rata-rata)']];
+        ss.forEach((x, i) => rows.push([i + 1, x.nama, x.jk, x.nilai.length, Math.round(x.skor * 10) / 10]));
+        const ring = [['Kelompok', 'Siswa', 'Rata-rata', 'Tertinggi', 'Terendah', 'Total']];
+        [['Laki-laki', 'L'], ['Perempuan', 'P']].forEach(([n, c]) => { const d = aduGrup(ss, c); ring.push([n, d.n, d.rata === null ? '' : Math.round(d.rata * 10) / 10, d.max ?? '', d.min ?? '', Math.round(d.total * 10) / 10]); });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ring), 'Ringkasan');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Peringkat');
+        XLSX.writeFile(wb, 'adu-laki-perempuan.xlsx');
+    }
+
+    function renderPengaturan() {
+        $('set-nama').value = db.settings.nama;
+        $('set-url').value = db.settings.scriptId ? scriptUrl(db.settings.scriptId) : '';
+        $('set-tautan').value = db.settings.scriptId ? tautanSiswa('') : '';
+        $('app-ver').textContent = APP.version;
+    }
+    function simpanPengaturan() {
+        db.settings.nama = $('set-nama').value.trim() || DEFAULT_DB.settings.nama;
+        saveDB(); $('side-nama').textContent = db.settings.nama; $('landing-nama').textContent = db.settings.nama; toast('Pengaturan disimpan');
+    }
+    async function simpanSkrip() {
+        const id = extractId($('set-url').value);
+        if (!id) return galat(new Error('Alamat skrip belum benar (berakhiran /exec).'), 'Alamat skrip');
+        loading('Menguji koneksi...');
+        try {
+            await api('ping', {}, id);
+            Swal.close();
+            db.settings.scriptId = id; saveDB(); cache.ujian = null;
+            renderPengaturan(); toast(fbAktif(id) ? 'Terhubung ke Firebase' : 'Terhubung ke Google Sheets');
+        } catch (e) { Swal.close(); galat(e, 'Koneksi gagal'); }
+    }
+
+    /* ============================================================
+       PWA: pasang aplikasi, status jaringan, service worker
+       ============================================================ */
+    let deferredInstall = null;
+    const tombolInstall = show => ['btn-install', 'btn-install-landing'].forEach(i => $(i).classList.toggle('hidden', !show));
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; tombolInstall(true); });
+    window.addEventListener('appinstalled', () => { deferredInstall = null; tombolInstall(false); toast('Aplikasi terpasang'); });
+    async function installApp() { if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; tombolInstall(false); }
+
+    const updateNet = () => { $('net-badge').classList.toggle('hidden', navigator.onLine); $('u-net').classList.toggle('hidden', navigator.onLine); };
+    window.addEventListener('online', updateNet); window.addEventListener('offline', updateNet);
+
+    if ('serviceWorker' in navigator) {
+        const hadController = !!navigator.serviceWorker.controller; let muatUlang = false;
+        window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
+            const cek = () => reg.update().catch(() => {});
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) cek(); });
+            setInterval(cek, 30 * 60 * 1000);
+        }).catch(() => {}));
+        // Versi baru aktif -> muat ulang otomatis satu kali
+        navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !muatUlang) { muatUlang = true; location.reload(); } });
+    }
+
+    /* ============================================================
+       INISIALISASI
+       ============================================================ */
+    function tick() { $('live-clock').textContent = new Date().toLocaleTimeString('en-GB'); }
+    function bacaTautan() {
+        const p = new URLSearchParams(location.search);
+        const s = extractId(p.get('s'));
+        if (s && s !== db.settings.scriptId) { db.settings.scriptId = s; saveDB(); }
+        return (p.get('kode') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    }
+    function init() {
+        terapkanWarna(db.settings.warna);
+        const kode = bacaTautan();
+        $('side-nama').textContent = db.settings.nama;
+        $('landing-nama').textContent = db.settings.nama;
+        if (attempt) {
+            // Ujian yang belum selesai (halaman dimuat ulang): lanjutkan, atau kirim otomatis bila waktu habis.
+            tampilUjian();
+            return;
+        }
+        if (kode) { $('s-kode').value = kode; showView('siswa'); }
+        else showView('landing');
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+        init(); updateNet(); tick(); setInterval(tick, 1000);
+        setTimeout(() => { const s = $('splash-screen'); s.classList.add('fade-out'); setTimeout(() => s.style.display = 'none', 500); }, 600);
+    });
+    </script>
+</body>
+</html>
