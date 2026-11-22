@@ -799,7 +799,7 @@
                                 <li>Buka <b class="text-slate-200">Kelola Ujian</b>, isi judul dan durasi, lalu impor soal dari Excel/CSV (atau pakai Bank Soal). Unduh template bila perlu.</li>
                                 <li>Simpan ujian. Ujian baru berstatus <b class="text-slate-200">Tutup</b>; buka saat kelas siap dimulai.</li>
                                 <li>Bagikan tautan siswa dari Pengaturan atau dari kartu ujian. Siswa masuk dengan <b class="text-slate-200">kode ujian, nomor absen, dan satu kata dari nama</b> (depan, tengah, atau belakang). Absen dan nama harus sama dengan menu Data Siswa; bila beda, siswa tidak bisa masuk. Daftar siswa disalin ke ujian saat <b class="text-slate-200">Simpan Ujian</b> dan setiap kali ujian <b class="text-slate-200">Dibuka</b>, jadi isi Data Siswa dulu (lengkap dengan absen dan L/P). Berlaku untuk Firebase dan Mode Lokal; ujian tanpa daftar siswa memakai login lama.</li>
-                                <li>Lihat nilai di <b class="text-slate-200">Hasil &amp; Nilai</b>. Soal esai dinilai lewat ikon mata; ikon putar-balik memberi izin perbaikan: nilai lama disimpan, siswa boleh mengerjakan ulang, dan nilai yang dipakai adalah yang paling besar. Tanpa izin guru, siswa yang sudah mengumpulkan tidak bisa masuk lagi.</li>
+                                <li>Lihat nilai di <b class="text-slate-200">Hasil &amp; Nilai</b>. Soal esai dinilai lewat ikon mata; ikon putar-balik memberi izin perbaikan: nilai lama disimpan, siswa boleh mengerjakan ulang, dan nilai yang dipakai adalah yang paling besar. Siswa yang sudah mengumpulkan tidak bisa masuk ke soal lagi; ia bisa menekan Ajukan Remedial, lalu permintaannya muncul di menu Rilis Nilai (ACC) dan di lencana menu. Setelah Anda ACC, ia bisa ujian lagi, berapa kali pun, dan nilai tertinggi yang dipakai.</li>
                             </ol>
                         </details>
                         <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
@@ -909,6 +909,7 @@
     const PIN_KEY = APP.slug + '_pin';
     const ATT_KEY = APP.slug + '_attempt';
     const KELUAR_KEY = APP.slug + '_keluar'; // permintaan keluar ujian (mode lokal)
+    const REMEDIAL_KEY = APP.slug + '_remedial'; // permintaan remedial siswa (mode lokal)
     const RECALL_KEY = APP.slug + '_recall'; // attempt yang menunggu acc guru untuk lanjut
 
     let db = loadDB();
@@ -1119,9 +1120,10 @@
                 if (!nama || !absen) return { ok: true, sudah: false };
                 if (Array.isArray(us.data().siswa) && us.data().siswa.length) { const k = cekKirim(us.data().siswa, nama, absen); nama = k.nama; absen = k.absen; }
                 const did = kode + '__' + fbSlug(nama) + '__' + fbSlug(absen);
-                const m = await fs.getDoc(ref('sudah', did)); if (m.exists()) return { ok: true, sudah: true };
-                try { const n = await fs.getDoc(ref('nilai', did)); if (n.exists()) return { ok: true, sudah: true }; } catch (e) {}
-                return { ok: true, sudah: false };
+                const m = await fs.getDoc(ref('sudah', did)); if (!m.exists()) return { ok: true, sudah: false };
+                let menunggu = false;
+                try { const rc = await fs.getDoc(ref('recall', did)); menunggu = rc.exists() && rc.data().tipe === 'remedial'; } catch (e) {}
+                return { ok: true, sudah: true, menunggu };
             } catch (e) { return { ok: true, sudah: false }; }
         }
 
@@ -1345,6 +1347,18 @@
             });
             return { ok: true };
         }
+        if (action === 'mintaRemedial') {
+            // Siswa yang sudah punya nilai mengajukan ujian ulang (remedial); guru memberi ACC di menu Rilis Nilai
+            const kode = lkKode(b.kode); if (!kode) throw new Error('Ujian tidak ditemukan.');
+            const us = await fs.getDoc(ref('ujian', kode)); if (!us.exists()) throw new Error('Ujian tidak ditemukan.');
+            let nama = String(b.nama || '').replace(/\s+/g, ' ').trim().slice(0, 60), absen = String(b.absen || '').trim().slice(0, 10);
+            if (Array.isArray(us.data().siswa) && us.data().siswa.length) { const k = cekKirim(us.data().siswa, nama, absen); nama = k.nama; absen = k.absen; }
+            const did = kode + '__' + fbSlug(nama) + '__' + fbSlug(absen);
+            try {
+                await fs.setDoc(ref('recall', did), { hasilId: did, tipe: 'remedial', kode, nama: nama.replace(/\s*\[[LP]\]\s*$/, ''), absen, judul: String(b.judul || '').slice(0, 150), waktu: new Date().toISOString(), status: 'menunggu' });
+            } catch (e) { if (e.code !== 'permission-denied') throw e; /* sudah pernah diajukan */ }
+            return { ok: true };
+        }
         if (action === 'cekRecallOk') {
             // Siswa cek apakah recall sudah disetujui guru (Rules: siswa boleh get satu dokumen)
             const docId = String(b.hasilId || '');
@@ -1538,7 +1552,9 @@
             const kode = lkKode(b.kode), ex = lkEx(d, kode); if (!ex) return { ok: true, sudah: false };
             let nama = String(b.nama || '').replace(/\s+/g, ' ').trim().slice(0, 60), absen = String(b.absen || '').trim().slice(0, 10);
             try { if (Array.isArray(ex.ujian.siswa) && ex.ujian.siswa.length) { const k = cekKirim(ex.ujian.siswa, nama, absen); nama = k.nama; absen = k.absen; } } catch (e) { return { ok: true, sudah: false }; }
-            return { ok: true, sudah: d.hasil.some(h => h.kode === kode && lkNorm(h.nama) === lkNorm(nama) && String(h.absen) === absen) };
+            const sdh = d.hasil.some(h => h.kode === kode && lkNorm(h.nama) === lkNorm(nama) && String(h.absen) === absen);
+            let mg = false; try { mg = Object.values(JSON.parse(localStorage.getItem(REMEDIAL_KEY) || '{}')).some(x => x.kode === kode && lkNorm(x.namaRaw) === lkNorm(nama) && String(x.absen) === absen); } catch (e) {}
+            return { ok: true, sudah: sdh, menunggu: sdh && mg };
         }
 
         if (action === 'submit') {
@@ -1677,6 +1693,17 @@
             // Sudah ditangani langsung oleh mintaLanjutKerjakan() via localStorage
             return { ok: true };
         }
+        if (action === 'mintaRemedial') {
+            const kode = lkKode(b.kode), d = lkBaca(), ex = lkEx(d, kode); if (!ex) throw new Error('Ujian tidak ditemukan.');
+            let nama = String(b.nama || '').replace(/\s+/g, ' ').trim().slice(0, 60), absen = String(b.absen || '').trim().slice(0, 10);
+            if (Array.isArray(ex.ujian.siswa) && ex.ujian.siswa.length) { const k = cekKirim(ex.ujian.siswa, nama, absen); nama = k.nama; absen = k.absen; }
+            const h = d.hasil.find(x => x.kode === kode && lkNorm(x.nama) === lkNorm(nama) && String(x.absen) === absen);
+            if (!h) throw new Error('Data nilai Anda tidak ditemukan.');
+            let rm = {}; try { rm = JSON.parse(localStorage.getItem(REMEDIAL_KEY) || '{}'); } catch (e) {}
+            rm[h.id] = { hasilId: h.id, tipe: 'remedial', kode, namaRaw: nama, nama: nama.replace(/\s*\[[LP]\]\s*$/, ''), absen, judul: String(b.judul || ''), waktu: new Date().toISOString(), status: 'menunggu' };
+            localStorage.setItem(REMEDIAL_KEY, JSON.stringify(rm));
+            return { ok: true };
+        }
         if (action === 'cekRecallOk') {
             const rc = (() => { try { return JSON.parse(localStorage.getItem(RECALL_KEY) || 'null'); } catch (e) { return null; } })();
             return { ok: true, disetujui: rc && rc.status === 'disetujui', data: rc };
@@ -1699,6 +1726,7 @@
             const rc = (() => { try { return JSON.parse(localStorage.getItem(RECALL_KEY) || 'null'); } catch (e) { return null; } })();
             const daftar = (rc && rc.status === 'menunggu' && rc.attempt && rc.attempt.kode === lkKode(b.kode)) ? [rc] : [];
             const k = kl(); if (k && k.status === 'menunggu' && k.kode === lkKode(b.kode)) daftar.push(k);
+            try { Object.values(JSON.parse(localStorage.getItem(REMEDIAL_KEY) || '{}')).forEach(x => { if (x.kode === lkKode(b.kode)) daftar.push(x); }); } catch (e) {}
             return { ok: true, daftar };
         }
         if (action === 'accKeluar' || action === 'tolakKeluar') {
@@ -1718,7 +1746,11 @@
             return { ok: true };
         }
         if (action === 'tolakLanjut') {
-            try { localStorage.removeItem(RECALL_KEY); } catch (e) {}
+            try {
+                const rc = JSON.parse(localStorage.getItem(RECALL_KEY) || 'null');
+                if (rc && (!b.hasilId || String(rc.hasilId) === String(b.hasilId))) localStorage.removeItem(RECALL_KEY);
+                const rm = JSON.parse(localStorage.getItem(REMEDIAL_KEY) || '{}'); delete rm[String(b.hasilId)]; localStorage.setItem(REMEDIAL_KEY, JSON.stringify(rm));
+            } catch (e) {}
             return { ok: true };
         }
         throw new Error('Aksi recall tidak dikenal: ' + action);
@@ -2096,11 +2128,20 @@
             nama = c.siswa.n; absen = String(c.siswa.a); jk = c.siswa.j || jkPilih;   // JK dari daftar kelas; bila kosong pakai pilihan siswa
         }
         if (!jk) return galat(new Error('Pilih jenis kelamin: Laki-laki atau Perempuan, lalu tekan Mulai Ujian lagi.'), 'Data belum lengkap');
-        // Sudah pernah mengumpulkan: tidak boleh masuk lagi kecuali guru menghapus hasilnya (izin remedial)
-        try {
-            const cs = await api('cekSudah', { kode, nama: jk ? nama.slice(0, 54) + ' [' + jk + ']' : nama, absen });
-            if (cs && cs.sudah) return Swal.fire({ icon: 'warning', title: 'Anda sudah mengerjakan ujian ini', text: 'Nilai Anda sudah tercatat, jadi Anda tidak boleh masuk ke soal lagi. Bila ingin memperbaiki nilai, minta izin guru dulu. Setelah guru mengizinkan, nilai yang dipakai adalah yang paling besar.', confirmButtonText: 'Mengerti', confirmButtonColor: '#059669' });
-        } catch (e) { /* server lama / tidak didukung: pengecekan saat kirim tetap menolak pengiriman ganda */ }
+        // Sudah pernah mengumpulkan: tidak boleh masuk ke soal. Siswa bisa mengajukan remedial; baru boleh ujian lagi setelah guru ACC.
+        const namaCek = jk ? nama.slice(0, 54) + ' [' + jk + ']' : nama;
+        let cs = null;
+        try { cs = await api('cekSudah', { kode, nama: namaCek, absen }); } catch (e) { /* server lama / tidak didukung: pengecekan saat kirim tetap menolak pengiriman ganda */ }
+        if (cs && cs.sudah) {
+            if (cs.menunggu) return Swal.fire({ icon: 'info', title: 'Permintaan remedial sudah dikirim', text: 'Tunggu guru memberi ACC. Setelah di-ACC, masuk lagi dengan data yang sama untuk mengerjakan ujian ulang.', confirmButtonText: 'Mengerti', confirmButtonColor: '#059669' });
+            const rr = await Swal.fire({ icon: 'warning', title: 'Anda sudah mengerjakan ujian ini', text: 'Nilai Anda sudah tercatat, jadi tidak boleh masuk ke soal lagi. Bila ingin memperbaiki nilai, ajukan remedial ke guru. Jika di-ACC, Anda boleh ujian lagi dan nilai yang dipakai adalah yang paling besar.', showCancelButton: true, confirmButtonText: 'Ajukan Remedial', cancelButtonText: 'Tutup', confirmButtonColor: '#059669', cancelButtonColor: '#334155' });
+            if (rr.isConfirmed) {
+                loading('Mengirim permintaan...');
+                try { await recallApi('mintaRemedial', { kode, nama: namaCek, absen, judul: u.judul }); Swal.close(); Swal.fire({ icon: 'success', title: 'Permintaan terkirim', text: 'Guru akan menerima pemberitahuan. Setelah di-ACC, masuk lagi untuk mengerjakan ujian ulang.', confirmButtonColor: '#059669' }); }
+                catch (e) { Swal.close(); galat(e, 'Gagal mengirim permintaan'); }
+            }
+            return;
+        }
         if (r.belum) { if (!await tungguJadwal(u, nama, absen)) return; return mulaiUjian(true); }   // belum waktunya: hitung mundur, lalu mulai otomatis
         const jadwalMs = u.jadwal ? Date.parse(u.jadwal) : 0, akhirJadwal = jadwalMs + u.durasi * 60000;
         const sisaMs = jadwalMs ? akhirJadwal - Date.now() : u.durasi * 60000, telatMs = jadwalMs ? Math.max(0, Date.now() - jadwalMs) : 0;
@@ -4227,6 +4268,19 @@ service cloud.firestore {
                     <button onclick="rlKeluar('${hk}', true)" class="bg-rose-500 hover:bg-rose-400 text-white text-[11px] font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-check mr-1"></i>ACC Keluar</button>
                 </div></div>`;
                 }
+                if (rc.tipe === 'remedial') {
+                    const hr = esc(rc.hasilId || ''), hh = rlData.hasil.find(x => String(x.id) === String(rc.hasilId));
+                    return `<div class="bg-sky-500/10 border border-sky-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div class="flex-1">
+                    <p class="text-xs font-bold text-sky-300"><i class="fas fa-pen-to-square mr-1.5"></i>Siswa mengajukan ujian ulang (REMEDIAL)</p>
+                    <p class="text-[11px] text-slate-400 mt-1">Siswa sudah punya nilai${hh ? ' <b class="text-slate-200">' + fmtNilai(hh.nilai_akhir) + '</b>' : ''} dan ingin memperbaikinya. Bila di-ACC, nilai lama disimpan dan siswa bisa ujian lagi. Nilai yang dipakai tetap yang paling besar.</p>
+                    <p class="text-[11px] font-bold text-slate-200 mt-2"><i class="fas fa-user mr-1 text-slate-400"></i>${esc(rc.nama || '')} &bull; Absen ${esc(String(rc.absen || ''))} &bull; ${esc(rc.judul || '')}</p>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <button onclick="rlTolakRemedial('${hr}')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-xmark mr-1"></i>Tolak</button>
+                    <button onclick="rlAccRemedial('${hr}')" class="bg-sky-500 hover:bg-sky-400 text-white text-[11px] font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-check mr-1"></i>ACC Remedial</button>
+                </div></div>`;
+                }
                 const nama = esc(rc.nama || (rc.attempt && rc.attempt.nama) || '');
                 const absen = esc(String(rc.absen || (rc.attempt && rc.attempt.absen) || ''));
                 const judul = esc(rc.judul || (rc.attempt && rc.attempt.judul) || '');
@@ -4264,6 +4318,42 @@ service cloud.firestore {
             await muatRilis();
         } catch (e) { Swal.close(); galat(e, 'Gagal ACC Lanjut'); }
     }
+    async function rlAccRemedial(hasilId) {
+        const rc = rlRecallDaftar.find(x => String(x.hasilId) === String(hasilId)); if (!rc) return;
+        const kode = $('rl-kuis').value, h = rlData.hasil.find(x => String(x.id) === String(hasilId));
+        const adaNilai = h && h.nilai_akhir !== null && h.nilai_akhir !== undefined && h.nilai_akhir !== '';
+        if (!await konfirmasi('ACC remedial untuk ' + (rc.nama || 'siswa') + '?',
+            (adaNilai ? 'Nilai lama <b>' + fmtNilai(h.nilai_akhir) + '</b> disimpan. ' : '') + 'Siswa boleh mengerjakan ujian ini lagi. Nilai yang dipakai adalah yang <b>paling besar</b> antara nilai lama dan nilai baru.', 'Ya, ACC Remedial')) return;
+        loading('Memproses...');
+        try {
+            if (h && !h.menunggu_perbaikan) {
+                if (adaNilai && !h.dari_arsip) await arsipApi('simpan', kode, { key: arsipKey(h), entri: { id: h.id, nama: h.nama, absen: h.absen, jk: h.jk || '', nilai_akhir: h.nilai_akhir, nilai_pg: h.nilai_pg ?? null, benar: h.benar ?? null, jumlah_pg: h.jumlah_pg ?? null, waktu: h.waktu || '' } });
+                await api('resetStudent', { id: h.id });
+            }
+            await recallApi('tolakLanjut', { hasilId });
+            Swal.close(); toast('Remedial di-ACC. Siswa bisa masuk ujian lagi.', 'success'); await muatRilis(); cekNotif();
+        } catch (e) { Swal.close(); galat(e, 'Gagal ACC remedial'); }
+    }
+    async function rlTolakRemedial(hasilId) {
+        loading('Memproses...');
+        try { await recallApi('tolakLanjut', { hasilId }); Swal.close(); toast('Permintaan remedial ditolak.', 'info'); await muatRilis(); cekNotif(); }
+        catch (e) { Swal.close(); galat(e, 'Gagal menolak'); }
+    }
+    // Lencana notifikasi di menu Rilis Nilai (ACC): jumlah permintaan siswa dari ujian yang sedang dibuka
+    async function cekNotif() {
+        const btn = $('btn-rilis'); if (!btn || !sessionStorage.getItem(PIN_KEY)) return;
+        let n = 0;
+        try {
+            const buka = (cache.ujian || []).filter(u => u.status === 'buka').slice(0, 15);
+            const rs = await Promise.all(buka.map(u => recallApi('daftarRecall', { kode: u.kode }).then(r => (r.daftar || []).length).catch(() => 0)));
+            n = rs.reduce((a, b) => a + b, 0);
+        } catch (e) {}
+        let bd = $('badge-rilis');
+        if (!bd) { bd = document.createElement('span'); bd.id = 'badge-rilis'; bd.className = 'ml-auto text-[10px] font-black px-2 py-0.5 rounded-full bg-sky-500 text-white hidden'; btn.appendChild(bd); }
+        bd.textContent = n; bd.classList.toggle('hidden', !n);
+    }
+    setInterval(() => { if (!document.hidden) cekNotif(); }, 30000);
+    setTimeout(cekNotif, 4000);
     async function rlKeluar(hasilId, setuju) {
         const rc = rlRecallDaftar.find(x => x.hasilId === hasilId);
         if (!rc) return;
