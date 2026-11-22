@@ -396,6 +396,7 @@
                     <div class="my-2 border-t border-slate-800"></div>
                     <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Kelas</div>
                     <button onclick="switchTab('roster')" id="btn-roster" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-user-group w-5 text-center"></i><span>Data Siswa</span></button>
+                    <button onclick="switchTab('akun')" id="btn-akun" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-id-card w-5 text-center"></i><span>Bagikan Akun Siswa</span></button>
                     <button onclick="switchTab('absensi')" id="btn-absensi" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-clipboard-user w-5 text-center"></i><span>Absensi</span></button>
                     <div class="my-2 border-t border-slate-800"></div>
                     <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Sistem</div>
@@ -743,6 +744,23 @@
                         <div id="ros-list"></div>
                     </section>
 
+                    <section id="tab-akun-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-id-card text-accent-400 mr-2"></i>Bagikan Akun Siswa</h3>
+                            <p class="text-[11px] text-slate-500">Daftar kode ujian, nama, nomor absen, dan jenis kelamin siswa untuk dibagikan. Data diambil dari menu Data Siswa. Siswa masuk dengan kode ujian, nomor absen, dan nama.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                                <label class="block text-[11px] font-semibold text-slate-400">Pilih ujian
+                                    <select id="ak-kode" onchange="akunRender()" class="field mt-1"></select></label>
+                                <label class="flex items-center gap-2 text-xs text-slate-300 pb-2.5"><input id="ak-tautan" type="checkbox" checked onchange="akunRender()" class="accent-emerald-500 w-4 h-4"> Sertakan tautan ujian siswa</label>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="akunSalin()" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-copy mr-1.5"></i>Salin Teks</button>
+                                <button onclick="akunPdf()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-pdf mr-1.5"></i>Unduh PDF</button>
+                            </div>
+                        </div>
+                        <div id="ak-list"></div>
+                    </section>
+
                     <section id="tab-absensi-view" class="tab-content hidden space-y-4">
                         <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
                             <input id="absn-tgl" type="date" style="color-scheme:dark" class="field !w-auto" onchange="renderAbsnHari()">
@@ -869,7 +887,7 @@
     // Opsional: isi ID/alamat skrip di sini bila ingin tertanam permanen di aplikasi (tanpa tautan ?s=).
     const SCRIPT_DEFAULT = '';
     const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
-    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', roster: 'Data Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
+    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
     const SCREENS = ['landing', 'siswa', 'tunggu', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
@@ -1734,6 +1752,7 @@
         if (id === 'rilis') renderRilis(true);
         if (id === 'analisis') renderAnalisis(true);
         if (id === 'roster') renderRoster();
+        if (id === 'akun') renderAkun();
         if (id === 'absensi') renderAbsensi();
         if (id === 'pengaturan') renderPengaturan();
         document.querySelector('#view-guru main').scrollTo({ top: 0 });
@@ -3715,6 +3734,81 @@ service cloud.firestore {
     const rosTulis = d => tulisJson(ROS_KEY, d);
     const rosId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const rosUrut = d => d.slice().sort((a, b) => (Number(a.absen) || 9999) - (Number(b.absen) || 9999) || String(a.nama).localeCompare(String(b.nama), 'id'));
+    /* ============================================================
+       BAGIKAN AKUN SISWA: kode ujian, nama, no. absen, jenis kelamin (salin teks atau unduh PDF)
+       ============================================================ */
+    async function renderAkun() {
+        const sel = $('ak-kode'), lama = sel.value;
+        let list = [];
+        try { list = await muatUjian(false) || []; } catch (e) { list = []; }
+        sel.innerHTML = list.length ? list.map(u => `<option value="${esc(u.kode)}">${esc(u.judul)} (${esc(u.kode)})</option>`).join('') : '<option value="">(belum ada ujian)</option>';
+        if (lama && list.some(u => u.kode === lama)) sel.value = lama;
+        akunRender();
+    }
+    function akunData() {
+        const kode = $('ak-kode').value, u = (cache.ujian || []).find(x => x.kode === kode);
+        return { kode, judul: u ? u.judul : '', siswa: rosUrut(rosBaca()), sekolah: db.settings.sekolah || '', kelas: db.settings.kelas || '',
+            tautan: ($('ak-tautan').checked && db.settings.scriptId && kode) ? tautanSiswa(kode) : '' };
+    }
+    function akunRender() {
+        const d = akunData(), box = $('ak-list');
+        if (!d.siswa.length) { box.innerHTML = kosongBox('fa-user-group', 'Data siswa masih kosong', 'Isi dulu di menu Data Siswa (tambah satu per satu atau impor Excel).'); return; }
+        const L = d.siswa.filter(x => x.jk === 'L').length, P = d.siswa.filter(x => x.jk === 'P').length;
+        box.innerHTML = `<div class="grid grid-cols-3 gap-4 mb-4">${statCard('fa-users', 'Total Siswa', d.siswa.length)}${statCard('fa-mars', 'Laki-laki', L, 'sky')}${statCard('fa-venus', 'Perempuan', P, 'rose')}</div>`
+            + (d.kode ? '' : '<p class="text-[11px] text-amber-300 mb-2"><i class="fas fa-triangle-exclamation mr-1"></i>Belum ada ujian dipilih, jadi kode ujian kosong. Buat ujian dulu di menu Kelola Ujian.</p>')
+            + `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs">
+                <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider"><tr><th class="px-3 py-3 text-center">No</th><th class="px-3 py-3 text-center">Kode Ujian</th><th class="px-3 py-3 text-center">No. Absen</th><th class="px-4 py-3 text-left">Nama Siswa</th><th class="px-3 py-3 text-center">JK</th></tr></thead>
+                <tbody class="divide-y divide-slate-800 bg-slate-900">${d.siswa.map((x, i) => `<tr class="hover:bg-slate-800/60"><td class="px-3 py-2.5 text-center text-slate-500">${i + 1}</td><td class="px-3 py-2.5 text-center font-mono font-bold text-accent-400">${esc(d.kode) || '—'}</td><td class="px-3 py-2.5 text-center text-slate-300 font-bold">${esc(x.absen) || '—'}</td><td class="px-4 py-2.5 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-2.5 text-center">${badgeJK(x.jk)}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    function akunTeks() {
+        const d = akunData();
+        let t = '*AKUN UJIAN ONLINE*\n';
+        if (d.sekolah) t += d.sekolah + '\n';
+        if (d.kelas) t += 'Kelas: ' + d.kelas + '\n';
+        if (d.judul) t += 'Ujian: ' + d.judul + '\n';
+        t += 'Kode Ujian: ' + (d.kode || '-') + '\n';
+        if (d.tautan) t += 'Tautan: ' + d.tautan + '\n';
+        t += '\nCara masuk: buka tautan, isi Kode Ujian, No. Absen, dan Nama, lalu tekan Mulai Ujian.\n\n';
+        t += d.siswa.map((x, i) => (i + 1) + '. ' + x.nama + ' | Absen ' + (x.absen || '-') + ' | ' + (x.jk || '-') + ' | Kode ' + (d.kode || '-')).join('\n');
+        return t;
+    }
+    async function akunSalin() {
+        const d = akunData(); if (!d.siswa.length) return toast('Data siswa masih kosong', 'info');
+        const t = akunTeks();
+        try { await navigator.clipboard.writeText(t); toast('Daftar akun disalin. Tinggal tempel.'); }
+        catch (e) { Swal.fire({ title: 'Salin teks ini', input: 'textarea', inputValue: t, width: 640, confirmButtonColor: '#059669' }); }
+    }
+    const muatSkrip = src => new Promise((ok, no) => { const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = () => no(new Error('gagal memuat ' + src)); document.head.appendChild(el); });
+    async function akunPdf() {
+        const d = akunData(); if (!d.siswa.length) return toast('Data siswa masih kosong', 'info');
+        if (!d.kode) return toast('Pilih ujian dulu untuk mengisi kode ujian', 'info');
+        loading('Menyiapkan PDF...');
+        try {
+            if (!(window.jspdf && window.jspdf.jsPDF)) await muatSkrip('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+            if (!window.jspdf.jsPDF.API.autoTable) await muatSkrip('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js');
+        } catch (e) { Swal.close(); return galat(new Error('PDF butuh internet untuk memuat pustaka pembuat PDF. Periksa koneksi lalu coba lagi, atau pakai tombol Salin Teks.'), 'PDF belum bisa dibuat'); }
+        try {
+            const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' }), W = doc.internal.pageSize.getWidth();
+            let y = 16;
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text('AKUN UJIAN ONLINE', W / 2, y, { align: 'center' }); y += 6;
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+            const info = [d.sekolah, d.kelas ? 'Kelas: ' + d.kelas : '', d.judul ? 'Ujian: ' + d.judul : ''].filter(Boolean).join('  |  ');
+            if (info) { doc.text(doc.splitTextToSize(info, W - 28), W / 2, y, { align: 'center' }); y += 5; }
+            doc.setFont('helvetica', 'bold'); doc.text('Kode Ujian: ' + d.kode, W / 2, y, { align: 'center' }); y += 5;
+            doc.setFont('helvetica', 'normal');
+            if (d.tautan) { doc.setFontSize(8.5); const baris = doc.splitTextToSize('Tautan: ' + d.tautan, W - 28); doc.text(baris, 14, y); y += baris.length * 4 + 1; doc.setFontSize(10); }
+            doc.setFontSize(9); doc.text('Cara masuk: buka tautan, isi Kode Ujian, No. Absen, dan Nama, lalu tekan Mulai Ujian.', 14, y + 2); y += 6;
+            doc.autoTable({ startY: y, margin: { left: 14, right: 14 },
+                head: [['No', 'Kode Ujian', 'No. Absen', 'Nama Siswa', 'JK']],
+                body: d.siswa.map((x, i) => [i + 1, d.kode, x.absen || '-', x.nama, x.jk || '-']),
+                styles: { fontSize: 9.5, cellPadding: 2 }, headStyles: { fillColor: [5, 150, 105], halign: 'center' },
+                columnStyles: { 0: { halign: 'center', cellWidth: 12 }, 1: { halign: 'center', cellWidth: 32 }, 2: { halign: 'center', cellWidth: 24 }, 4: { halign: 'center', cellWidth: 16 } } });
+            const n = doc.internal.getNumberOfPages(), tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(120); doc.text('Dicetak ' + tgl + '  -  halaman ' + i + ' dari ' + n, W / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' }); }
+            doc.save('akun-siswa-' + d.kode + '.pdf');
+            Swal.close(); toast('PDF diunduh');
+        } catch (e) { Swal.close(); galat(e, 'PDF gagal dibuat'); }
+    }
     function renderRoster() {
         const d = rosUrut(rosBaca()), L = d.filter(x => x.jk === 'L').length, P = d.filter(x => x.jk === 'P').length;
         $('ros-stats').innerHTML = statCard('fa-users', 'Total Siswa', d.length) + statCard('fa-mars', 'Laki-laki', L, 'sky') + statCard('fa-venus', 'Perempuan', P, 'rose');
