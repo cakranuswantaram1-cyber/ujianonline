@@ -392,6 +392,8 @@
                     <button onclick="switchTab('tim')" id="btn-tim" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-people-group w-5 text-center"></i><span>Kuis Langsung L vs P</span></button>
                     <button onclick="switchTab('bank')" id="btn-bank" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-box-archive w-5 text-center"></i><span>Bank Soal</span></button>
                     <button onclick="switchTab('analisis')" id="btn-analisis" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-chart-line w-5 text-center"></i><span>Analisis &amp; Remedial</span></button>
+                    <button onclick="switchTab('riwremedial')" id="btn-riwremedial" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-clock-rotate-left w-5 text-center"></i><span>Riwayat Remedial</span></button>
+                    <button onclick="switchTab('pantau')" id="btn-pantau" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-satellite-dish w-5 text-center"></i><span>Pantau Langsung</span><span id="badge-pantau" class="ml-auto text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-white hidden">0</span></button>
                     <button onclick="timProyektor()" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-tv w-5 text-center"></i><span>Papan Skor Layar</span></button>
                     <div class="my-2 border-t border-slate-800"></div>
                     <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Kelas</div>
@@ -724,6 +726,47 @@
                         <div id="ana-isi"></div>
                     </section>
 
+                    <!-- TAB: Riwayat Remedial -->
+                    <section id="tab-riwremedial-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="riw-kuis" onchange="renderRiwRemedial()" class="field flex-1 min-w-[12rem]"></select>
+                            <button onclick="renderRiwRemedial()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
+                            <button onclick="riwEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Semua percobaan siswa: nilai lama sebelum remedial, nilai baru setelah remedial, dan nilai mana yang dipakai. Berguna bila wali murid bertanya. Hanya tersedia bila ada data arsip remedial.</p>
+                        <div id="riw-isi"></div>
+                    </section>
+
+                    <!-- TAB: Pantau Langsung -->
+                    <section id="tab-pantau-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="pt-kuis" onchange="pantauMuat()" class="field flex-1 min-w-[12rem]"></select>
+                            <span id="pt-status-dot" class="flex items-center gap-1.5 text-[11px] font-bold text-slate-500"><span class="w-2 h-2 rounded-full bg-slate-600 inline-block"></span>Tidak aktif</span>
+                            <button onclick="pantauToggle()" id="pt-toggle-btn" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-play mr-1.5"></i>Mulai Pantau</button>
+                            <button onclick="pantauMuat()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Segarkan</button>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Pantau siswa <b class="text-slate-200">selama ujian berlangsung</b>. Halaman ini diperbarui tiap 10 detik selama Pantau aktif. <b class="text-amber-300">Belum masuk</b>: belum ada jawaban terkirim. <b class="text-accent-400">Sudah selesai</b>: sudah mengumpulkan. <b class="text-red-400">Sering keluar</b>: keluar halaman ≥ 2 kali.</p>
+                        <div id="pt-ringkasan" class="grid grid-cols-2 sm:grid-cols-4 gap-3 hidden">
+                            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
+                                <p class="text-[10px] uppercase font-black text-slate-500">Terdaftar</p>
+                                <p id="pt-n-daftar" class="text-2xl font-black text-slate-100 mt-1">-</p>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
+                                <p class="text-[10px] uppercase font-black text-slate-500">Sudah Selesai</p>
+                                <p id="pt-n-selesai" class="text-2xl font-black text-accent-400 mt-1">-</p>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
+                                <p class="text-[10px] uppercase font-black text-slate-500">Belum Masuk</p>
+                                <p id="pt-n-belum" class="text-2xl font-black text-amber-400 mt-1">-</p>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
+                                <p class="text-[10px] uppercase font-black text-slate-500">Sering Keluar</p>
+                                <p id="pt-n-keluar" class="text-2xl font-black text-red-400 mt-1">-</p>
+                            </div>
+                        </div>
+                        <div id="pt-isi"></div>
+                    </section>
+
                     <section id="tab-roster-view" class="tab-content hidden space-y-4">
                         <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
                             <label class="text-[11px] font-semibold text-slate-400 flex items-center gap-2"><i class="fas fa-people-roof text-accent-400"></i>Kelas
@@ -903,7 +946,7 @@
     // Opsional: isi ID/alamat skrip di sini bila ingin tertanam permanen di aplikasi (tanpa tautan ?s=).
     const SCRIPT_DEFAULT = '';
     const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
-    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
+    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', riwremedial: 'Riwayat Remedial', pantau: 'Pantau Langsung', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
     const SCREENS = ['landing', 'siswa', 'tunggu', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
@@ -911,6 +954,7 @@
     const KELUAR_KEY = APP.slug + '_keluar'; // permintaan keluar ujian (mode lokal)
     const REMEDIAL_KEY = APP.slug + '_remedial'; // permintaan remedial siswa (mode lokal)
     const RECALL_KEY = APP.slug + '_recall'; // attempt yang menunggu acc guru untuk lanjut
+    const WAKTU_KEY  = APP.slug + '_xt_';    // tambah waktu per siswa: prefix + kode + '_' + absen
 
     let db = loadDB();
 
@@ -1400,9 +1444,28 @@
             if (docId) { try { await fs.deleteDoc(ref('recall', docId)); } catch (e) {} }
             return { ok: true };
         }
+        // Cek sinyal tambah waktu (dipanggil siswa tiap 15 detik, tanpa auth)
+        if (action === 'cekTambahWaktu') {
+            const docId = lkKode(b.kode) + '_' + String(b.absen || '').trim();
+            try {
+                const sn = await fs.getDoc(ref('extra_time', docId));
+                if (!sn.exists()) return { ok: true, menit: 0 };
+                const d = sn.data(); const menit = Number(d.menit || 0);
+                if (menit > 0) await fs.deleteDoc(ref('extra_time', docId)); // sekali baca, langsung hapus
+                return { ok: true, menit };
+            } catch (e) { return { ok: true, menit: 0 }; }
+        }
         // Aksi guru: accLanjut dan tolakLanjut
         await C.auth.authStateReady();
         if (!C.auth.currentUser) throw new Error('PIN guru salah atau sesi habis. Masuk ulang sebagai guru.');
+        // Tambah waktu siswa (guru)
+        if (action === 'tambahWaktu') {
+            const kode = lkKode(b.kode), absen = String(b.absen || '').trim();
+            const menit = Math.max(1, Math.min(Number(b.menit || 0), 120));
+            const docId = kode + '_' + absen;
+            await fs.setDoc(ref('extra_time', docId), { kode, absen, menit, oleh: 'guru', waktu: new Date().toISOString() });
+            return { ok: true };
+        }
         if (action === 'daftarRecall') {
             const col = fs.collection(D, 'recall');
             const q = await fs.getDocs(fs.query(col, fs.where('kode', '==', String(b.kode || ''))));
@@ -1720,6 +1783,18 @@
         if (action === 'cekKeluar') { const k = kl(); return { ok: true, status: k && k.hasilId === String(b.hasilId) ? k.status : 'menunggu' }; }
         if (action === 'hapusKeluar') { try { localStorage.removeItem(KELUAR_KEY); } catch (e) {} return { ok: true }; }
         if (action === 'batalKeluar') { const k = kl(); if (k && k.status === 'menunggu') { try { localStorage.removeItem(KELUAR_KEY); } catch (e) {} } return { ok: true }; }
+        if (action === 'cekTambahWaktu') {
+            const key = WAKTU_KEY + lkKode(b.kode) + '_' + String(b.absen || '').trim();
+            try { const v = JSON.parse(localStorage.getItem(key) || 'null'); if (v && v.menit) { localStorage.removeItem(key); return { ok: true, menit: Number(v.menit) }; } } catch (e) {}
+            return { ok: true, menit: 0 };
+        }
+        if (action === 'tambahWaktu') {
+            const kode = lkKode(b.kode), absen = String(b.absen || '').trim();
+            const menit = Math.max(1, Math.min(Number(b.menit || 0), 120));
+            const key = WAKTU_KEY + kode + '_' + absen;
+            try { localStorage.setItem(key, JSON.stringify({ kode, absen, menit, waktu: new Date().toISOString() })); } catch (e) {}
+            return { ok: true };
+        }
         const pinSimpan = localStorage.getItem(LK_PIN);
         if (!pinSimpan || sessionStorage.getItem(PIN_KEY) !== pinSimpan) throw new Error('PIN guru salah atau sesi habis.');
         if (action === 'daftarRecall') {
@@ -1807,6 +1882,8 @@
         if (id === 'bank') renderBank();
         if (id === 'rilis') renderRilis(true);
         if (id === 'analisis') renderAnalisis(true);
+        if (id === 'riwremedial') renderRiwRemedial();
+        if (id === 'pantau') { pantauIsiKuis().then(() => pantauMuat()); }
         if (['ujian', 'akun', 'absensi'].includes(id)) rosIsiKelas();
         if (id === 'roster') renderRoster();
         if (id === 'akun') renderAkun();
@@ -2185,6 +2262,7 @@
         suaraMulai();
         pjPasangRiwayat();
     }
+    let _xtLastCek = 0;
     function tickUjian() {
         if (!attempt) return;
         const sisa = Math.max(0, Math.ceil((attempt.akhir - Date.now()) / 1000));
@@ -2192,6 +2270,18 @@
         el.textContent = mmss(sisa);
         el.className = 'text-sm font-black font-mono ' + (sisa <= 60 ? 'text-red-400 animate-pulse' : sisa <= 300 ? 'text-amber-400' : 'text-slate-100');
         if (sisa <= 0 && !submitting) kumpulkan(true);
+        // Polling tambah waktu dari guru (tiap 15 detik, non-blocking)
+        const now = Date.now();
+        if (!submitting && now - _xtLastCek >= 15000) {
+            _xtLastCek = now;
+            recallApi('cekTambahWaktu', { kode: attempt.kode, absen: attempt.absen }).then(r => {
+                if (r && r.menit > 0) {
+                    attempt.akhir += r.menit * 60000;
+                    saveAttempt();
+                    pjBanner('\u23F1 Guru menambahkan ' + r.menit + ' menit untuk Anda. Semangat!');
+                }
+            }).catch(() => {});
+        }
     }
     const terjawab = q => { const v = attempt.jawaban[q.no]; return v !== undefined && String(v).trim() !== ''; };
 
@@ -4402,6 +4492,331 @@ service cloud.firestore {
         if (!await konfirmasi('Tarik semua nilai?', ids.length + ' nilai pada ujian ini disembunyikan lagi dari siswa.', 'Ya, tarik')) return;
         rlKirim('tarik', { ids }, 'Semua nilai ditarik');
     }
+
+    /* ============================================================
+       RIWAYAT REMEDIAL: semua percobaan siswa per ujian
+       Membaca: db.arsip (nilai lama), hasilData / ambilHasil (nilai aktif)
+       ============================================================ */
+    let riwData = null;
+    async function renderRiwRemedial() {
+        // Isi dropdown kuis
+        const sel = $('riw-kuis');
+        if (!cache.ujian) await muatUjian(false);
+        const ujianList = cache.ujian || [];
+        if (!sel.options.length || riwData === null) {
+            const prev = sel.value;
+            sel.innerHTML = '<option value="">— Pilih Ujian —</option>' +
+                ujianList.map(u => `<option value="${esc(u.kode)}">${esc(u.judul)} (${esc(u.kode)})</option>`).join('');
+            if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+        }
+        const kode = sel.value;
+        const box = $('riw-isi');
+        if (!kode) { box.innerHTML = '<p class="text-[11px] text-slate-500 text-center py-8">Pilih ujian di atas untuk melihat riwayat remedial.</p>'; return; }
+        box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-6"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat data...</p>';
+        try {
+            // Ambil arsip (nilai lama) dan hasil aktual (nilai baru)
+            const [arsip, hasilR] = await Promise.all([
+                arsipBaca(kode),
+                fbT(api('getResults', { kode })).catch(() => null)
+            ]);
+            const hasilArr = hasilR ? hasilR.hasil.map(parseJK) : [];
+            const penalti = hasilR ? poinPenalti(kode, hasilR.ujian) : 0;
+            const hasilMap = {}; // key → hasil aktif
+            hasilArr.forEach(h => { hasilMap[arsipKey(h)] = terapkanPenalti(h, penalti); });
+
+            // Susun baris: satu baris per siswa yang punya entri arsip
+            const rows = [];
+            Object.entries(arsip).forEach(([key, a]) => {
+                const nilaiLama = a.nilai_akhir;
+                const hAktif = hasilMap[key];
+                const nilaiBaruRaw = hAktif ? hAktif.nilai_akhir : null;
+                // Nilai yang dipakai = tertinggi antara lama dan baru
+                let dipakai, label;
+                if (nilaiBaruRaw === null || nilaiBaruRaw === undefined) {
+                    dipakai = nilaiLama; label = 'Belum mengerjakan ulang';
+                } else if (Number(nilaiLama) >= Number(nilaiBaruRaw)) {
+                    dipakai = nilaiLama; label = 'Nilai lama lebih tinggi';
+                } else {
+                    dipakai = nilaiBaruRaw; label = 'Nilai baru lebih tinggi';
+                }
+                rows.push({ nama: a.nama || key.split('|')[0], absen: a.absen || key.split('|')[1] || '', jk: a.jk || '', waktu: a.waktu || '', nilaiLama, nilaiBaru: nilaiBaruRaw, dipakai, label, waktuBaru: hAktif ? hAktif.waktu : '' });
+            });
+
+            riwData = rows;
+
+            if (!rows.length) {
+                box.innerHTML = '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center"><i class="fas fa-circle-check text-accent-400 text-2xl mb-3"></i><p class="text-sm font-bold text-slate-300">Belum ada riwayat remedial</p><p class="text-[11px] text-slate-500 mt-1">Riwayat muncul setelah guru memberi izin perbaikan (tombol ↩ di Hasil &amp; Nilai) dan siswa mengerjakan ulang.</p></div>';
+                return;
+            }
+
+            rows.sort((a, b) => Number(a.absen) - Number(b.absen) || a.nama.localeCompare(b.nama));
+            const thS = 'bg-slate-950 text-slate-400 font-bold text-[11px] uppercase tracking-wide px-3 py-3 text-left';
+            box.innerHTML = `<div class="overflow-x-auto rounded-2xl border border-slate-800">
+                <table class="w-full text-xs">
+                <thead class="sticky top-0 z-10"><tr>
+                    <th class="${thS}">No</th>
+                    <th class="${thS}">Nama</th>
+                    <th class="${thS} text-center">JK</th>
+                    <th class="${thS} text-center">Nilai Lama<div class="text-[9px] font-normal text-slate-500 normal-case">Sebelum remedial</div></th>
+                    <th class="${thS} text-center">Tgl Lama</th>
+                    <th class="${thS} text-center">Nilai Baru<div class="text-[9px] font-normal text-slate-500 normal-case">Setelah remedial</div></th>
+                    <th class="${thS} text-center">Tgl Baru</th>
+                    <th class="${thS} text-center">Yang Dipakai</th>
+                    <th class="${thS}">Keterangan</th>
+                </tr></thead>
+                <tbody class="divide-y divide-slate-800 bg-slate-900">
+                ${rows.map(r => {
+                    const fmtTgl = iso => { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit' }); };
+                    const nilaiBaruTeks = r.nilaiBaru === null || r.nilaiBaru === undefined ? '<span class="text-slate-500">—</span>' : `<span class="font-black ${Number(r.nilaiBaru) >= Number(r.nilaiLama) ? 'text-accent-400' : 'text-red-400'}">${fmtNilai(r.nilaiBaru)}</span>`;
+                    const dipakaiClass = r.dipakai === r.nilaiBaru && r.nilaiBaru !== null ? 'text-accent-400' : 'text-sky-300';
+                    return `<tr class="hover:bg-slate-800/60">
+                        <td class="px-3 py-3 text-slate-400">${esc(r.absen)}</td>
+                        <td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(r.nama)}</td>
+                        <td class="px-3 py-3 text-center">${badgeJK(r.jk)}</td>
+                        <td class="px-3 py-3 text-center font-black text-slate-300">${fmtNilai(r.nilaiLama)}</td>
+                        <td class="px-3 py-3 text-center text-[10px] text-slate-500 whitespace-nowrap">${fmtTgl(r.waktu)}</td>
+                        <td class="px-3 py-3 text-center">${nilaiBaruTeks}</td>
+                        <td class="px-3 py-3 text-center text-[10px] text-slate-500 whitespace-nowrap">${fmtTgl(r.waktuBaru)}</td>
+                        <td class="px-3 py-3 text-center font-black ${dipakaiClass} text-sm">${fmtNilai(r.dipakai)}</td>
+                        <td class="px-3 py-3 text-[10px] text-slate-400">${esc(r.label)}</td>
+                    </tr>`;
+                }).join('')}
+                </tbody></table></div>`;
+        } catch (e) { box.innerHTML = `<p class="text-[11px] text-red-400 text-center py-6"><i class="fas fa-triangle-exclamation mr-2"></i>${esc(e.message)}</p>`; }
+    }
+    async function riwEkspor() {
+        if (!riwData || !riwData.length) return toast('Muat data riwayat dulu', 'info');
+        const kode = $('riw-kuis').value;
+        const ujian = (cache.ujian || []).find(u => u.kode === kode);
+        const rows = [['No/Absen', 'Nama', 'JK', 'Nilai Lama', 'Nilai Baru', 'Nilai Dipakai', 'Keterangan']];
+        riwData.forEach(r => rows.push([r.absen, r.nama, r.jk, r.nilaiLama ?? '', r.nilaiBaru ?? '', r.dipakai ?? '', r.label]));
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Riwayat Remedial');
+        XLSX.writeFile(wb, `Riwayat_Remedial_${kode}.xlsx`);
+    }
+
+    /* ============================================================
+       PANTAU LANGSUNG: status siswa selama ujian berlangsung
+       Poll tiap 10 detik. Membaca: getResults (Firebase/Lokal) + arsip siswa yang sedang perbaikan.
+       ============================================================ */
+    let pantauTimer = null, pantauAktif = false, ptData = null;
+
+    async function pantauIsiKuis() {
+        if (!cache.ujian) await muatUjian(false);
+        const sel = $('pt-kuis');
+        const ujianList = (cache.ujian || []).filter(u => u.status === 'buka');
+        const semua = cache.ujian || [];
+        const prev = sel.value;
+        sel.innerHTML = '<option value="">— Pilih Ujian —</option>' +
+            (ujianList.length ? '<optgroup label="Sedang Dibuka">' + ujianList.map(u => `<option value="${esc(u.kode)}">${esc(u.judul)} (${esc(u.kode)})</option>`).join('') + '</optgroup>' : '') +
+            (semua.filter(u => u.status !== 'buka').length ? '<optgroup label="Sudah Ditutup">' + semua.filter(u => u.status !== 'buka').map(u => `<option value="${esc(u.kode)}">${esc(u.judul)} (${esc(u.kode)})</option>`).join('') + '</optgroup>' : '');
+        if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+    }
+
+    async function pantauMuat() {
+        const kode = $('pt-kuis').value;
+        const box = $('pt-isi'), ring = $('pt-ringkasan');
+        if (!kode) {
+            box.innerHTML = '<p class="text-[11px] text-slate-500 text-center py-8">Pilih ujian di atas. Disarankan pilih ujian yang sedang dibuka.</p>';
+            ring.classList.add('hidden'); return;
+        }
+        try {
+            const r = await api('getResults', { kode });
+            const ujian = r.ujian || {};
+            const penalti = poinPenalti(kode, ujian);
+            const hasil = (r.hasil || []).map(h => terapkanPenalti(parseJK(h), penalti));
+            const arsip = await arsipBaca(kode);
+
+            // Daftar siswa resmi dari ujian (bila ada)
+            const daftarSiswa = Array.isArray(ujian.siswa) ? ujian.siswa : [];
+            // Set absen siswa yang sudah mengumpulkan
+            const sudahMap = {}; // absen → hasil
+            hasil.forEach(h => { sudahMap[String(h.absen).trim()] = h; });
+
+            // Hitung yang sedang menunggu perbaikan (punya arsip, belum submit baru)
+            const arsipKeys = Object.keys(arsip);
+
+            // Bangun baris
+            const barisSudah = [], barisMenunggu = [], barisBelum = [];
+
+            // 1) Siswa sudah mengumpulkan
+            hasil.forEach(h => {
+                if (h.menunggu_perbaikan) {
+                    barisMenunggu.push(h); // diberi izin perbaikan, belum submit ulang
+                } else {
+                    barisSudah.push(h);
+                }
+            });
+
+            // 2) Siswa dari daftar resmi yang belum ada di hasil
+            if (daftarSiswa.length) {
+                daftarSiswa.forEach(s => {
+                    const ab = String(s.absen || s.no || '').trim();
+                    if (!sudahMap[ab]) barisBelum.push(s);
+                });
+            }
+
+            ptData = { barisSudah, barisMenunggu, barisBelum, ujian };
+
+            // Ringkasan
+            ring.classList.remove('hidden');
+            $('pt-n-daftar').textContent = daftarSiswa.length || (barisSudah.length + barisBelum.length);
+            $('pt-n-selesai').textContent = barisSudah.length;
+            $('pt-n-belum').textContent = barisBelum.length;
+            $('pt-n-keluar').textContent = barisSudah.filter(h => (h.keluar || 0) >= 2).length + barisMenunggu.filter(h => (h.keluar || 0) >= 2).length;
+
+            // Update badge di sidebar
+            const jumlahBelum = barisBelum.length;
+            const bd = $('badge-pantau');
+            if (bd) { bd.textContent = jumlahBelum; bd.classList.toggle('hidden', !jumlahBelum || ujian.status !== 'buka'); }
+
+            // Render tabel
+            const thS = 'bg-slate-950 text-slate-400 font-bold text-[11px] uppercase tracking-wide px-3 py-3 text-left';
+            let html = '';
+
+            // Sudah selesai
+            if (barisSudah.length) {
+                barisSudah.sort((a, b) => Number(a.absen) - Number(b.absen));
+                html += `<div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                    <div class="px-4 py-3 border-b border-slate-800 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-accent-500 inline-block"></span>
+                        <span class="text-sm font-bold text-slate-100">Sudah Selesai</span>
+                        <span class="ml-auto text-xs font-black text-accent-400">${barisSudah.length} siswa</span>
+                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-xs">
+                    <thead><tr>
+                        <th class="${thS}">No</th><th class="${thS}">Nama</th><th class="${thS} text-center">JK</th>
+                        <th class="${thS} text-center">Nilai</th><th class="${thS} text-center">Keluar Halaman</th><th class="${thS} text-center">Waktu Kumpul</th><th class="${thS}"></th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-slate-800">
+                    ${barisSudah.map(h => {
+                        const keluarBanyak = (h.keluar || 0) >= 2;
+                        const tglKumpul = h.waktu ? new Date(h.waktu).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—';
+                        return `<tr class="hover:bg-slate-800/60">
+                            <td class="px-3 py-2.5 text-slate-400">${esc(h.absen)}</td>
+                            <td class="px-3 py-2.5 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}</td>
+                            <td class="px-3 py-2.5 text-center">${badgeJK(h.jk)}</td>
+                            <td class="px-3 py-2.5 text-center font-black text-accent-400">${h.nilai_akhir !== null && h.nilai_akhir !== undefined ? fmtNilai(h.nilai_akhir) : '<span class="text-slate-500 text-[10px]">Esai</span>'}</td>
+                            <td class="px-3 py-2.5 text-center font-bold ${keluarBanyak ? 'text-red-400' : 'text-slate-400'}">${h.keluar || 0}×${keluarBanyak ? ' <i class="fas fa-triangle-exclamation text-[10px]"></i>' : ''}</td>
+                            <td class="px-3 py-2.5 text-center text-[10px] text-slate-400">${tglKumpul}</td>
+                            <td class="px-3 py-2.5 text-right"><span class="text-[10px] text-slate-600 italic">Sudah selesai</span></td>
+                        </tr>`;
+                    }).join('')}
+                    </tbody></table></div></div>`;
+            }
+
+            // Diberi izin perbaikan, belum submit
+            if (barisMenunggu.length) {
+                html += `<div class="bg-slate-900 border border-sky-500/30 rounded-2xl overflow-hidden">
+                    <div class="px-4 py-3 border-b border-sky-500/20 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block animate-pulse"></span>
+                        <span class="text-sm font-bold text-slate-100">Diberi Izin Perbaikan — Belum Mengerjakan Ulang</span>
+                        <span class="ml-auto text-xs font-black text-sky-400">${barisMenunggu.length} siswa</span>
+                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-xs">
+                    <thead><tr><th class="${thS}">No</th><th class="${thS}">Nama</th><th class="${thS} text-center">JK</th><th class="${thS} text-center">Nilai Lama</th></tr></thead>
+                    <tbody class="divide-y divide-slate-800">
+                    ${barisMenunggu.map(h => `<tr class="hover:bg-slate-800/60">
+                        <td class="px-3 py-2.5 text-slate-400">${esc(h.absen)}</td>
+                        <td class="px-3 py-2.5 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}</td>
+                        <td class="px-3 py-2.5 text-center">${badgeJK(h.jk)}</td>
+                        <td class="px-3 py-2.5 text-center font-black text-slate-400">${fmtNilai(h.nilai_lama)}</td>
+                    </tr>`).join('')}
+                    </tbody></table></div></div>`;
+            }
+
+            // Belum masuk
+            if (barisBelum.length) {
+                barisBelum.sort((a, b) => Number(a.absen || a.no || 0) - Number(b.absen || b.no || 0));
+                html += `<div class="bg-slate-900 border border-amber-500/30 rounded-2xl overflow-hidden">
+                    <div class="px-4 py-3 border-b border-amber-500/20 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block animate-pulse"></span>
+                        <span class="text-sm font-bold text-slate-100">Belum Masuk / Belum Mengumpulkan</span>
+                        <span class="ml-auto text-xs font-black text-amber-400">${barisBelum.length} siswa</span>
+                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-xs">
+                    <thead><tr><th class="${thS}">No</th><th class="${thS}">Nama</th><th class="${thS} text-center">JK</th></tr></thead>
+                    <tbody class="divide-y divide-slate-800">
+                    ${barisBelum.map(s => `<tr class="hover:bg-slate-800/60">
+                        <td class="px-3 py-2.5 text-slate-400">${esc(String(s.absen || s.no || ''))}</td>
+                        <td class="px-3 py-2.5 font-semibold text-amber-200 whitespace-nowrap">${esc(s.nama || '')}</td>
+                        <td class="px-3 py-2.5 text-center">${badgeJK(s.jk || '')}</td>
+                    </tr>`).join('')}
+                    </tbody></table></div></div>`;
+            } else if (!daftarSiswa.length && !barisSudah.length && !barisMenunggu.length) {
+                html = '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center"><p class="text-sm font-bold text-slate-400">Belum ada data siswa</p><p class="text-[11px] text-slate-500 mt-1">Ujian mungkin belum ada peserta yang masuk.</p></div>';
+            } else if (!daftarSiswa.length) {
+                // ada hasil tapi tidak ada daftar siswa resmi — tidak bisa tahu siapa belum masuk
+                if (!html) html = '<p class="text-[11px] text-slate-500 text-center py-4">Ujian ini tidak punya daftar siswa resmi — kolom "Belum Masuk" tidak tersedia.</p>';
+            }
+
+            // Terakhir diperbarui
+            const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            html += `<p class="text-[10px] text-slate-600 text-right">Diperbarui: ${now}</p>`;
+            box.innerHTML = html;
+        } catch (e) {
+            $('pt-isi').innerHTML = `<p class="text-[11px] text-red-400 text-center py-6"><i class="fas fa-triangle-exclamation mr-2"></i>${esc(e.message)}</p>`;
+        }
+    }
+
+    function pantauToggle() {
+        const btn = $('pt-toggle-btn'), dot = $('pt-status-dot');
+        if (pantauAktif) {
+            clearInterval(pantauTimer); pantauTimer = null; pantauAktif = false;
+            btn.innerHTML = '<i class="fas fa-play mr-1.5"></i>Mulai Pantau';
+            btn.className = 'bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition';
+            dot.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-600 inline-block"></span> Tidak aktif';
+        } else {
+            pantauAktif = true;
+            btn.innerHTML = '<i class="fas fa-stop mr-1.5"></i>Hentikan';
+            btn.className = 'bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition';
+            dot.innerHTML = '<span class="w-2 h-2 rounded-full bg-accent-500 inline-block animate-pulse"></span> <span class="text-accent-400">Aktif — memperbarui tiap 10 detik</span>';
+            pantauMuat();
+            pantauTimer = setInterval(() => {
+                // Hanya update bila tab pantau yang sedang terbuka
+                const sec = $('tab-pantau-view');
+                if (sec && !sec.classList.contains('hidden') && !document.hidden) pantauMuat();
+            }, 10000);
+        }
+    }
+
+    async function tambahWaktuSiswa(kode, absen, nama) {
+        const { value: menit } = await Swal.fire({
+            title: 'Tambah Waktu untuk ' + nama,
+            icon: 'clock',
+            input: 'number',
+            inputLabel: 'Berapa menit yang ditambahkan?',
+            inputValue: 10,
+            inputAttributes: { min: 1, max: 120, step: 1 },
+            showCancelButton: true,
+            confirmButtonText: 'Tambahkan',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#059669',
+            cancelButtonColor: '#334155',
+            html: `<p class="text-sm text-slate-300 mb-3">Tambahkan waktu untuk <b>${esc(nama)}</b> (absen ${esc(String(absen))}). Siswa akan otomatis mendapat tambahan waktu selama mengerjakan.</p><input id="swal2-input" type="number" class="swal2-input" min="1" max="120" step="1" value="10">`,
+            preConfirm: () => {
+                const v = Number(document.getElementById('swal2-input').value);
+                if (!v || v < 1 || v > 120) { Swal.showValidationMessage('Masukkan angka 1–120 menit'); return false; }
+                return v;
+            }
+        });
+        if (!menit) return;
+        loading('Mengirim sinyal tambah waktu...');
+        try {
+            await recallApi('tambahWaktu', { kode, absen: String(absen), menit });
+            Swal.close();
+            toast(menit + ' menit ditambahkan untuk ' + nama + '. Siswa akan menerimanya dalam 15 detik.', 'success');
+            // Simpan log tambah waktu di db lokal untuk riwayat (opsional)
+            db.waktuLog = db.waktuLog || [];
+            db.waktuLog.push({ kode, absen: String(absen), nama, menit, waktu: new Date().toISOString() });
+            if (db.waktuLog.length > 200) db.waktuLog = db.waktuLog.slice(-200);
+            saveDB();
+        } catch (e) { Swal.close(); galat(e, 'Gagal menambah waktu'); }
+    }
+
+    // Hentikan timer pantau otomatis bila tab bukan pantau
+    document.addEventListener('visibilitychange', () => { if (document.hidden && pantauAktif) { /* biarkan aktif, akan skip di interval */ } });
 
     /* ---------- Siswa: Lihat Nilai Saya ---------- */
     function bukaNilai() { $('nl-hasil').innerHTML = ''; $('nl-jk-box').classList.add('hidden'); if (!$('nl-kode').value) $('nl-kode').value = $('s-kode').value; showView('nilai'); }
