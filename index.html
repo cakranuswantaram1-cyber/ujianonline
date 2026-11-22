@@ -178,6 +178,7 @@
                     <span><span class="block text-base">Lihat Nilai Saya</span><span class="block text-[11px] font-medium text-slate-400">Cek nilai ujian yang sudah dirilis guru</span></span>
                 </button>
             </div>
+            <div id="png-landing" class="hidden w-full max-w-sm mt-6"></div>
             <button id="btn-install-landing" onclick="installApp()" class="hidden mt-6 text-xs font-bold text-accent-400 underline"><i class="fas fa-circle-down mr-1.5"></i>Pasang di Layar Utama</button>
         </div>
     </div>
@@ -187,6 +188,7 @@
         <div class="min-h-full flex flex-col items-center justify-center p-6">
             <div class="w-full max-w-sm">
                 <button onclick="showView('landing')" class="text-xs font-bold text-slate-400 hover:text-accent-400 mb-4"><i class="fas fa-arrow-left mr-1.5"></i>Kembali</button>
+                <div id="png-siswa" class="hidden mb-4"></div>
                 <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
                     <div>
                         <h2 class="text-lg font-black text-slate-100">Masuk Ujian</h2>
@@ -402,6 +404,7 @@
                     <button onclick="switchTab('roster')" id="btn-roster" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-user-group w-5 text-center"></i><span>Data Siswa</span></button>
                     <button onclick="switchTab('akun')" id="btn-akun" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-id-card w-5 text-center"></i><span>Bagikan Akun Siswa</span></button>
                     <button onclick="switchTab('absensi')" id="btn-absensi" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-clipboard-user w-5 text-center"></i><span>Absensi</span></button>
+                    <button onclick="switchTab('pengumuman')" id="btn-pengumuman" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-bell w-5 text-center"></i><span>Pengumuman</span></button>
                     <div class="my-2 border-t border-slate-800"></div>
                     <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Sistem</div>
                     <button onclick="switchTab('pengaturan')" id="btn-pengaturan" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-gear w-5 text-center"></i><span>Pengaturan</span></button>
@@ -847,6 +850,18 @@
                         <div id="absn-rekap"></div>
                     </section>
 
+                    <section id="tab-pengumuman-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <div class="mr-auto min-w-0">
+                                <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-bell text-accent-400 mr-2"></i>Papan Pengumuman</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Tampil di halaman depan siswa. Pengumuman yang melewati tanggal berakhir otomatis hilang dari tampilan siswa.</p>
+                            </div>
+                            <button onclick="pngForm()" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-plus mr-1.5"></i>Tulis Pengumuman</button>
+                        </div>
+                        <div id="png-guru-list"></div>
+                    </section>
+
+
                     <section id="tab-panduan-view" class="tab-content hidden space-y-3">
                         <details open class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
                             <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-file-pen text-accent-400 mr-2"></i>Alur ujian online</summary>
@@ -996,11 +1011,11 @@
     /* ============================================================
        KONFIGURASI & DATA
        ============================================================ */
-    const APP = { slug: 'ujian-kelas', dbKey: 'ujian-kelas_db_v1', version: '1.2.0' };
+    const APP = { slug: 'ujian-kelas', dbKey: 'ujian-kelas_db_v1', version: '1.3.0' };
     // Opsional: isi ID/alamat skrip di sini bila ingin tertanam permanen di aplikasi (tanpa tautan ?s=).
     const SCRIPT_DEFAULT = '';
     const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
-    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', riwremedial: 'Riwayat Remedial', leger: 'Leger Nilai', butir: 'Analisis Butir Soal', pantau: 'Pantau Langsung', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
+    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', riwremedial: 'Riwayat Remedial', leger: 'Leger Nilai', butir: 'Analisis Butir Soal', pantau: 'Pantau Langsung', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', pengumuman: 'Pengumuman', panduan: 'Panduan', pengaturan: 'Pengaturan' };
     const SCREENS = ['landing', 'siswa', 'tunggu', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
@@ -1311,9 +1326,21 @@
             return { ok: true, n: await fbHapusSuara(C, lkKode(b.kode), b.absen ? String(b.absen).trim().slice(0, 10) : null) };
         }
 
+        // Pengumuman disimpan di dokumen khusus ujian/_pengumuman (dibaca siswa tanpa login, ditulis guru)
+        if (action === 'getPengumuman') {
+            const sp = await fs.getDoc(ref('ujian', '_pengumuman'));
+            return { ok: true, items: sp.exists() ? pngBersih(sp.data().items) : [] };
+        }
+        if (action === 'savePengumuman') {
+            await guru();
+            const items = pngBersih(b.items);
+            await fs.setDoc(ref('ujian', '_pengumuman'), { items, diubah: new Date().toISOString() });
+            return { ok: true, items };
+        }
+
         if (action === 'listExams') {
             const qs = await fs.getDocs(col('ujian'));
-            const daftar = await Promise.all(qs.docs.map(async d => {
+            const daftar = await Promise.all(qs.docs.filter(d => !d.id.startsWith('_')).map(async d => {
                 const u = d.data();
                 const [n, m] = await Promise.all([
                     fbCount(fs, fs.query(col('hasil'), fs.where('kode', '==', u.kode))),
@@ -1723,8 +1750,12 @@
             return { ok: true, ada_esai: adaEsai, nilai_pg: nilaiPg, nilai_akhir: nilaiAkhir, jumlah_pg: pg.jumlah, benar: pg.benar, hasil_id: hasilId };
         }
 
+        if (action === 'getPengumuman') return { ok: true, items: pngBersih(d.pengumuman) };
+
         // ---- semua aksi di bawah khusus guru ----
         if (!pinSimpan || pin !== pinSimpan) throw new Error('PIN guru salah atau sesi habis. Masuk ulang sebagai guru.');
+
+        if (action === 'savePengumuman') { d.pengumuman = pngBersih(b.items); lkTulis(d); return { ok: true, items: d.pengumuman }; }
 
         if (action === 'listExams') {
             const daftar = d.ujian.map(u => {
@@ -1928,11 +1959,148 @@
     function showView(name) {
         SCREENS.forEach(s => $('view-' + s).classList.toggle('hidden', s !== name));
         if (name !== 'ujian') window.onbeforeunload = null;
+        if (name === 'landing' || name === 'siswa') pngMuatSiswa();
     }
     function toggleSidebar() {
         $('sidebar').classList.toggle('open');
         $('sidebar-overlay').classList.toggle('hidden');
     }
+
+    /* ============================================================
+       PENGUMUMAN (papan info guru -> halaman depan siswa)
+       ============================================================ */
+    const PNG_JENIS = {
+        info:    { ikon: 'fa-circle-info',          label: 'Info',    warna: 'text-sky-400',     bg: 'bg-sky-500/10 border-sky-500/30' },
+        penting: { ikon: 'fa-triangle-exclamation', label: 'Penting', warna: 'text-amber-400',   bg: 'bg-amber-500/10 border-amber-500/30' },
+        jadwal:  { ikon: 'fa-calendar-days',        label: 'Jadwal',  warna: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' }
+    };
+    let pngData = [], pngSiswaT = 0;
+    // Dipakai di sisi "server" (Firebase & lokal) dan di aplikasi: membuang isian yang tidak sah
+    function pngBersih(arr) {
+        if (!Array.isArray(arr)) return [];
+        return arr.map(x => {
+            x = x || {};
+            const judul = String(x.judul || '').trim().slice(0, 80), isi = String(x.isi || '').trim().slice(0, 600);
+            if (!judul) return null;
+            return { id: String(x.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 20) || Math.random().toString(36).slice(2, 10),
+                judul, isi, jenis: PNG_JENIS[x.jenis] ? x.jenis : 'info', sematkan: !!x.sematkan,
+                berakhir: /^\d{4}-\d{2}-\d{2}$/.test(String(x.berakhir || '')) ? String(x.berakhir) : '',
+                dibuat: isNaN(Date.parse(x.dibuat)) ? new Date().toISOString() : new Date(x.dibuat).toISOString() };
+        }).filter(Boolean).slice(0, 30);
+    }
+    const pngHariIni = () => { const n = new Date(); return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0'); };
+    const pngAktif = p => !p.berakhir || p.berakhir >= pngHariIni();
+    const pngUrut = (a, b) => (b.sematkan ? 1 : 0) - (a.sematkan ? 1 : 0) || String(b.dibuat).localeCompare(String(a.dibuat));
+    const pngTgl = t => { const m = String(t).match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; };
+
+    function pngKartu(p, guru) {
+        const j = PNG_JENIS[p.jenis] || PNG_JENIS.info, lewat = !pngAktif(p);
+        const lencana = (ikon, teks, kls) => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${kls}"><i class="fas ${ikon} mr-1"></i>${teks}</span>`;
+        return `<div class="rounded-2xl border ${j.bg} p-4 mb-2 ${lewat ? 'opacity-60' : ''}">
+            <div class="flex items-start gap-3">
+                <i class="fas ${j.ikon} ${j.warna} mt-0.5"></i>
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-sm font-bold text-slate-100 break-words">${esc(p.judul)}</p>
+                        ${p.sematkan ? lencana('fa-thumbtack', 'Disematkan', 'bg-slate-800 text-slate-300') : ''}
+                        ${guru ? lencana(j.ikon, j.label, 'bg-slate-800 ' + j.warna) : ''}
+                        ${guru && lewat ? lencana('fa-clock', 'Sudah berakhir', 'bg-slate-800 text-slate-400') : ''}
+                    </div>
+                    ${p.isi ? `<p class="text-xs text-slate-300 mt-1 whitespace-pre-line break-words">${esc(p.isi)}</p>` : ''}
+                    <p class="text-[10px] text-slate-500 mt-2">${esc(fmtWaktu(p.dibuat))}${p.berakhir ? ' &bull; tampil sampai ' + esc(pngTgl(p.berakhir)) : ''}</p>
+                </div>
+            </div>
+            ${guru ? `<div class="flex flex-wrap gap-2 mt-3 pl-7">
+                <button onclick="pngEdit('${p.id}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold px-3 py-1.5 rounded-lg transition"><i class="fas fa-pen mr-1.5"></i>Ubah</button>
+                <button onclick="pngSemat('${p.id}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold px-3 py-1.5 rounded-lg transition"><i class="fas fa-thumbtack mr-1.5"></i>${p.sematkan ? 'Lepas Sematan' : 'Sematkan'}</button>
+                <button onclick="pngHapus('${p.id}')" class="bg-slate-800 hover:bg-rose-600 text-rose-300 hover:text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition"><i class="fas fa-trash mr-1.5"></i>Hapus</button>
+            </div>` : ''}
+        </div>`;
+    }
+
+    /* ---- sisi siswa ---- */
+    async function pngMuatSiswa() {
+        if (!db.settings.scriptId) { pngRenderSiswa(); return; }
+        if (Date.now() - pngSiswaT < 15000) { pngRenderSiswa(); return; }
+        try { const r = await api('getPengumuman', {}); pngData = Array.isArray(r.items) ? r.items : []; pngSiswaT = Date.now(); }
+        catch (e) { /* diam: pengumuman hanya pelengkap, tidak boleh mengganggu masuk ujian */ }
+        pngRenderSiswa();
+    }
+    function pngRenderSiswa(semua) {
+        const daftar = pngData.filter(pngAktif).sort(pngUrut);
+        ['png-landing', 'png-siswa'].forEach(id => {
+            const el = $(id); if (!el) return;
+            if (!daftar.length) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+            el.classList.remove('hidden');
+            el.innerHTML = `<div class="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2"><i class="fas fa-bell text-accent-400"></i>Pengumuman</div>`
+                + (semua ? daftar : daftar.slice(0, 3)).map(p => pngKartu(p, false)).join('')
+                + (!semua && daftar.length > 3 ? `<button onclick="pngRenderSiswa(true)" class="text-xs font-bold text-accent-400 underline">Lihat ${daftar.length - 3} pengumuman lainnya</button>` : '');
+        });
+    }
+
+    /* ---- sisi guru ---- */
+    async function renderPengumuman() {
+        const box = $('png-guru-list');
+        box.innerHTML = '<p class="text-center text-slate-500 text-sm py-10"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat pengumuman...</p>';
+        try { const r = await api('getPengumuman', {}); pngData = Array.isArray(r.items) ? r.items : []; }
+        catch (e) {
+            box.innerHTML = kosongBox('fa-triangle-exclamation', 'Pengumuman belum bisa dimuat', esc(e && e.message ? e.message : e) + '<br>Menu ini bekerja di mode Firebase dan mode Lokal.');
+            return;
+        }
+        pngRenderGuru();
+    }
+    function pngRenderGuru() {
+        const box = $('png-guru-list'); if (!box) return;
+        const daftar = pngData.slice().sort(pngUrut);
+        box.innerHTML = daftar.length ? daftar.map(p => pngKartu(p, true)).join('')
+            : kosongBox('fa-bell-slash', 'Belum ada pengumuman', 'Klik <b>Tulis Pengumuman</b> untuk membuat yang pertama.');
+    }
+    async function pngSimpan(daftar, pesan) {
+        loading('Menyimpan...');
+        try {
+            const r = await api('savePengumuman', { items: daftar });
+            pngData = Array.isArray(r.items) ? r.items : daftar; pngSiswaT = 0;
+            Swal.close(); toast(pesan); pngRenderGuru();
+            return true;
+        } catch (e) { Swal.close(); galat(e, 'Pengumuman gagal disimpan'); return false; }
+    }
+    async function pngForm(p) {
+        p = p || {};
+        const opsi = Object.keys(PNG_JENIS).map(k => `<option value="${k}" ${(p.jenis || 'info') === k ? 'selected' : ''}>${PNG_JENIS[k].label}</option>`).join('');
+        const r = await Swal.fire({
+            title: p.id ? 'Ubah Pengumuman' : 'Tulis Pengumuman', showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: `<div class="space-y-3 text-left">
+                <label class="block text-[11px] font-semibold text-slate-400">Judul
+                    <input id="png-f-judul" class="field mt-1" maxlength="80" placeholder="Contoh: Ulangan IPAS besok" value="${esc(p.judul || '')}" autocomplete="off"></label>
+                <label class="block text-[11px] font-semibold text-slate-400">Isi pengumuman
+                    <textarea id="png-f-isi" class="field mt-1" rows="5" maxlength="600" placeholder="Tulis pesan untuk siswa...">${esc(p.isi || '')}</textarea></label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="block text-[11px] font-semibold text-slate-400">Jenis<select id="png-f-jenis" class="field mt-1">${opsi}</select></label>
+                    <label class="block text-[11px] font-semibold text-slate-400">Tampil sampai (opsional)
+                        <input id="png-f-akhir" type="date" style="color-scheme:dark" class="field mt-1" value="${esc(p.berakhir || '')}"></label>
+                </div>
+                <label class="flex items-center gap-2 text-xs text-slate-300"><input id="png-f-semat" type="checkbox" class="w-4 h-4" ${p.sematkan ? 'checked' : ''}> Sematkan di paling atas</label>
+            </div>`,
+            preConfirm: () => {
+                const judul = document.getElementById('png-f-judul').value.trim();
+                if (!judul) { Swal.showValidationMessage('Judul wajib diisi'); return false; }
+                return { judul, isi: document.getElementById('png-f-isi').value.trim(), jenis: document.getElementById('png-f-jenis').value,
+                    berakhir: document.getElementById('png-f-akhir').value, sematkan: document.getElementById('png-f-semat').checked };
+            }
+        });
+        if (!r.isConfirmed) return;
+        const baru = Object.assign({}, p, r.value, { id: p.id || Math.random().toString(36).slice(2, 10), dibuat: p.dibuat || new Date().toISOString() });
+        const daftar = p.id ? pngData.map(x => x.id === p.id ? baru : x) : [baru].concat(pngData);
+        if (!p.id && daftar.length > 30) { toast('Maksimal 30 pengumuman. Hapus yang lama dulu.', 'warning'); return; }
+        await pngSimpan(daftar, p.id ? 'Pengumuman diperbarui' : 'Pengumuman diterbitkan');
+    }
+    function pngEdit(id) { const p = pngData.find(x => x.id === id); if (p) pngForm(p); }
+    function pngSemat(id) { pngSimpan(pngData.map(x => x.id === id ? Object.assign({}, x, { sematkan: !x.sematkan }) : x), 'Sematan diubah'); }
+    async function pngHapus(id) {
+        if (!(await konfirmasi('Hapus pengumuman ini?', 'Siswa tidak akan melihatnya lagi.', 'Ya, hapus'))) return;
+        pngSimpan(pngData.filter(x => x.id !== id), 'Pengumuman dihapus');
+    }
+
     function switchTab(id) {
         if (!TABS[id]) id = 'dashboard';
         document.querySelector('#view-guru main').classList.remove('tim-play');
@@ -1963,6 +2131,7 @@
         if (id === 'roster') renderRoster();
         if (id === 'akun') renderAkun();
         if (id === 'absensi') renderAbsensi();
+        if (id === 'pengumuman') renderPengumuman();
         if (id === 'pengaturan') renderPengaturan();
         document.querySelector('#view-guru main').scrollTo({ top: 0 });
     }
