@@ -461,6 +461,15 @@
                                 <label class="flex items-center gap-2"><input id="f-acak-opsi" type="checkbox" checked class="accent-emerald-500 w-4 h-4"> Acak pilihan jawaban</label>
                             </div>
                             <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+                                <label class="flex items-center gap-2 text-xs text-slate-300"><input id="f-penalti-on" type="checkbox" class="accent-emerald-500 w-4 h-4" onchange="$('f-penalti-box').classList.toggle('hidden', !this.checked)"> <i class="fas fa-person-walking-arrow-right text-accent-400"></i> Kurangi nilai bila siswa keluar dari halaman ujian</label>
+                                <div id="f-penalti-box" class="hidden">
+                                    <label class="block text-[11px] font-semibold text-slate-400">Pengurangan tiap 1 kali keluar (poin dari nilai 0-100)
+                                        <input id="f-penalti-poin" type="number" min="0.5" max="100" step="0.5" value="5" class="field mt-1">
+                                    </label>
+                                    <p class="text-[11px] text-slate-500 mt-1">Contoh: diisi 5 dan siswa keluar 3 kali, nilai akhirnya dikurangi 15. Nilai tidak turun di bawah 0. Jumlah keluar tercatat otomatis, dan pengurangan dihitung saat Anda membuka Hasil &amp; Nilai.</p>
+                                </div>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
                                 <label class="block text-[11px] font-semibold text-slate-400"><i class="fas fa-list-check text-accent-400 mr-1.5"></i>Jenis soal yang dipakai pada ujian ini
                                     <select id="f-jenis" class="field mt-1" onchange="renderPreview()">
                                         <option value="semua">Campuran: pilihan ganda + esai (semua soal di file)</option>
@@ -525,6 +534,7 @@
                             <button onclick="muatHasil()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Muat ulang"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
                             <button onclick="ekspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
                             <button onclick="cetakRekap(hasilData)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Cetak semua nilai dalam 1 lembar"><i class="fas fa-print mr-1.5"></i>Cetak Nilai 1 Lembar</button>
+                            <button onclick="aturPenalti()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Atur pengurangan nilai bila siswa keluar dari halaman ujian"><i class="fas fa-person-walking-arrow-right mr-1.5"></i>Potongan Keluar</button>
                             <button onclick="hapusSemuaFoto()" class="bg-slate-800 hover:bg-slate-700 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Hapus semua foto kamera ujian ini"><i class="fas fa-camera-rotate mr-1.5"></i>Hapus Foto</button>
                             <button onclick="hapusSemuaSuara()" class="bg-slate-800 hover:bg-slate-700 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Hapus semua rekaman suara ujian ini"><i class="fas fa-microphone-slash mr-1.5"></i>Hapus Suara</button>
                         </div>
@@ -1176,7 +1186,7 @@
             try { await fbHapusFoto(C, kode, null); } catch (e) { /* Rules foto belum dipasang: abaikan */ }
             try { await fbHapusSuara(C, kode, null); } catch (e) { /* Rules suara belum dipasang: abaikan */ }
             const bt = fs.writeBatch(D);
-            bt.set(ref('ujian', kode), { kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi,
+            bt.set(ref('ujian', kode), { kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, penalti_poin: Math.max(0, Math.min(Number(u.penalti_poin) || 0, 100)),
                 kamera: !!u.kamera, kamera_detik: [30, 60, 120].includes(Number(u.kamera_detik)) ? Number(u.kamera_detik) : 60, kamera_wajib: !!u.kamera_wajib,
                 suara: !!u.suara, suara_interval: [60, 120, 180, 300, 600].includes(Number(u.suara_interval)) ? Number(u.suara_interval) : 60, suara_lama: [10, 15, 20, 30].includes(Number(u.suara_lama)) ? Number(u.suara_lama) : 10, suara_wajib: !!u.suara_wajib,
                 jadwal: rapikanJadwal(u.jadwal), status: rapikanJadwal(u.jadwal) ? 'buka' : 'tutup', dibuat: new Date().toISOString(), jumlah_soal: items.length, jumlah_pg: pg, jumlah_esai: items.length - pg, siswa: rapikanSiswa(b.siswa) });
@@ -1474,7 +1484,7 @@
             d.hasil.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 10), kode, nama, absen,
                 waktu: new Date().toISOString(), durasi: Math.max(0, Math.min(Math.round(Number(b.durasi) || 0), ex.ujian.durasi * 60)),
                 jawaban: jaw, skor: {}, poin_pg: pg.poin, jumlah_pg: pg.jumlah, benar: pg.benar, nilai_pg: nilaiPg,
-                poin_esai: null, nilai_akhir: nilaiAkhir, status_esai: adaEsai ? 'menunggu' : '' });
+                poin_esai: null, nilai_akhir: nilaiAkhir, status_esai: adaEsai ? 'menunggu' : '', keluar: Math.max(0, Math.min(Math.round(Number(b.keluar) || 0), 9999)) });
             lkTulis(d);
             const hasilId = d.hasil[d.hasil.length - 1].id;
             return { ok: true, ada_esai: adaEsai, nilai_pg: nilaiPg, nilai_akhir: nilaiAkhir, jumlah_pg: pg.jumlah, benar: pg.benar, hasil_id: hasilId };
@@ -1518,7 +1528,7 @@
             });
             // Kode yang sama diganti total; nilai lama ikut dihapus karena tidak cocok lagi dengan soal baru.
             d.ujian = d.ujian.filter(x => x.kode !== kode); d.soal = d.soal.filter(x => x.kode !== kode); d.hasil = d.hasil.filter(x => x.kode !== kode);
-            d.ujian.push({ kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, jadwal: rapikanJadwal(u.jadwal), status: rapikanJadwal(u.jadwal) ? 'buka' : 'tutup', dibuat: new Date().toISOString(), siswa: rapikanSiswa(b.siswa) });
+            d.ujian.push({ kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, penalti_poin: Math.max(0, Math.min(Number(u.penalti_poin) || 0, 100)), jadwal: rapikanJadwal(u.jadwal), status: rapikanJadwal(u.jadwal) ? 'buka' : 'tutup', dibuat: new Date().toISOString(), siswa: rapikanSiswa(b.siswa) });
             d.soal.push(...baris);
             lkTulis(d);
             return { ok: true };
@@ -1774,6 +1784,54 @@
         }
     });
 
+    /* ---------- Peringatan keluar tidak sengaja: tombol kembali, layar penuh, kembali dari aplikasi lain ---------- */
+    let pjDialog = false, pjHilangAt = 0, pjBannerT = null;
+    function pjBanner(teks, tombol, aksi) {
+        const lama = document.getElementById('pj-banner'); if (lama) lama.remove();
+        const el = document.createElement('div');
+        el.id = 'pj-banner';
+        el.className = 'fixed left-3 right-3 z-[9998] bg-amber-500 text-slate-900 rounded-xl shadow-2xl px-4 py-3 text-xs font-bold flex items-center gap-3';
+        el.style.top = 'calc(env(safe-area-inset-top, 0px) + 8px)';
+        const t = document.createElement('span'); t.className = 'flex-1'; t.textContent = teks; el.appendChild(t);
+        if (tombol) {
+            const b = document.createElement('button'); b.className = 'bg-slate-900 text-amber-300 rounded-lg px-3 py-1.5 shrink-0'; b.textContent = tombol;
+            b.onclick = () => { el.remove(); try { aksi(); } catch (e) {} };
+            el.appendChild(b);
+        }
+        document.body.appendChild(el);
+        clearTimeout(pjBannerT); pjBannerT = setTimeout(() => { if (el.parentNode) el.remove(); }, tombol ? 15000 : 7000);
+    }
+    // Satu entri riwayat disiapkan agar tombol kembali (HP / browser) bisa ditahan dan ditanyakan dulu
+    function pjPasangRiwayat() {
+        try { if (!(history.state && history.state.ujian)) history.pushState({ ujian: 1 }, '', location.href); } catch (e) {}
+    }
+    async function pjTanyaKeluar() {
+        if (pjDialog || Swal.isVisible()) return;   // dialog lain sedang terbuka: jangan ditimpa
+        pjDialog = true;
+        const r = await Swal.fire({ icon: 'question', title: 'Yakin ingin keluar dari ujian?', showCancelButton: true, allowOutsideClick: false, allowEscapeKey: false,
+            confirmButtonText: 'Tidak, lanjut mengerjakan', cancelButtonText: 'Minta izin keluar', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: '<p class="text-sm">Anda menekan tombol kembali. Jawaban Anda aman dan waktu tetap berjalan. Bila tidak sengaja, pilih <b>lanjut mengerjakan</b>.</p>' });
+        pjDialog = false;
+        if (r.dismiss === Swal.DismissReason.cancel && enUjian()) mintaKeluar();
+    }
+    window.addEventListener('popstate', () => {
+        if (!enUjian()) return;
+        try { history.pushState({ ujian: 1 }, '', location.href); } catch (e) {}   // tetap di halaman ujian
+        pjTanyaKeluar();
+    });
+    // Layar penuh tertutup (mis. tidak sengaja menggeser/menekan kembali): tawarkan kembali ke layar penuh
+    document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement || !enUjian()) return;
+        pjBanner('Layar penuh tertutup.', 'Kembali ke layar penuh', () => { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); });
+    });
+    // Kembali dari aplikasi lain / tab lain: ingatkan agar tetap di halaman ujian
+    document.addEventListener('visibilitychange', () => {
+        if (!enUjian()) return;
+        if (document.visibilityState === 'hidden') { pjHilangAt = Date.now(); return; }
+        const lama = pjHilangAt ? Date.now() - pjHilangAt : 0; pjHilangAt = 0;
+        if (lama >= 1500) pjBanner('Anda sempat keluar dari halaman ujian. Mohon tetap di halaman ini sampai selesai.');
+    });
+
     /* ---------- Kamera pengawas: foto kecil berkala, dikirim berkelompok ---------- */
     let kamStream = null, kamTimer = null, kamBuf = [], kamJalan = false, kamCtx = null;
     async function kamMinta() {
@@ -1995,6 +2053,7 @@
         renderSoal();
         kamMulai();
         suaraMulai();
+        pjPasangRiwayat();
     }
     function tickUjian() {
         if (!attempt) return;
@@ -2455,14 +2514,17 @@
             if (!sw.length) { if (!await konfirmasi('Data Siswa masih kosong', 'Siswa akan masuk dengan cara lama (nama lengkap + jenis kelamin), tanpa pencocokan nomor absen. Isi menu Data Siswa dulu bila ingin login dengan absen + nama.', 'Ya, simpan tanpa daftar')) return; }
             else if (s.tanpaAbsen.length && !await konfirmasi(s.tanpaAbsen.length + ' siswa belum punya nomor absen', 'Mereka tidak bisa masuk ujian: ' + s.tanpaAbsen.slice(0, 5).map(x => x.nama).join(', ') + (s.tanpaAbsen.length > 5 ? ', dan lainnya' : '') + '. Lengkapi nomor absen di Data Siswa, atau lanjut simpan.', 'Ya, lanjut simpan')) return;
         }
+        if ($('f-penalti-on').checked && !(Number($('f-penalti-poin').value) > 0)) return galat(new Error('Isi jumlah pengurangan nilai lebih dari 0, atau matikan pilihan pengurangan nilai.'), 'Data belum lengkap');
         loading('Menyimpan ujian...');
         try {
             await api('saveExam', Object.assign({ ujian: { kode, judul, durasi, acak_soal: $('f-acak-soal').checked, acak_opsi: $('f-acak-opsi').checked,
+                penalti_poin: $('f-penalti-on').checked ? Math.max(0, Math.min(Number($('f-penalti-poin').value) || 0, 100)) : 0,
                 kamera: $('f-kam').checked, kamera_detik: Number($('f-kam-detik').value), kamera_wajib: $('f-kam-wajib').value === '1',
                 suara: $('f-suara').checked, suara_interval: Number($('f-suara-interval').value), suara_lama: Number($('f-suara-lama').value), suara_wajib: $('f-suara-wajib').value === '1', jadwal: jdwl }, soal: soalPakai }, dukungSiswa() ? { siswa: sw } : {}));
+            db.penalti = db.penalti || {}; if ($('f-penalti-on').checked) db.penalti[kode] = Math.max(0, Math.min(Number($('f-penalti-poin').value) || 0, 100)); else delete db.penalti[kode]; saveDB();
             Swal.close();
             toast(jdwl ? 'Ujian terjadwal dan dibuka otomatis' : 'Ujian tersimpan (status: Tutup)');
-            soalImpor = null; renderPreview(); $('f-judul').value = ''; $('f-jenis').value = 'semua'; $('f-jadwal-on').checked = false; $('f-jadwal').value = ''; $('f-jadwal-box').classList.add('hidden'); $('f-kam').checked = false; $('f-kam-opsi').classList.add('hidden'); $('f-suara').checked = false; $('f-suara-opsi').classList.add('hidden'); acakKode();
+            soalImpor = null; renderPreview(); $('f-judul').value = ''; $('f-jenis').value = 'semua'; $('f-jadwal-on').checked = false; $('f-jadwal').value = ''; $('f-jadwal-box').classList.add('hidden'); $('f-kam').checked = false; $('f-kam-opsi').classList.add('hidden'); $('f-suara').checked = false; $('f-suara-opsi').classList.add('hidden'); $('f-penalti-on').checked = false; $('f-penalti-box').classList.add('hidden'); acakKode();
             await muatUjian(true);
         } catch (e) { Swal.close(); galat(e, 'Gagal menyimpan'); }
     }
@@ -2568,7 +2630,7 @@
                 <td class="px-3 py-3 text-center">${badgeJK(h.jk)}</td>
                 <td class="px-3 py-3 text-center text-slate-300">${fmtNilai(h.nilai_pg)}</td>
                 <td class="px-3 py-3 text-center">${badge(h)}</td>
-                <td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(h.nilai_akhir)}</td>
+                <td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(h.nilai_akhir)}${h.potongan > 0 ? `<div class="text-[10px] font-bold text-red-400" title="Nilai sebelum pengurangan: ${fmtNilai(h.nilai_akhir_asli)}">−${fmtNilai(h.potongan)}</div>` : ''}</td>
                 <td class="px-3 py-3 text-center">${badgeKeluar(h.keluar)}</td>
                 <td class="px-3 py-3 text-right whitespace-nowrap">
                     ${d.ujian && d.ujian.suara ? `<button onclick="lihatSuara('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Dengarkan rekaman suara"><i class="fas fa-microphone"></i></button>` : ''}
@@ -2947,9 +3009,9 @@ service cloud.firestore {
 
     function ekspor() {
         if (!hasilData || !hasilData.hasil.length) return toast('Belum ada data untuk diekspor', 'info');
-        const rows = [['Nama', 'JK', 'Absen', 'Nilai PG', 'Poin PG', 'Poin Esai', 'Nilai Akhir', 'Status Esai', 'Durasi (menit)', 'Keluar (×)', 'Waktu Kumpul']];
+        const rows = [['Nama', 'JK', 'Absen', 'Nilai PG', 'Poin PG', 'Poin Esai', 'Nilai Akhir', 'Status Esai', 'Durasi (menit)', 'Keluar (×)', 'Potongan Keluar', 'Waktu Kumpul']];
         hasilData.hasil.slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id')).forEach(h =>
-            rows.push([h.nama, h.jk || '', h.absen, h.nilai_pg, h.poin_pg, h.poin_esai ?? '', h.nilai_akhir ?? '', h.status_esai, Math.round(h.durasi / 6) / 10, Number(h.keluar) || 0, h.waktu]));
+            rows.push([h.nama, h.jk || '', h.absen, h.nilai_pg, h.poin_pg, h.poin_esai ?? '', h.nilai_akhir ?? '', h.status_esai, Math.round(h.durasi / 6) / 10, Number(h.keluar) || 0, h.potongan || 0, h.waktu]));
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Nilai');
         XLSX.writeFile(wb, 'nilai-' + hasilData.ujian.kode + '.xlsx');
@@ -3369,7 +3431,42 @@ service cloud.firestore {
        jadi skrip Google Sheets tidak perlu diubah. Di panel guru penanda ini dibaca lalu disembunyikan.
        ============================================================ */
     const parseJK = h => { const m = String(h.nama).match(/^(.*?)\s*\[([LP])\]\s*$/); return m ? Object.assign({}, h, { nama: m[1], jk: m[2] }) : Object.assign({}, h, { jk: '' }); };
-    async function ambilHasil(kode) { const r = await api('getResults', { kode }); r.hasil = r.hasil.map(parseJK); return r; }
+    /* Pengurangan nilai karena keluar halaman ujian. Poin per keluar: pengaturan di perangkat guru lebih diutamakan,
+       bila tidak ada dipakai yang tersimpan bersama ujian. Dihitung dari jumlah keluar asli, jadi mengubah angka akan menghitung ulang semua nilai. */
+    function poinPenalti(kode, ujian) {
+        const lokal = db.penalti && db.penalti[kode];
+        const p = (lokal !== undefined && lokal !== null) ? Number(lokal) : Number(ujian && ujian.penalti_poin);
+        return p > 0 ? p : 0;
+    }
+    function terapkanPenalti(h, p) {
+        const asli = (h.nilai_akhir === undefined || h.nilai_akhir === '') ? null : h.nilai_akhir;
+        const n = Math.max(0, Math.round(Number(h.keluar) || 0));
+        h.nilai_akhir_asli = asli; h.potongan = 0;
+        if (p > 0 && n > 0 && asli !== null) {
+            h.potongan = Math.min(lkBulat(n * p), Number(asli));
+            h.nilai_akhir = lkBulat(Math.max(0, Number(asli) - n * p));
+        }
+        return h;
+    }
+    async function ambilHasil(kode) {
+        const r = await api('getResults', { kode }); r.hasil = r.hasil.map(parseJK);
+        r.penalti = poinPenalti(kode, r.ujian);
+        r.hasil = r.hasil.map(h => terapkanPenalti(h, r.penalti));
+        return r;
+    }
+    async function aturPenalti() {
+        const kode = $('h-kode').value; if (!kode) return;
+        const sekarang = poinPenalti(kode, hasilData && hasilData.ujian);
+        const r = await Swal.fire({ title: 'Pengurangan nilai bila keluar', icon: 'question', showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#059669',
+            html: `<label class="flex items-center gap-2 text-sm justify-center mb-3"><input id="pn-on" type="checkbox" ${sekarang > 0 ? 'checked' : ''} class="w-4 h-4"> Aktifkan pengurangan nilai</label>
+                   <label class="block text-xs text-left">Pengurangan tiap 1 kali keluar (poin)<input id="pn-poin" type="number" min="0.5" max="100" step="0.5" value="${sekarang > 0 ? sekarang : 5}" class="swal2-input" style="margin:6px 0 0;width:100%"></label>
+                   <p class="text-xs mt-2 text-left" style="opacity:.7">Berlaku untuk semua siswa di ujian ini, termasuk yang sudah mengumpulkan. Nilai dihitung ulang dari jumlah keluar yang tercatat, tidak pernah turun di bawah 0.</p>`,
+            preConfirm: () => { const on = document.getElementById('pn-on').checked, p = Number(document.getElementById('pn-poin').value); if (on && !(p > 0)) { Swal.showValidationMessage('Isi pengurangan lebih dari 0'); return false; } return on ? Math.min(p, 100) : 0; } });
+        if (!r.isConfirmed) return;
+        db.penalti = db.penalti || {}; db.penalti[kode] = r.value; saveDB();
+        toast(r.value > 0 ? 'Pengurangan ' + r.value + ' poin tiap keluar diaktifkan' : 'Pengurangan nilai dimatikan');
+        muatHasil();
+    }
     const badgeJK = jk => jk ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${jk === 'L' ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30' : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'}">${jk}</span>` : '<span class="text-slate-600">—</span>';
     const nilaiKosong = h => h.nilai_akhir === null || h.nilai_akhir === undefined || h.nilai_akhir === '';
     const aduCache = {}; let aduRows = [];
