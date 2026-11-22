@@ -787,6 +787,23 @@
     &amp;&amp; request.auth.token.email == "EMAIL_GURU@gmail.com";
 }</pre>
                         </details>
+                        <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800" ontoggle="rulesIsi()">
+                            <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-file-code text-accent-400 mr-2"></i>Rules Firestore lengkap (salin / unduh, untuk Firebase baru)</summary>
+                            <p class="mt-3 text-[12px] text-slate-400">Cocok untuk guru yang baru membuat proyek Firebase. Ketik email guru, tekan <b class="text-slate-200">Salin</b> atau <b class="text-slate-200">Unduh</b>, lalu tempel ke Firebase. Rules sudah lengkap: ujian, soal, kunci, hasil, nilai, kamera, dan rekam suara.</p>
+                            <label class="block text-[11px] font-semibold text-slate-400 mt-3">Email guru <span class="text-slate-500">(sama dengan email di Firebase Authentication; beberapa email pisahkan dengan koma)</span>
+                                <input id="rf-email" type="text" class="field mt-1" placeholder="guru@gmail.com" autocomplete="off"></label>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <button onclick="rulesSalin()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-copy mr-1.5"></i>Salin Rules</button>
+                                <button onclick="rulesUnduh()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-download mr-1.5"></i>Unduh firestore.rules</button>
+                            </div>
+                            <ol class="mt-3 space-y-1.5 text-[12px] text-slate-400 list-decimal pl-5">
+                                <li>Di Firebase Console, buka <b class="text-slate-200">Build &rarr; Authentication &rarr; Sign-in method</b>, aktifkan <b class="text-slate-200">Email/Password</b>. Di tab <b class="text-slate-200">Users</b>, tekan <b class="text-slate-200">Add user</b> dan isi email serta password guru.</li>
+                                <li>Buka <b class="text-slate-200">Build &rarr; Firestore Database &rarr; Rules</b>.</li>
+                                <li>Hapus seluruh isi editor (pilih semua, lalu hapus), tempel hasil <b class="text-slate-200">Salin Rules</b>. Bila memakai file unduhan, buka file itu dengan aplikasi catatan, salin isinya, lalu tempel.</li>
+                                <li>Tekan <b class="text-slate-200">Publish</b>.</li>
+                            </ol>
+                            <p class="mt-2 text-[11px] text-amber-300">Rules ini menggantikan seluruh Rules yang ada. Jangan dipakai bila proyek Firebase Anda punya aturan lain yang masih dibutuhkan.</p>
+                        </details>
                         <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
                             <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-shield-halved text-accent-400 mr-2"></i>Penyimpanan &amp; keamanan data</summary>
                             <p class="mt-3 text-[12px] text-slate-400">Data ujian tersimpan di Firebase/Google Sheets (atau di perangkat bila Mode Lokal). Data Siswa, Absensi, dan KKM tersimpan di perangkat ini saja; gunakan tombol Ekspor Excel secara berkala sebagai arsip. Menghapus data browser akan menghapus data tersebut.</p>
@@ -2607,6 +2624,112 @@
         if (!await konfirmasi('Hapus semua rekaman suara ujian ' + hasilKode + '?', 'Semua rekaman suara dari semua siswa untuk ujian ini dihapus permanen.', 'Ya, hapus semua')) return;
         loading('Menghapus...');
         try { const x = await api('hapusSuara', { kode: hasilKode }); Swal.close(); toast(x.n + ' berkas rekaman dihapus'); } catch (e) { Swal.close(); galat(e); }
+    }
+    /* ---------- Rules Firestore lengkap: salin / unduh (Panduan) ---------- */
+    function rulesIsi() {
+        const el = $('rf-email'); if (!el || el.value) return;
+        try { el.value = localStorage.getItem(APP.slug + '_email') || ''; } catch (e) {}
+    }
+    function rulesBuat(daftarEmail) {
+        const em = daftarEmail.map(x => "'" + x + "'").join(', ');
+        return `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Akun guru: email yang dibuat di Firebase Authentication.
+    function guru() {
+      return request.auth != null
+        && request.auth.token.email in [${em}];
+    }
+
+    // Data ujian: siswa boleh membaca satu ujian jika tahu kodenya, tetapi tidak boleh melihat daftar semua ujian.
+    match /ujian/{kode} {
+      allow get: if true;
+      allow list, write: if guru();
+    }
+
+    // Soal: siswa hanya boleh membaca saat ujian berstatus "buka".
+    match /soal/{kode} {
+      allow get: if guru() || get(/databases/$(database)/documents/ujian/$(kode)).data.status == 'buka';
+      allow list, write: if guru();
+    }
+
+    // Kunci jawaban: hanya guru.
+    match /kunci/{kode} {
+      allow read, write: if guru();
+    }
+
+    // Jawaban siswa: siswa hanya boleh mengirim satu kali (tidak bisa membaca atau mengubah).
+    match /hasil/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['id','kode','nama','absen','waktu','durasi','jawaban','status_esai','keluar'])
+        && request.resource.data.id == id
+        && request.resource.data.kode is string
+        && id.matches(request.resource.data.kode + '__.*')
+        && request.resource.data.nama is string && request.resource.data.nama.size() > 0 && request.resource.data.nama.size() <= 70
+        && request.resource.data.absen is string && request.resource.data.absen.size() > 0 && request.resource.data.absen.size() <= 10
+        && request.resource.data.jawaban is map
+        && exists(/databases/$(database)/documents/ujian/$(request.resource.data.kode));
+      allow read, update, delete: if guru();
+    }
+
+    // Nilai yang sudah di-ACC guru: siswa hanya bisa membaca satu dokumen miliknya.
+    match /nilai/{id} {
+      allow get: if true;
+      allow list, write: if guru();
+    }
+
+    match /recall/{id} {
+      allow create, get: if true;
+      allow read, write: if guru();
+    }
+
+    match /recall_ok/{id} {
+      allow get, delete: if true;
+      allow read, write: if guru();
+    }
+
+    // Kamera pengawas
+    match /foto/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['kode','absen','nama','waktu','fotos'])
+        && request.resource.data.fotos is list
+        && request.resource.data.fotos.size() <= 8;
+      allow get, list, update, delete: if guru();
+    }
+
+    // Rekam suara
+    match /suara/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['kode','absen','nama','waktu','klip'])
+        && request.resource.data.klip is list
+        && request.resource.data.klip.size() <= 3;
+      allow get, list, update, delete: if guru();
+    }
+
+    match /{other=**} {
+      allow read, write: if false;
+    }
+  }
+}
+`;
+    }
+    function rulesAmbil() {
+        const daftar = String($('rf-email').value || '').toLowerCase().split(/[\s,;]+/).filter(Boolean);
+        if (!daftar.length) { galat(new Error('Isi email guru dulu.'), 'Email belum diisi'); return null; }
+        const salah = daftar.find(x => !/^[^\s@'"\\]+@[^\s@'"\\]+\.[^\s@'"\\]+$/.test(x));
+        if (salah) { galat(new Error('Email tidak valid: ' + salah), 'Email belum benar'); return null; }
+        return rulesBuat(daftar);
+    }
+    async function rulesSalin() {
+        const t = rulesAmbil(); if (!t) return;
+        try { await navigator.clipboard.writeText(t); toast('Rules disalin. Tempel di Firebase.'); }
+        catch (e) { Swal.fire({ title: 'Salin Rules ini', input: 'textarea', inputValue: t, width: 720, confirmButtonColor: '#059669' }); }
+    }
+    function rulesUnduh() {
+        const t = rulesAmbil(); if (!t) return;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([t], { type: 'text/plain' })); a.download = 'firestore.rules';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        toast('firestore.rules diunduh');
     }
     async function detailSiswa(id) {
         const h = hasilData.hasil.find(x => x.id === id);
