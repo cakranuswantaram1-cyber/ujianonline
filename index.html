@@ -81,10 +81,54 @@
         #t-pane-soal:not(.hidden) { display: block; }
         @media print { #view-ujian { display: none !important; } }
         @media print { #sidebar, header, #splash-screen, .no-print { display: none !important; } body { background: #fff; color: #000; } }
+        /* Cetak Review Jawaban: hanya #print-area yang dicetak */
+        #print-area { display: none; }
+        @media print {
+            @page { size: A4; margin: 15mm 14mm 16mm; }
+            html, body { height: auto !important; overflow: visible !important; padding: 0 !important; background: #fff !important; color: #111 !important; }
+            body > *:not(#print-area) { display: none !important; }
+            #print-area { display: block !important; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #111;
+                          -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .pr-page { page-break-after: always; }
+            .pr-page:last-child { page-break-after: auto; }
+            .pr-kop { text-align: center; border-bottom: 3px double #0f172a; padding-bottom: 7px; margin-bottom: 10px; }
+            .pr-kop .sk { font-size: 12pt; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+            .pr-kop .jd { font-size: 14pt; font-weight: 800; margin-top: 3px; }
+            .pr-kop .sj { font-size: 9.5pt; color: #475569; margin-top: 1px; }
+            .pr-box { display: flex; gap: 10px; margin-bottom: 10px; }
+            .pr-info { flex: 1; border-collapse: collapse; font-size: 10pt; }
+            .pr-info td { padding: 2px 0; vertical-align: top; }
+            .pr-info td:first-child { width: 30%; color: #475569; }
+            .pr-info td:nth-child(2) { width: 3%; }
+            .pr-nilai { width: 28%; border: 2px solid #0f172a; border-radius: 8px; text-align: center; padding: 6px 4px; display: flex; flex-direction: column; justify-content: center; }
+            .pr-nilai b { font-size: 26pt; font-weight: 800; line-height: 1.05; }
+            .pr-nilai span { font-size: 8pt; text-transform: uppercase; letter-spacing: .05em; color: #475569; }
+            .pr-ring { display: flex; gap: 6px; margin-bottom: 10px; }
+            .pr-ring div { flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; text-align: center; background: #f8fafc; }
+            .pr-ring b { display: block; font-size: 12pt; font-weight: 800; }
+            .pr-ring span { font-size: 7.5pt; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
+            .pr-tbl { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+            .pr-tbl thead { display: table-header-group; }
+            .pr-tbl th { background: #0f172a !important; color: #fff !important; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .04em; padding: 5px 6px; text-align: left; border: 1px solid #0f172a; }
+            .pr-tbl td { border: 1px solid #cbd5e1; padding: 5px 6px; vertical-align: top; }
+            .pr-tbl tr { break-inside: avoid; page-break-inside: avoid; }
+            .pr-tbl .no { width: 6%; text-align: center; font-weight: 700; }
+            .pr-tbl .sl { width: 38%; white-space: pre-wrap; }
+            .pr-tbl .js { width: 21%; white-space: pre-wrap; } .pr-tbl .jb { width: 22%; white-space: pre-wrap; }
+            .pr-tbl .ht { width: 13%; text-align: center; font-weight: 800; font-size: 8.5pt; }
+            .pr-tbl tr.salah td, .pr-tbl tr.kosong td { background: #fef2f2 !important; }
+            .pr-tbl tr.salah .ht { color: #b91c1c; } .pr-tbl tr.kosong .ht { color: #b45309; } .pr-tbl tr.benar .ht { color: #047857; } .pr-tbl tr.esai .ht, .pr-tbl tr.nokey .ht { color: #0369a1; }
+            .pr-tbl .jb b { color: #047857; } .pr-tbl .mu { color: #94a3b8; }
+            .pr-ttd { margin-top: 18px; display: flex; justify-content: flex-end; break-inside: avoid; }
+            .pr-ttd div { width: 42%; text-align: center; font-size: 10pt; }
+            .pr-ttd .gap { height: 46px; }
+            .pr-foot { margin-top: 8px; font-size: 8pt; color: #94a3b8; text-align: right; }
+        }
     </style>
 </head>
 <body class="antialiased">
 
+    <div id="print-area"></div>
     <div id="t-layar" class="hidden fixed inset-0 z-[90] bg-gradient-to-br from-[#0f172a] to-[#0b1329] overflow-y-auto screen-fixed p-6 cursor-pointer" onclick="tutupLayar()"></div>
 
     <!-- Splash screen -->
@@ -298,6 +342,7 @@
                     <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Ujian</div>
                     <button onclick="switchTab('ujian')" id="btn-ujian" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-file-pen w-5 text-center"></i><span>Kelola Ujian</span></button>
                     <button onclick="switchTab('hasil')" id="btn-hasil" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-ranking-star w-5 text-center"></i><span>Hasil &amp; Nilai</span></button>
+                    <button onclick="switchTab('review')" id="btn-review" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-list-check w-5 text-center"></i><span>Review Jawaban</span></button>
                     <button onclick="switchTab('rilis')" id="btn-rilis" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-bullhorn w-5 text-center"></i><span>Rilis Nilai (ACC)</span></button>
                     <button onclick="switchTab('adu')" id="btn-adu" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-trophy w-5 text-center"></i><span>Adu L vs P</span></button>
                     <button onclick="switchTab('tim')" id="btn-tim" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-people-group w-5 text-center"></i><span>Kuis Langsung L vs P</span></button>
@@ -410,6 +455,30 @@
                         </div>
                         <div id="h-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
                         <div id="h-tabel"></div>
+                    </section>
+
+                    <section id="tab-review-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <label class="block text-[11px] font-semibold text-slate-400">Ujian
+                                    <select id="rv-kode" onchange="rvMuat()" class="field mt-1"></select></label>
+                                <label class="block text-[11px] font-semibold text-slate-400">Siswa
+                                    <select id="rv-siswa" onchange="rvTampil()" class="field mt-1"></select></label>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <label class="block text-[11px] font-semibold text-slate-400">Nama Sekolah / Madrasah <span class="text-slate-500">(untuk kop cetakan)</span>
+                                    <input id="rv-sekolah" class="field mt-1" placeholder="Contoh: MIN 2 Cirebon" onchange="rvSimpanInfo()"></label>
+                                <label class="block text-[11px] font-semibold text-slate-400">Kelas
+                                    <input id="rv-kelas" class="field mt-1" placeholder="Contoh: Kelas IV A" onchange="rvSimpanInfo()"></label>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="rvMuat(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
+                                <button onclick="rvCetak(false)" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-pdf mr-1.5"></i>Cetak PDF Siswa Ini</button>
+                                <button onclick="rvCetak(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-print mr-1.5"></i>Cetak Semua Siswa</button>
+                            </div>
+                            <p class="text-[10px] text-slate-500">Tombol cetak membuka jendela cetak. Pilih <b class="text-slate-300">Simpan sebagai PDF</b> (di HP: Cetak lalu Simpan PDF). Cetak Semua: satu halaman per siswa.</p>
+                        </div>
+                        <div id="rv-isi"></div>
                     </section>
 
                     <section id="tab-tim-view" class="tab-content hidden">
@@ -667,7 +736,7 @@
     // Opsional: isi ID/alamat skrip di sini bila ingin tertanam permanen di aplikasi (tanpa tautan ?s=).
     const SCRIPT_DEFAULT = '';
     const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
-    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', roster: 'Data Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
+    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', roster: 'Data Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
     const SCREENS = ['landing', 'siswa', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
@@ -983,7 +1052,7 @@
             const [ss, ks, hs] = await Promise.all([fs.getDoc(ref('soal', kode)), fs.getDoc(ref('kunci', kode)), fs.getDocs(fs.query(col('hasil'), fs.where('kode', '==', kode)))]);
             const items = ss.exists() ? (ss.data().items || []) : [], kunci = ks.exists() ? (ks.data().k || {}) : {};
             const hasil = hs.docs.map(d => fbHitung(items, kunci, d.data())).sort((a, b) => String(a.waktu).localeCompare(String(b.waktu)));
-            return { ok: true, ujian: us.data(), soal: items.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot })), hasil };
+            return { ok: true, ujian: us.data(), soal: items.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot, opsi: q.opsi || [], kunci: kunci[q.no] || '' })), hasil };
         }
 
         if (action === 'gradeEssay') {
@@ -1263,7 +1332,7 @@
         if (action === 'getResults') {
             const ex = lkEx(d, lkKode(b.kode));
             if (!ex) throw new Error('Ujian tidak ditemukan.');
-            return { ok: true, ujian: ex.ujian, soal: ex.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot })),
+            return { ok: true, ujian: ex.ujian, soal: ex.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot, opsi: q.opsi || [], kunci: q.kunci || '' })),
                 hasil: d.hasil.filter(h => h.kode === ex.ujian.kode) };
         }
 
@@ -1383,6 +1452,7 @@
         if (id === 'dashboard') { renderDashboard(); renderDashExtra(); }
         if (id === 'ujian') renderUjian();
         if (id === 'hasil') renderHasil();
+        if (id === 'review') renderReview();
         if (id === 'adu') renderAdu(true);
         if (id === 'tim') { if (timView === 'soal' && !timBaca().aktif) timView = 'set'; renderTim(); }
         if (id === 'bank') renderBank();
@@ -2068,6 +2138,7 @@
                 <td class="px-3 py-3 text-right whitespace-nowrap">
                     ${d.ujian && d.ujian.kamera ? `<button onclick="lihatFoto('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Lihat foto kamera"><i class="fas fa-camera"></i></button>` : ''}
                     <button onclick="detailSiswa('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Detail / nilai esai"><i class="fas fa-eye"></i></button>
+                    <button onclick="rvBuka('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Review jawaban benar/salah"><i class="fas fa-list-check"></i></button>
                     <button onclick="resetSiswa('${esc(h.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus agar siswa bisa mengulang"><i class="fas fa-rotate-left"></i></button>
                 </td></tr>`).join('')}</tbody></table></div>`;
     }
@@ -2140,6 +2211,138 @@
         try { await api('resetStudent', { id }); Swal.close(); toast('Jawaban dihapus'); muatHasil(); }
         catch (e) { Swal.close(); galat(e); }
     }
+
+    /* ============================================================
+       REVIEW JAWABAN: benar/salah per soal, kunci untuk yang salah, cetak PDF
+       ============================================================ */
+    let rvData = null, rvFilter = 'semua';
+    const rvOpsi = (q, k) => { const o = (q.opsi || []).find(x => x.k === k); return o ? o.t : ''; };
+    const rvTeks = (q, k) => k ? k + (rvOpsi(q, k) ? '. ' + rvOpsi(q, k) : '') : '';
+    function rvAnalisis(h, soal) {
+        const jaw = h.jawaban || {}, skor = h.skor || {};
+        const baris = soal.map(q => {
+            const j = jaw[q.no];
+            if (q.jenis === 'ESAI') {
+                const ada = h.status_esai === 'selesai' && skor[q.no] !== undefined && skor[q.no] !== null;
+                return { q, j: j === undefined ? '' : String(j), status: 'esai', skor: ada ? Number(skor[q.no]) : null };
+            }
+            const jw = String(j || '').toUpperCase();
+            if (!q.kunci) return { q, j: jw, status: 'nokey' };
+            return { q, j: jw, status: !jw ? 'kosong' : jw === q.kunci ? 'benar' : 'salah' };
+        });
+        const n = s => baris.filter(b => b.status === s).length;
+        return { baris, benar: n('benar'), salah: n('salah'), kosong: n('kosong'), esai: n('esai'), nokey: n('nokey') };
+    }
+    function rvSimpanInfo() { db.settings.sekolah = $('rv-sekolah').value.trim(); db.settings.kelas = $('rv-kelas').value.trim(); saveDB(); }
+    async function renderReview(paksa) {
+        const sel = $('rv-kode');
+        $('rv-sekolah').value = db.settings.sekolah || ''; $('rv-kelas').value = db.settings.kelas || '';
+        try { await muatUjian(true); } catch (e) { $('rv-isi').innerHTML = pesanGalat(e); return; }
+        const list = cache.ujian;
+        if (!list.length) { sel.innerHTML = '<option value="">(belum ada ujian)</option>'; $('rv-siswa').innerHTML = ''; $('rv-isi').innerHTML = kosongBox('fa-inbox', 'Belum ada ujian'); return; }
+        const lama = sel.value || hasilKode;
+        sel.innerHTML = list.map(u => `<option value="${esc(u.kode)}">${esc(u.judul)} (${esc(u.kode)})</option>`).join('');
+        if (list.some(u => u.kode === lama)) sel.value = lama;
+        rvMuat(paksa);
+    }
+    async function rvMuat(paksa) {
+        const kode = $('rv-kode').value; if (!kode) return;
+        const siswaLama = rvPilih || $('rv-siswa').value; rvPilih = '';
+        $('rv-isi').innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>';
+        try { rvData = await ambilHasil(kode); } catch (e) { rvData = null; $('rv-isi').innerHTML = pesanGalat(e); return; }
+        const hs = rvData.hasil.slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id'));
+        rvData.hasil = hs;
+        $('rv-siswa').innerHTML = hs.length ? hs.map(h => `<option value="${esc(h.id)}">${esc(h.nama)} (absen ${esc(h.absen)}) - nilai ${fmtNilai(h.nilai_akhir)}</option>`).join('') : '<option value="">(belum ada yang mengumpulkan)</option>';
+        if (hs.some(h => String(h.id) === siswaLama)) $('rv-siswa').value = siswaLama;
+        rvTampil();
+    }
+    let rvPilih = '';
+    function rvBuka(id) {
+        rvPilih = String(id);
+        hasilKode = ($('h-kode') || {}).value || hasilKode;
+        switchTab('review');
+    }
+    function rvFilterSet(f) { rvFilter = f; rvTampil(); }
+    function rvHSekarang() { return rvData ? rvData.hasil.find(h => String(h.id) === $('rv-siswa').value) : null; }
+    const rvBadge = { benar: ['Benar', 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', 'fa-circle-check'], salah: ['Salah', 'bg-rose-500/15 text-rose-400 border-rose-500/30', 'fa-circle-xmark'],
+        kosong: ['Tidak dijawab', 'bg-amber-500/15 text-amber-400 border-amber-500/30', 'fa-circle-minus'], esai: ['Esai', 'bg-sky-500/15 text-sky-400 border-sky-500/30', 'fa-pen'], nokey: ['Kunci tidak tersedia', 'bg-slate-500/15 text-slate-300 border-slate-500/30', 'fa-circle-question'] };
+    function rvTampil() {
+        const box = $('rv-isi'), h = rvHSekarang();
+        if (!rvData) return;
+        if (!h) { box.innerHTML = kosongBox('fa-inbox', 'Belum ada jawaban masuk', 'Bagikan tautan siswa dan buka ujiannya.'); return; }
+        const a = rvAnalisis(h, rvData.soal), pg = a.benar + a.salah + a.kosong;
+        const tampil = a.baris.filter(b => rvFilter === 'semua' || (rvFilter === 'salah' && (b.status === 'salah' || b.status === 'kosong')));
+        const fbtn = (f, t) => `<button onclick="rvFilterSet('${f}')" class="text-xs font-bold px-3 py-2 rounded-xl border transition ${rvFilter === f ? 'bg-accent-600 border-accent-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}">${t}</button>`;
+        const kartu = b => {
+            const q = b.q, bd = rvBadge[b.status];
+            let isi = '';
+            if (q.jenis === 'PG') {
+                isi = (q.opsi || []).map(o => {
+                    const benar = o.k === q.kunci, dipilih = o.k === b.j;
+                    const cls = benar ? 'border-emerald-500/60 bg-emerald-500/10 text-emerald-200' : dipilih ? 'border-rose-500/60 bg-rose-500/10 text-rose-200' : 'border-slate-800 bg-slate-950 text-slate-300';
+                    const tanda = benar ? '<i class="fas fa-check text-emerald-400 ml-auto pl-2"></i>' : dipilih ? '<i class="fas fa-xmark text-rose-400 ml-auto pl-2"></i>' : '';
+                    return `<div class="flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${cls}"><b class="shrink-0">${esc(o.k)}.</b><span class="min-w-0 break-words whitespace-pre-wrap">${esc(o.t)}</span>${tanda}${dipilih ? '<span class="shrink-0 text-[9px] font-black uppercase ml-1 opacity-80">jawaban siswa</span>' : ''}</div>`;
+                }).join('');
+                isi = `<div class="space-y-1.5 mt-3">${isi}</div>`;
+                if (b.status === 'salah' || b.status === 'kosong') isi += `<p class="mt-3 text-xs font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2"><i class="fas fa-lightbulb mr-1.5"></i>Jawaban yang benar: ${esc(rvTeks(q, q.kunci))}</p>`;
+            } else {
+                isi = `<p class="text-[10px] uppercase font-bold text-slate-500 mt-3">Jawaban siswa</p><p class="text-xs text-slate-100 whitespace-pre-wrap mt-1">${esc(b.j || '(tidak dijawab)')}</p>
+                    <p class="text-[11px] mt-2 ${b.skor === null ? 'text-amber-400' : 'text-sky-300'}">${b.skor === null ? 'Belum dinilai guru' : 'Nilai: ' + fmtNilai(b.skor) + ' dari ' + fmtNilai(q.bobot)}</p>
+                    ${q.kunci ? `<p class="mt-2 text-xs font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2"><i class="fas fa-lightbulb mr-1.5"></i>Acuan jawaban: ${esc(q.kunci)}</p>` : ''}`;
+            }
+            return `<div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                <div class="flex items-start justify-between gap-3"><span class="text-[10px] uppercase font-bold tracking-wider text-slate-500">Soal ${esc(q.no)} &bull; bobot ${esc(q.bobot)}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${bd[1]}"><i class="fas ${bd[2]} mr-1"></i>${bd[0]}</span></div>
+                <p class="text-sm text-slate-100 whitespace-pre-wrap break-words mt-1.5">${esc(q.soal)}</p>${isi}</div>`;
+        };
+        const catatan = (a.nokey ? `<p class="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3"><i class="fas fa-triangle-exclamation mr-1.5"></i>${a.nokey} soal pilihan ganda tidak punya kunci di data ini (biasanya karena memakai skrip Google Sheets lama), jadi benar/salahnya tidak bisa dihitung.</p>` : '')
+            + (h.status_esai === 'menunggu' ? `<p class="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3"><i class="fas fa-hourglass-half mr-1.5"></i>Esai siswa ini belum dinilai, jadi nilai akhir belum keluar.</p>` : '');
+        box.innerHTML = `<div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><p class="text-sm font-black text-slate-100">${esc(h.nama)} ${badgeJK(h.jk)}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Absen ${esc(h.absen)} &bull; dikumpulkan ${fmtWaktu(h.waktu)} &bull; durasi ${mmss(h.durasi || 0)}</p></div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">${statCard('fa-award', 'Nilai Akhir', fmtNilai(h.nilai_akhir))}${statCard('fa-circle-check', 'Benar' + (pg ? ' (dari ' + pg + ' PG)' : ''), a.benar)}${statCard('fa-circle-xmark', 'Salah', a.salah, 'rose')}${statCard('fa-circle-minus', 'Tidak Dijawab', a.kosong, 'amber')}</div>
+            ${catatan}
+            <div class="flex gap-2">${fbtn('semua', 'Semua soal')}${fbtn('salah', 'Yang salah saja')}</div>
+            ${tampil.length ? `<div class="space-y-3">${tampil.map(kartu).join('')}</div>` : '<p class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4"><i class="fas fa-circle-check mr-2"></i>Tidak ada soal yang salah. Mantap!</p>'}`;
+    }
+    function rvHtmlCetak(h) {
+        const a = rvAnalisis(h, rvData.soal), u = rvData.ujian || {}, pg = a.benar + a.salah + a.kosong;
+        const sekolah = db.settings.sekolah || '', kelas = db.settings.kelas || '';
+        const baris = a.baris.map(b => {
+            const q = b.q; let js, jb, ht;
+            if (q.jenis === 'PG') {
+                js = b.j ? esc(rvTeks(q, b.j)) : '<span class="mu">(tidak dijawab)</span>';
+                jb = (b.status === 'salah' || b.status === 'kosong') ? '<b>' + esc(rvTeks(q, q.kunci)) + '</b>' : '<span class="mu">&mdash;</span>';
+                ht = b.status === 'benar' ? '&#10003; BENAR' : b.status === 'salah' ? '&#10007; SALAH' : b.status === 'kosong' ? 'KOSONG' : '?';
+            } else {
+                js = b.j ? esc(b.j) : '<span class="mu">(tidak dijawab)</span>';
+                jb = q.kunci ? '<b>' + esc(q.kunci) + '</b>' : '<span class="mu">&mdash;</span>';
+                ht = b.skor === null ? 'ESAI<br>belum dinilai' : 'ESAI<br>' + fmtNilai(b.skor) + ' / ' + fmtNilai(q.bobot);
+            }
+            return `<tr class="${b.status}"><td class="no">${esc(q.no)}</td><td class="sl">${esc(q.soal)}</td><td class="js">${js}</td><td class="jb">${jb}</td><td class="ht">${ht}</td></tr>`;
+        }).join('');
+        const tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const info = [['Nama Siswa', esc(h.nama)], ['No. Absen', esc(h.absen)], ['Kelas', esc(kelas) || '-'], ['Ujian', esc(u.judul || '')], ['Kode Ujian', esc(u.kode || '')], ['Dikumpulkan', fmtWaktu(h.waktu)]];
+        if (h.jk) info.splice(2, 0, ['Jenis Kelamin', h.jk === 'L' ? 'Laki-laki' : 'Perempuan']);
+        return `<section class="pr-page"><div class="pr-kop">${sekolah ? `<div class="sk">${esc(sekolah)}</div>` : ''}<div class="jd">LAPORAN HASIL UJIAN</div><div class="sj">${esc(u.judul || '')}${kelas ? ' &bull; ' + esc(kelas) : ''}</div></div>
+            <div class="pr-box"><table class="pr-info">${info.map(r => `<tr><td>${r[0]}</td><td>:</td><td>${r[1]}</td></tr>`).join('')}</table>
+                <div class="pr-nilai"><span>Nilai Akhir</span><b>${fmtNilai(h.nilai_akhir)}</b></div></div>
+            <div class="pr-ring"><div><b>${a.benar}${pg ? ' / ' + pg : ''}</b><span>Jawaban Benar</span></div><div><b>${a.salah}</b><span>Jawaban Salah</span></div><div><b>${a.kosong}</b><span>Tidak Dijawab</span></div>${a.esai ? `<div><b>${a.esai}</b><span>Soal Esai</span></div>` : ''}</div>
+            <table class="pr-tbl"><thead><tr><th class="no">No</th><th>Soal</th><th>Jawaban Siswa</th><th>Jawaban Benar</th><th class="ht">Hasil</th></tr></thead><tbody>${baris}</tbody></table>
+            <div class="pr-ttd"><div>Guru Mata Pelajaran<div class="gap"></div>(................................)</div></div>
+            <div class="pr-foot">Dicetak ${tgl}</div></section>`;
+    }
+    function rvCetak(semua) {
+        if (!rvData || !rvData.hasil.length) return toast('Belum ada jawaban untuk dicetak', 'info');
+        const daftar = semua ? rvData.hasil : [rvHSekarang()].filter(Boolean);
+        if (!daftar.length) return toast('Pilih siswa dulu', 'info');
+        $('print-area').innerHTML = daftar.map(rvHtmlCetak).join('');
+        const judulLama = document.title, kode = (rvData.ujian && rvData.ujian.kode) || 'ujian';
+        document.title = semua ? 'Hasil-' + kode + '-semua-siswa' : 'Hasil-' + kode + '-' + String(daftar[0].nama).replace(/\s+/g, '-');
+        const beres = () => { document.title = judulLama; $('print-area').innerHTML = ''; window.removeEventListener('afterprint', beres); };
+        window.addEventListener('afterprint', beres);
+        setTimeout(() => window.print(), 100);
+    }
+
     function ekspor() {
         if (!hasilData || !hasilData.hasil.length) return toast('Belum ada data untuk diekspor', 'info');
         const rows = [['Nama', 'JK', 'Absen', 'Nilai PG', 'Poin PG', 'Poin Esai', 'Nilai Akhir', 'Status Esai', 'Durasi (menit)', 'Keluar (×)', 'Waktu Kumpul']];
