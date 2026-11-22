@@ -461,6 +461,11 @@
                                 <label class="flex items-center gap-2"><input id="f-acak-soal" type="checkbox" checked class="accent-emerald-500 w-4 h-4"> Acak urutan soal</label>
                                 <label class="flex items-center gap-2"><input id="f-acak-opsi" type="checkbox" checked class="accent-emerald-500 w-4 h-4"> Acak pilihan jawaban</label>
                             </div>
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1">
+                                <label class="block text-[11px] font-semibold text-slate-400"><i class="fas fa-people-roof text-accent-400 mr-1.5"></i>Kelas peserta ujian
+                                    <select id="f-kelas" class="field mt-1"></select></label>
+                                <p class="text-[11px] text-slate-500">Hanya siswa dari kelas ini yang bisa masuk (login pakai nomor absen + nama). Pilih "Semua kelas" bila ujian dipakai bersama beberapa kelas; pastikan nomor absennya tidak bentrok.</p>
+                            </div>
                             <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
                                 <label class="flex items-center gap-2 text-xs text-slate-300"><input id="f-penalti-on" type="checkbox" class="accent-emerald-500 w-4 h-4" onchange="$('f-penalti-box').classList.toggle('hidden', !this.checked)"> <i class="fas fa-person-walking-arrow-right text-accent-400"></i> Kurangi nilai bila siswa keluar dari halaman ujian</label>
                                 <div id="f-penalti-box" class="hidden">
@@ -720,16 +725,24 @@
                     </section>
 
                     <section id="tab-roster-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <label class="text-[11px] font-semibold text-slate-400 flex items-center gap-2"><i class="fas fa-people-roof text-accent-400"></i>Kelas
+                                <select id="ros-kelas" onchange="rosPilihKelas(this.value)" class="field !w-auto"></select></label>
+                            <p class="text-[11px] text-slate-500 flex-1 min-w-[12rem]">Isi kolom Kelas saat menambah siswa (contoh: 6 A). Kelas baru otomatis muncul di pilihan ini dan di menu Absensi, Bagikan Akun, serta Kelola Ujian.</p>
+                        </div>
                         <div id="ros-stats" class="grid grid-cols-3 gap-4"></div>
                         <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
                             <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-user-plus text-accent-400 mr-2"></i>Tambah Siswa</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
                                 <label class="block text-[11px] font-semibold text-slate-400 md:col-span-2">Nama Lengkap
                                     <input id="ros-nama" maxlength="54" class="field mt-1" placeholder="Nama sesuai absen" autocomplete="off" onkeydown="if(event.key==='Enter')rosTambah()"></label>
                                 <label class="block text-[11px] font-semibold text-slate-400">No. Absen
                                     <input id="ros-absen" class="field mt-1" inputmode="numeric" placeholder="Contoh: 7" autocomplete="off" onkeydown="if(event.key==='Enter')rosTambah()"></label>
                                 <label class="block text-[11px] font-semibold text-slate-400">Jenis Kelamin
                                     <select id="ros-jk" class="field mt-1"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></label>
+                                <label class="block text-[11px] font-semibold text-slate-400">Kelas
+                                    <input id="ros-kelas-in" list="ros-kelas-dl" maxlength="20" class="field mt-1" placeholder="Contoh: 6 A" autocomplete="off" onkeydown="if(event.key==='Enter')rosTambah()"></label>
+                                <datalist id="ros-kelas-dl"></datalist>
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <button onclick="rosTambah()" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-plus mr-1.5"></i>Tambah</button>
@@ -751,6 +764,8 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                                 <label class="block text-[11px] font-semibold text-slate-400">Pilih ujian
                                     <select id="ak-kode" onchange="akunRender()" class="field mt-1"></select></label>
+                                <label class="block text-[11px] font-semibold text-slate-400">Pilih kelas
+                                    <select id="ak-kelas" onchange="rosPilihKelas(this.value)" class="field mt-1"></select></label>
                                 <label class="flex items-center gap-2 text-xs text-slate-300 pb-2.5"><input id="ak-tautan" type="checkbox" checked onchange="akunRender()" class="accent-emerald-500 w-4 h-4"> Sertakan tautan ujian siswa</label>
                             </div>
                             <div class="flex flex-wrap gap-2">
@@ -763,6 +778,7 @@
 
                     <section id="tab-absensi-view" class="tab-content hidden space-y-4">
                         <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="absn-kelas" onchange="rosPilihKelas(this.value)" class="field !w-auto" title="Pilih kelas"></select>
                             <input id="absn-tgl" type="date" style="color-scheme:dark" class="field !w-auto" onchange="renderAbsnHari()">
                             <button onclick="absnSemuaHadir()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-check-double mr-1.5"></i>Tandai Sisanya Hadir</button>
                         </div>
@@ -1751,6 +1767,7 @@
         if (id === 'bank') renderBank();
         if (id === 'rilis') renderRilis(true);
         if (id === 'analisis') renderAnalisis(true);
+        if (['ujian', 'akun', 'absensi'].includes(id)) rosIsiKelas();
         if (id === 'roster') renderRoster();
         if (id === 'akun') renderAkun();
         if (id === 'absensi') renderAbsensi();
@@ -2555,7 +2572,7 @@
     // Daftar siswa (menu Data Siswa) yang disalin ke ujian untuk login absen + nama. Hanya untuk Firebase dan Mode Lokal.
     const dukungSiswa = () => fbAktif(db.settings.scriptId) || lkAktif(db.settings.scriptId);
     function siapkanSiswa() {
-        const ros = rosUrut(rosBaca()), tanpaAbsen = ros.filter(x => !String(x.absen || '').trim());
+        const fk = $('f-kelas'), ros = rosUrut(fk && fk.value ? rosFilter(fk.value) : rosBaca()), tanpaAbsen = ros.filter(x => !String(x.absen || '').trim());
         return { daftar: rapikanSiswa(ros.map(x => ({ a: x.absen, n: x.nama, j: x.jk }))), tanpaAbsen, tanpaJK: ros.filter(x => !x.jk).length };
     }
     async function simpanUjian() {
@@ -3732,6 +3749,43 @@ service cloud.firestore {
     /* ---------- Data Siswa ---------- */
     const rosBaca = () => { const d = bacaJson(ROS_KEY, []); return Array.isArray(d) ? d : []; };
     const rosTulis = d => tulisJson(ROS_KEY, d);
+    /* ---------- Multi kelas: tiap siswa punya kolom kelas; pilihan kelas dipakai bersama di semua menu ---------- */
+    const rosKelasNama = x => String((x && x.kelas) || '').trim();
+    const rosKelasDaftar = () => [...new Set(rosBaca().map(rosKelasNama).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id', { numeric: true }));
+    function rosAktif() {
+        const k = db.settings.kelasAktif, ds = rosKelasDaftar();
+        if (k === '__none') return ds.length && rosBaca().some(x => !rosKelasNama(x)) ? '__none' : '*';
+        return k && ds.includes(k) ? k : '*';
+    }
+    function rosFilter(k) {
+        k = k === undefined ? rosAktif() : k;
+        const d = rosBaca();
+        return k === '*' ? d : k === '__none' ? d.filter(x => !rosKelasNama(x)) : d.filter(x => rosKelasNama(x) === k);
+    }
+    const rosKelasLabel = k => k === '*' ? 'Semua kelas' : k === '__none' ? 'Tanpa kelas' : k;
+    function rosIsiKelas() {
+        const ds = rosKelasDaftar(), adaTanpa = ds.length > 0 && rosBaca().some(x => !rosKelasNama(x)), aktif = rosAktif();
+        const opsi = '<option value="*">Semua kelas</option>' + ds.map(k => `<option value="${esc(k)}">${esc(k)}</option>`).join('') + (adaTanpa ? '<option value="__none">(Tanpa kelas)</option>' : '');
+        ['ros-kelas', 'absn-kelas', 'ak-kelas'].forEach(id => { const el = $(id); if (el) { el.innerHTML = opsi; el.value = aktif; } });
+        const f = $('f-kelas'); if (f) { const lama = f.value; f.innerHTML = opsi; f.value = lama && [...f.options].some(o => o.value === lama) ? lama : aktif; }
+        const dl = $('ros-kelas-dl'); if (dl) dl.innerHTML = ds.map(k => `<option value="${esc(k)}">`).join('');
+        const inp = $('ros-kelas-in'); if (inp && !inp.value && aktif !== '*' && aktif !== '__none') inp.value = aktif;
+    }
+    function rosPilihKelas(v) {
+        db.settings.kelasAktif = v; saveDB();
+        const inp = $('ros-kelas-in'); if (inp) inp.value = (v !== '*' && v !== '__none') ? v : '';
+        rosIsiKelas(); renderRoster();
+        if ($('absn-tgl')) { renderAbsnHari(); renderAbsnRekap(); }
+        if ($('ak-list')) akunRender();
+    }
+    async function rosGantiKelas(id) {
+        const d = rosBaca(), x = d.find(s => s.id === id); if (!x) return;
+        const r = await Swal.fire({ title: 'Kelas ' + x.nama, input: 'text', inputValue: rosKelasNama(x), inputPlaceholder: 'Contoh: 6 A', showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155', inputAttributes: { maxlength: 20 } });
+        if (!r.isConfirmed) return;
+        const k = String(r.value || '').replace(/\s+/g, ' ').trim().slice(0, 20);
+        if (d.some(s => s.id !== id && lkNorm(s.nama) === lkNorm(x.nama) && lkNorm(rosKelasNama(s)) === lkNorm(k))) return toast('Di kelas itu sudah ada siswa dengan nama yang sama', 'info');
+        x.kelas = k; if (rosTulis(d)) { renderRoster(); toast('Kelas diperbarui'); }
+    }
     const rosId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const rosUrut = d => d.slice().sort((a, b) => (Number(a.absen) || 9999) - (Number(b.absen) || 9999) || String(a.nama).localeCompare(String(b.nama), 'id'));
     /* ============================================================
@@ -3747,7 +3801,7 @@ service cloud.firestore {
     }
     function akunData() {
         const kode = $('ak-kode').value, u = (cache.ujian || []).find(x => x.kode === kode);
-        return { kode, judul: u ? u.judul : '', siswa: rosUrut(rosBaca()), sekolah: db.settings.sekolah || '', kelas: db.settings.kelas || '',
+        return { kode, judul: u ? u.judul : '', siswa: rosUrut(rosFilter()), sekolah: db.settings.sekolah || '', kelas: (rosAktif() !== '*' && rosAktif() !== '__none') ? rosAktif() : (db.settings.kelas || ''),
             tautan: ($('ak-tautan').checked && db.settings.scriptId && kode) ? tautanSiswa(kode) : '' };
     }
     function akunRender() {
@@ -3757,8 +3811,8 @@ service cloud.firestore {
         box.innerHTML = `<div class="grid grid-cols-3 gap-4 mb-4">${statCard('fa-users', 'Total Siswa', d.siswa.length)}${statCard('fa-mars', 'Laki-laki', L, 'sky')}${statCard('fa-venus', 'Perempuan', P, 'rose')}</div>`
             + (d.kode ? '' : '<p class="text-[11px] text-amber-300 mb-2"><i class="fas fa-triangle-exclamation mr-1"></i>Belum ada ujian dipilih, jadi kode ujian kosong. Buat ujian dulu di menu Kelola Ujian.</p>')
             + `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs">
-                <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider"><tr><th class="px-3 py-3 text-center">No</th><th class="px-3 py-3 text-center">Kode Ujian</th><th class="px-3 py-3 text-center">No. Absen</th><th class="px-4 py-3 text-left">Nama Siswa</th><th class="px-3 py-3 text-center">JK</th></tr></thead>
-                <tbody class="divide-y divide-slate-800 bg-slate-900">${d.siswa.map((x, i) => `<tr class="hover:bg-slate-800/60"><td class="px-3 py-2.5 text-center text-slate-500">${i + 1}</td><td class="px-3 py-2.5 text-center font-mono font-bold text-accent-400">${esc(d.kode) || '—'}</td><td class="px-3 py-2.5 text-center text-slate-300 font-bold">${esc(x.absen) || '—'}</td><td class="px-4 py-2.5 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-2.5 text-center">${badgeJK(x.jk)}</td></tr>`).join('')}</tbody></table></div>`;
+                <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider"><tr><th class="px-3 py-3 text-center">No</th><th class="px-3 py-3 text-center">Kode Ujian</th><th class="px-3 py-3 text-center">No. Absen</th><th class="px-4 py-3 text-left">Nama Siswa</th><th class="px-3 py-3 text-center">JK</th><th class="px-3 py-3 text-center">Kelas</th></tr></thead>
+                <tbody class="divide-y divide-slate-800 bg-slate-900">${d.siswa.map((x, i) => `<tr class="hover:bg-slate-800/60"><td class="px-3 py-2.5 text-center text-slate-500">${i + 1}</td><td class="px-3 py-2.5 text-center font-mono font-bold text-accent-400">${esc(d.kode) || '—'}</td><td class="px-3 py-2.5 text-center text-slate-300 font-bold">${esc(x.absen) || '—'}</td><td class="px-4 py-2.5 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-2.5 text-center">${badgeJK(x.jk)}</td><td class="px-3 py-2.5 text-center text-slate-300">${esc(rosKelasNama(x)) || '—'}</td></tr>`).join('')}</tbody></table></div>`;
     }
     function akunTeks() {
         const d = akunData();
@@ -3769,7 +3823,7 @@ service cloud.firestore {
         t += 'Kode Ujian: ' + (d.kode || '-') + '\n';
         if (d.tautan) t += 'Tautan: ' + d.tautan + '\n';
         t += '\nCara masuk: buka tautan, isi Kode Ujian, No. Absen, dan Nama, lalu tekan Mulai Ujian.\n\n';
-        t += d.siswa.map((x, i) => (i + 1) + '. ' + x.nama + ' | Absen ' + (x.absen || '-') + ' | ' + (x.jk || '-') + ' | Kode ' + (d.kode || '-')).join('\n');
+        t += d.siswa.map((x, i) => (i + 1) + '. ' + x.nama + ' | Absen ' + (x.absen || '-') + ' | ' + (x.jk || '-') + (rosKelasNama(x) ? ' | Kelas ' + rosKelasNama(x) : '') + ' | Kode ' + (d.kode || '-')).join('\n');
         return t;
     }
     async function akunSalin() {
@@ -3799,10 +3853,10 @@ service cloud.firestore {
             if (d.tautan) { doc.setFontSize(8.5); const baris = doc.splitTextToSize('Tautan: ' + d.tautan, W - 28); doc.text(baris, 14, y); y += baris.length * 4 + 1; doc.setFontSize(10); }
             doc.setFontSize(9); doc.text('Cara masuk: buka tautan, isi Kode Ujian, No. Absen, dan Nama, lalu tekan Mulai Ujian.', 14, y + 2); y += 6;
             doc.autoTable({ startY: y, margin: { left: 14, right: 14 },
-                head: [['No', 'Kode Ujian', 'No. Absen', 'Nama Siswa', 'JK']],
-                body: d.siswa.map((x, i) => [i + 1, d.kode, x.absen || '-', x.nama, x.jk || '-']),
+                head: [['No', 'Kode Ujian', 'No. Absen', 'Nama Siswa', 'JK', 'Kelas']],
+                body: d.siswa.map((x, i) => [i + 1, d.kode, x.absen || '-', x.nama, x.jk || '-', rosKelasNama(x) || '-']),
                 styles: { fontSize: 9.5, cellPadding: 2 }, headStyles: { fillColor: [5, 150, 105], halign: 'center' },
-                columnStyles: { 0: { halign: 'center', cellWidth: 12 }, 1: { halign: 'center', cellWidth: 32 }, 2: { halign: 'center', cellWidth: 24 }, 4: { halign: 'center', cellWidth: 16 } } });
+                columnStyles: { 0: { halign: 'center', cellWidth: 12 }, 1: { halign: 'center', cellWidth: 32 }, 2: { halign: 'center', cellWidth: 24 }, 4: { halign: 'center', cellWidth: 14 }, 5: { halign: 'center', cellWidth: 22 } } });
             const n = doc.internal.getNumberOfPages(), tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
             for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(120); doc.text('Dicetak ' + tgl + '  -  halaman ' + i + ' dari ' + n, W / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' }); }
             doc.save('akun-siswa-' + d.kode + '.pdf');
@@ -3810,18 +3864,19 @@ service cloud.firestore {
         } catch (e) { Swal.close(); galat(e, 'PDF gagal dibuat'); }
     }
     function renderRoster() {
-        const d = rosUrut(rosBaca()), L = d.filter(x => x.jk === 'L').length, P = d.filter(x => x.jk === 'P').length;
+        rosIsiKelas();
+        const d = rosUrut(rosFilter()), L = d.filter(x => x.jk === 'L').length, P = d.filter(x => x.jk === 'P').length;
         $('ros-stats').innerHTML = statCard('fa-users', 'Total Siswa', d.length) + statCard('fa-mars', 'Laki-laki', L, 'sky') + statCard('fa-venus', 'Perempuan', P, 'rose');
         if (!d.length) { $('ros-list').innerHTML = kosongBox('fa-user-group', 'Belum ada data siswa', 'Tambah satu per satu atau impor dari Excel.'); return; }
-        $('ros-list').innerHTML = (d.some(x => !x.jk) ? `<p class="text-[11px] text-amber-300 mb-2"><i class="fas fa-hand-pointer mr-1"></i>${d.filter(x => !x.jk).length} siswa belum diisi jenis kelaminnya. Ketuk label <b>—</b> pada kolom JK untuk memilih L atau P.</p>` : '') + `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3">Absen</th><th class="px-3 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
-            <tbody class="divide-y divide-slate-800 bg-slate-900">${d.map(x => `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 text-center text-slate-400 font-bold">${esc(x.absen) || '—'}</td><td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-3 text-center"><button onclick="rosToggleJK('${esc(x.id)}')" title="Ketuk untuk mengubah jenis kelamin">${badgeJK(x.jk)}</button></td><td class="px-3 py-3 text-right"><button onclick="rosHapus('${esc(x.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus siswa"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+        $('ros-list').innerHTML = (d.some(x => !x.jk) ? `<p class="text-[11px] text-amber-300 mb-2"><i class="fas fa-hand-pointer mr-1"></i>${d.filter(x => !x.jk).length} siswa belum diisi jenis kelaminnya. Ketuk label <b>—</b> pada kolom JK untuk memilih L atau P.</p>` : '') + `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3">Absen</th><th class="px-3 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3">Kelas</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${d.map(x => `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 text-center text-slate-400 font-bold">${esc(x.absen) || '—'}</td><td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(x.nama)}</td><td class="px-3 py-3 text-center"><button onclick="rosToggleJK('${esc(x.id)}')" title="Ketuk untuk mengubah jenis kelamin">${badgeJK(x.jk)}</button></td><td class="px-3 py-3 text-center"><button onclick="rosGantiKelas('${esc(x.id)}')" class="text-[11px] font-bold ${rosKelasNama(x) ? 'text-slate-200' : 'text-slate-600'} hover:text-accent-400" title="Ketuk untuk mengubah kelas">${esc(rosKelasNama(x)) || '—'}</button></td><td class="px-3 py-3 text-right"><button onclick="rosHapus('${esc(x.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus siswa"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
     }
     function rosTambah() {
-        const nama = $('ros-nama').value.trim(), absen = $('ros-absen').value.trim(), jk = $('ros-jk').value;
+        const nama = $('ros-nama').value.trim(), absen = $('ros-absen').value.trim(), jk = $('ros-jk').value, kelas = $('ros-kelas-in').value.replace(/\s+/g, ' ').trim().slice(0, 20);
         if (!nama) return toast('Nama siswa wajib diisi', 'info');
         const d = rosBaca();
-        if (d.some(x => lkNorm(x.nama) === lkNorm(nama))) return toast('Siswa dengan nama itu sudah ada', 'info');
-        d.push({ id: rosId(), nama, absen, jk });
+        if (d.some(x => lkNorm(x.nama) === lkNorm(nama) && lkNorm(rosKelasNama(x)) === lkNorm(kelas))) return toast('Siswa dengan nama itu sudah ada di kelas ini', 'info');
+        d.push({ id: rosId(), nama, absen, jk, kelas });
         if (!rosTulis(d)) return;
         $('ros-nama').value = ''; $('ros-absen').value = ''; $('ros-nama').focus();
         renderRoster(); toast('Siswa ditambahkan');
@@ -3832,9 +3887,11 @@ service cloud.firestore {
         if (rosTulis(rosBaca().filter(s => s.id !== id))) { renderRoster(); toast('Siswa dihapus'); }
     }
     async function rosHapusSemua() {
-        if (!rosBaca().length) return toast('Daftar siswa sudah kosong', 'info');
-        if (!await konfirmasi('Kosongkan daftar siswa?', 'Semua siswa pada daftar kelas dihapus. Ekspor Excel dulu bila perlu arsip.', 'Ya, kosongkan')) return;
-        if (rosTulis([])) { renderRoster(); toast('Daftar dikosongkan'); }
+        const k = rosAktif(), target = rosFilter(k);
+        if (!target.length) return toast('Daftar siswa sudah kosong', 'info');
+        const hapusId = new Set(target.map(x => x.id));
+        if (!await konfirmasi(k === '*' ? 'Kosongkan SEMUA daftar siswa?' : 'Kosongkan kelas ' + rosKelasLabel(k) + '?', (k === '*' ? 'Siswa dari semua kelas (' + target.length + ' orang) dihapus.' : target.length + ' siswa di kelas ini dihapus; kelas lain tidak berubah.') + ' Ekspor Excel dulu bila perlu arsip.', 'Ya, kosongkan')) return;
+        if (rosTulis(rosBaca().filter(x => !hapusId.has(x.id)))) { renderRoster(); toast('Daftar dikosongkan'); }
     }
     // Impor cepat: CSV dibaca sebagai teks UTF-8 (BOM aman), Excel sebagai biner.
     function rosBacaFile(file) {
@@ -3852,15 +3909,15 @@ service cloud.firestore {
         const hi = rows.findIndex(r => r.some(c => NAMA.includes(nk(c))));
         if (hi < 0) return null;
         const h = rows[hi].map(nk), col = (...ks) => h.findIndex(x => ks.includes(x));
-        const cN = col(...NAMA), cA = col('absen', 'no absen', 'nomor absen', 'no', 'no.'), cJ = col('jk', 'jenis kelamin', 'l/p', 'gender');
+        const cN = col(...NAMA), cA = col('absen', 'no absen', 'nomor absen', 'no', 'no.'), cJ = col('jk', 'jenis kelamin', 'l/p', 'gender'), cK = col('kelas', 'rombel', 'nama kelas', 'rombongan belajar');
         const daftar = [];
         rows.slice(hi + 1).forEach(r => {
             const nama = String(r[cN] ?? '').replace(/\s+/g, ' ').trim();
             if (!nama || /^(total|jumlah|rata)/i.test(nama)) return;
             const j = cJ >= 0 ? lkNorm(r[cJ]) : '';
-            daftar.push({ nama, absen: cA >= 0 ? String(r[cA] ?? '').trim().slice(0, 10) : '', jk: /^(l|laki|pria)/.test(j) ? 'L' : /^(p|perempuan|wanita)/.test(j) ? 'P' : '' });
+            daftar.push({ nama, absen: cA >= 0 ? String(r[cA] ?? '').trim().slice(0, 10) : '', jk: /^(l|laki|pria)/.test(j) ? 'L' : /^(p|perempuan|wanita)/.test(j) ? 'P' : '', kelas: cK >= 0 ? String(r[cK] ?? '').replace(/\s+/g, ' ').trim().slice(0, 20) : '' });
         });
-        return { daftar, adaJK: cJ >= 0 };
+        return { daftar, adaJK: cJ >= 0, adaKelas: cK >= 0 };
     }
     async function rosImpor(ev) {
         const file = ev.target.files[0]; ev.target.value = '';
@@ -3869,14 +3926,19 @@ service cloud.firestore {
         try { k = rosKandidat(await rosBacaFile(file)); }
         catch (x) { return galat(new Error('File tidak bisa dibaca. Gunakan .xlsx atau .csv.'), 'Impor gagal'); }
         if (!k || !k.daftar.length) return galat(new Error('Tidak ada nama siswa yang ditemukan. Pastikan ada kolom "Nama Siswa" (atau "nama") pada baris judul.'), 'Impor gagal');
-        const d = rosBaca(), ada = new Set(d.map(x => lkNorm(x.nama))), baru = []; let lewat = 0;
-        k.daftar.forEach(x => { const n = lkNorm(x.nama); if (ada.has(n)) { lewat++; return; } ada.add(n); baru.push(x); });
+        if (!k.adaKelas) {
+            const aktif = rosAktif(), q = await Swal.fire({ title: 'Masuk ke kelas mana?', text: 'File ini tidak punya kolom Kelas. Semua siswa di file akan dimasukkan ke kelas yang Anda tulis (boleh dikosongkan).', input: 'text', inputValue: aktif !== '*' && aktif !== '__none' ? aktif : '', inputPlaceholder: 'Contoh: 6 A', showCancelButton: true, confirmButtonText: 'Lanjut', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155', inputAttributes: { maxlength: 20 } });
+            if (!q.isConfirmed) return;
+            const kk = String(q.value || '').replace(/\s+/g, ' ').trim().slice(0, 20); k.daftar.forEach(x => { x.kelas = kk; });
+        }
+        const d = rosBaca(), kunci = x => lkNorm(x.nama) + '|' + lkNorm(rosKelasNama(x)), ada = new Set(d.map(kunci)), baru = []; let lewat = 0;
+        k.daftar.forEach(x => { const n = kunci(x); if (ada.has(n)) { lewat++; return; } ada.add(n); baru.push(x); });
         if (!baru.length) return toast('Semua ' + lewat + ' nama sudah ada di daftar', 'info');
         const contoh = baru.slice(0, 6).map(x => esc(x.nama)).join('<br>') + (baru.length > 6 ? '<br>... dan ' + (baru.length - 6) + ' lainnya' : '');
         const r = await Swal.fire({ title: baru.length + ' siswa siap ditambahkan', icon: 'question', showCancelButton: true, confirmButtonText: 'Tambahkan', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
             html: `<p class="text-xs text-left leading-relaxed">${contoh}</p>${lewat ? `<p class="text-[11px] text-slate-400 mt-3 text-left">${lewat} nama dilewati karena sudah ada.</p>` : ''}${k.adaJK ? '' : '<p class="text-[11px] text-amber-300 mt-3 text-left">File ini tidak memuat jenis kelamin. Setelah impor, ketuk label JK di daftar untuk mengisinya.</p>'}` });
         if (!r.isConfirmed) return;
-        baru.forEach(x => d.push({ id: rosId(), nama: x.nama, absen: x.absen, jk: x.jk }));
+        baru.forEach(x => d.push({ id: rosId(), nama: x.nama, absen: x.absen, jk: x.jk, kelas: x.kelas || '' }));
         if (rosTulis(d)) { renderRoster(); toast(baru.length + ' siswa ditambahkan'); }
     }
     // Ketuk label JK di daftar: kosong, L, P, lalu kosong lagi
@@ -3887,17 +3949,17 @@ service cloud.firestore {
         if (rosTulis(d)) renderRoster();
     }
     function rosTemplate() {
-        const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet([['nama', 'absen', 'jk'], ['Contoh Siswa Satu', 1, 'L'], ['Contoh Siswa Dua', 2, 'P']]);
-        ws['!cols'] = [{ wch: 34 }, { wch: 8 }, { wch: 6 }];
+        const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet([['nama', 'absen', 'jk', 'kelas'], ['Contoh Siswa Satu', 1, 'L', '6 A'], ['Contoh Siswa Dua', 2, 'P', '6 A'], ['Contoh Siswa Tiga', 1, 'L', '6 B']]);
+        ws['!cols'] = [{ wch: 34 }, { wch: 8 }, { wch: 6 }, { wch: 10 }];
         XLSX.utils.book_append_sheet(wb, ws, 'Siswa');
         XLSX.writeFile(wb, 'template-data-siswa.xlsx');
     }
     function rosEkspor() {
-        const d = rosUrut(rosBaca());
+        const k = rosAktif(), d = rosUrut(rosFilter(k));
         if (!d.length) return toast('Belum ada data untuk diekspor', 'info');
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['nama', 'absen', 'jk']].concat(d.map(x => [x.nama, x.absen, x.jk]))), 'Siswa');
-        XLSX.writeFile(wb, 'data-siswa.xlsx');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['nama', 'absen', 'jk', 'kelas']].concat(d.map(x => [x.nama, x.absen, x.jk, rosKelasNama(x)]))), 'Siswa');
+        XLSX.writeFile(wb, k === '*' || k === '__none' ? 'data-siswa.xlsx' : 'data-siswa-' + k.replace(/[^A-Za-z0-9]+/g, '-') + '.xlsx');
     }
 
     /* ---------- Absensi ---------- */
@@ -3911,7 +3973,7 @@ service cloud.firestore {
         renderAbsnHari(); renderAbsnRekap();
     }
     function renderAbsnHari() {
-        const tgl = $('absn-tgl').value, ros = rosUrut(rosBaca()), data = absnBaca()[tgl] || {};
+        const tgl = $('absn-tgl').value, ros = rosUrut(rosFilter()), data = absnBaca()[tgl] || {};
         if (!ros.length) {
             $('absn-stats').innerHTML = '';
             $('absn-list').innerHTML = kosongBox('fa-user-group', 'Belum ada data siswa', '<button onclick="switchTab(\'roster\')" class="font-bold text-accent-400 underline">Isi Data Siswa dulu</button>');
@@ -3933,7 +3995,7 @@ service cloud.firestore {
         if (tulisJson(ABSN_KEY, all)) { renderAbsnHari(); renderAbsnRekap(); }
     }
     function absnSemuaHadir() {
-        const tgl = $('absn-tgl').value, ros = rosBaca();
+        const tgl = $('absn-tgl').value, ros = rosFilter();
         if (!tgl) return toast('Pilih tanggal dulu', 'info');
         if (!ros.length) return toast('Belum ada data siswa', 'info');
         const all = absnBaca(); all[tgl] = all[tgl] || {};
@@ -3941,7 +4003,7 @@ service cloud.firestore {
         if (tulisJson(ABSN_KEY, all)) { renderAbsnHari(); renderAbsnRekap(); toast('Siswa yang belum diisi ditandai hadir'); }
     }
     function absnHitung(bln) {
-        const ros = rosUrut(rosBaca()), all = absnBaca(), tgls = Object.keys(all).filter(t => t.startsWith(bln)).sort();
+        const ros = rosUrut(rosFilter()), all = absnBaca(), tgls = Object.keys(all).filter(t => t.startsWith(bln)).sort();
         const baris = ros.map(s => {
             const c = { H: 0, S: 0, I: 0, A: 0 };
             tgls.forEach(t => { const v = all[t][s.id]; if (v && c[v] !== undefined) c[v]++; });
@@ -3952,7 +4014,7 @@ service cloud.firestore {
     }
     function renderAbsnRekap() {
         const bln = $('absn-bulan').value, box = $('absn-rekap');
-        if (!bln || !rosBaca().length) { box.innerHTML = ''; return; }
+        if (!bln || !rosFilter().length) { box.innerHTML = ''; return; }
         const { tgls, baris } = absnHitung(bln);
         if (!tgls.length) { box.innerHTML = '<p class="text-[11px] text-slate-500 text-center py-6">Belum ada absensi pada bulan ini.</p>'; return; }
         box.innerHTML = `<p class="text-[11px] text-slate-500 mb-2">${tgls.length} hari tercatat pada bulan ini.</p><div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3 text-left">Nama</th><th class="px-3 py-3">JK</th><th class="px-3 py-3 text-emerald-400">H</th><th class="px-3 py-3 text-amber-400">S</th><th class="px-3 py-3 text-sky-400">I</th><th class="px-3 py-3 text-rose-400">A</th><th class="px-3 py-3">% Hadir</th></tr></thead>
@@ -3966,7 +4028,7 @@ service cloud.firestore {
         const rows = [['Absen', 'Nama', 'JK', 'Hadir', 'Sakit', 'Izin', 'Alpa', '% Hadir']].concat(baris.map(b => [b.s.absen, b.s.nama, b.s.jk, b.H, b.S, b.I, b.A, b.pct === null ? '' : b.pct]));
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Rekap ' + bln);
-        XLSX.writeFile(wb, 'rekap-absensi-' + bln + '.xlsx');
+        { const kk = rosAktif(); XLSX.writeFile(wb, 'rekap-absensi-' + (kk === '*' || kk === '__none' ? '' : kk.replace(/[^A-Za-z0-9]+/g, '-') + '-') + bln + '.xlsx'); }
     }
 
     /* ============================================================
