@@ -213,6 +213,30 @@
         </div>
     </div>
 
+    <!-- ================= SISWA: MENUNGGU JADWAL ================= -->
+    <div id="view-tunggu" class="screen hidden fixed inset-0 z-[35] overflow-y-auto screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
+        <div class="min-h-full flex flex-col items-center justify-center p-6">
+            <div class="w-full max-w-sm bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl text-center space-y-4">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-sky-500/15 text-sky-400 flex items-center justify-center text-2xl"><i class="fas fa-hourglass-half"></i></div>
+                <div>
+                    <h2 class="text-lg font-black text-slate-100">Ujian Belum Dimulai</h2>
+                    <p id="tg-judul" class="text-sm text-slate-300 mt-1 font-semibold"></p>
+                    <p id="tg-siswa" class="text-[11px] text-slate-500 mt-0.5"></p>
+                </div>
+                <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4">
+                    <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Ujian dimulai pada</p>
+                    <p id="tg-waktu" class="text-sm font-black text-slate-100 mt-1"></p>
+                    <p id="tg-akhir" class="text-[11px] text-slate-400 mt-1"></p>
+                    <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mt-4">Kurang</p>
+                    <div id="tg-hitung" class="flex gap-2 mt-2"></div>
+                    <p id="tg-ket" class="text-xs text-accent-400 font-bold mt-3"></p>
+                </div>
+                <p class="text-[11px] text-slate-400">Soal belum dibuka. Biarkan halaman ini tetap terbuka: ujian akan mulai sendiri tepat pada waktunya. Lama ujian <b id="tg-durasi" class="text-slate-200"></b> menit, dihitung dari jam mulai.</p>
+                <button onclick="batalTunggu()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm px-4 py-3 rounded-xl transition">Kembali</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= SISWA: UJIAN ================= -->
     <div id="view-ujian" class="screen hidden fixed inset-0 z-[40] screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329] flex flex-col">
         <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between gap-3 shrink-0">
@@ -445,7 +469,7 @@
                                 <div id="f-jadwal-box" class="hidden space-y-2">
                                     <label class="block text-[11px] font-semibold text-slate-400">Tanggal &amp; jam mulai
                                         <input id="f-jadwal" type="datetime-local" style="color-scheme:dark" class="field mt-1"></label>
-                                    <p class="text-[11px] text-slate-500">Ujian langsung berstatus <b class="text-slate-300">Dibuka</b>. Sebelum jam mulai, siswa yang login hanya melihat hitung mundur (soal belum dikirim) dan ujian mulai sendiri tepat waktu. Ujian berakhir pada jam mulai + durasi: siswa yang terlambat login tetap bisa masuk, tetapi sisa waktunya berkurang. Hanya untuk Firebase dan Mode Lokal. Jam mengikuti jam perangkat masing-masing siswa.</p>
+                                    <p class="text-[11px] text-slate-500">Ujian langsung berstatus <b class="text-slate-300">Dibuka</b>. Sebelum jam mulai, siswa yang login hanya melihat halaman tunggu berisi jam mulai dan hitung mundur (soal belum dikirim), lalu ujian mulai sendiri tepat waktu. Ujian berakhir pada jam mulai + durasi untuk semua siswa: yang login terlambat tetap bisa masuk, tetapi hanya mendapat sisa waktu (mulai 14.00, durasi 60 menit, login 14.20 = sisa 40 menit). Hanya untuk Firebase dan Mode Lokal. Jam mengikuti jam perangkat masing-masing siswa.</p>
                                 </div>
                             </div>
                             <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-3">
@@ -771,7 +795,7 @@
     const SCRIPT_DEFAULT = '';
     const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
     const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', roster: 'Data Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
-    const SCREENS = ['landing', 'siswa', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
+    const SCREENS = ['landing', 'siswa', 'tunggu', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
     const ATT_KEY = APP.slug + '_attempt';
@@ -1210,14 +1234,14 @@
     function ketJadwal(u) {
         const mulai = Date.parse(u.jadwal), akhir = mulai + u.durasi * 60000, now = Date.now(), tgl = fmtJadwal(u.jadwal);
         if (now < mulai) return 'Terjadwal: ' + tgl + ' &bull; mulai ' + selisihTeks(mulai - now) + ' lagi';
-        if (now < akhir) return 'Terjadwal: ' + tgl + ' &bull; sedang berlangsung (sisa ' + selisihTeks(akhir - now) + ')';
+        if (now < akhir) return 'Terjadwal: ' + tgl + ' &bull; sedang berlangsung (berakhir ' + selisihTeks(akhir - now) + ' lagi)';
         return 'Terjadwal: ' + tgl + ' &bull; sudah berakhir';
     }
-    // Memeriksa jadwal di sisi server/lokal: lewat batas akhir = ditolak; sebelum mulai = soal tidak dikirim.
+    // Sebelum jam mulai soal tidak dikirim. Ujian berakhir pada jam mulai + durasi untuk semua siswa; yang masuk terlambat mendapat sisa waktu.
     function cekJadwal(u) {
         const jd = u.jadwal ? Date.parse(u.jadwal) : 0;
         if (jd && Date.now() > jd + (u.durasi || 0) * 60000) throw new Error('Waktu ujian ini sudah berakhir.');
-        return jd && Date.now() < jd;
+        return !!jd && Date.now() < jd;
     }
     function rapikanSiswa(arr) {
         if (!Array.isArray(arr)) return [];
@@ -1662,17 +1686,26 @@
         ['L', 'P'].forEach(c => { const b = $('jk-' + c), on = c === v;
             b.style.background = on ? 'rgb(var(--a500) / .2)' : ''; b.style.borderColor = on ? 'rgb(var(--a500))' : ''; b.style.color = on ? '#fff' : ''; });
     }
-    // Layar hitung mundur untuk ujian terjadwal. true = waktu mulai tiba, false = siswa membatalkan.
-    function tungguJadwal(u) {
+    // Halaman tunggu untuk ujian terjadwal (soal belum dibuka). true = waktu mulai tiba, false = siswa kembali.
+    let tungguIv = null, tungguRes = null;
+    function batalTunggu() { clearInterval(tungguIv); const r = tungguRes; tungguRes = null; showView('siswa'); if (r) r(false); }
+    function tungguJadwal(u, nama, absen) {
         return new Promise(res => {
-            let iv = null;
-            const kotak = ms => { let t = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(t / 86400); t %= 86400; const j = Math.floor(t / 3600); t %= 3600; const m = Math.floor(t / 60), d = t % 60;
-                return [[h, 'Hari'], [j, 'Jam'], [m, 'Menit'], [d, 'Detik']].map(([n, l]) => `<div style="flex:1;background:#020617;border:1px solid #334155;border-radius:12px;padding:10px 2px"><div style="font-size:26px;font-weight:900;color:rgb(var(--a400));font-variant-numeric:tabular-nums">${String(n).padStart(2, '0')}</div><div style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:700">${l}</div></div>`).join(''); };
             const mulai = Date.parse(u.jadwal);
-            Swal.fire({ title: 'Ujian belum dimulai', showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Batal', cancelButtonColor: '#334155', allowOutsideClick: false,
-                html: `<p class="text-sm"><b>${esc(u.judul)}</b></p><p class="text-xs text-slate-400 mt-1">Mulai ${esc(fmtJadwal(u.jadwal))}</p><div id="jd-hit" style="display:flex;gap:8px;margin-top:16px">${kotak(mulai - Date.now())}</div><p class="text-xs text-slate-400 mt-4">Biarkan halaman ini tetap terbuka. Ujian akan mulai sendiri tepat waktu.</p>`,
-                didOpen: () => { iv = setInterval(() => { const ms = mulai - Date.now(); if (ms <= 0) { clearInterval(iv); res(true); Swal.close(); return; } const el = document.getElementById('jd-hit'); if (el) el.innerHTML = kotak(ms); }, 500); },
-                willClose: () => clearInterval(iv) }).then(r => { if (r.dismiss === Swal.DismissReason.cancel) res(false); });
+            tungguRes = res;
+            $('tg-judul').textContent = u.judul; $('tg-siswa').textContent = nama + ' • absen ' + absen;
+            $('tg-waktu').textContent = fmtJadwal(u.jadwal); $('tg-durasi').textContent = u.durasi;
+            $('tg-akhir').textContent = 'Berakhir pukul ' + new Date(mulai + u.durasi * 60000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' (' + u.durasi + ' menit)';
+            const gambar = () => {
+                const ms = mulai - Date.now();
+                let t = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(t / 86400); t %= 86400; const j = Math.floor(t / 3600); t %= 3600; const m = Math.floor(t / 60), d = t % 60;
+                $('tg-hitung').innerHTML = [[h, 'Hari'], [j, 'Jam'], [m, 'Menit'], [d, 'Detik']].map(([n, l]) => `<div class="flex-1 bg-slate-900 border border-slate-700 rounded-xl py-2"><div class="text-2xl font-black text-accent-400 font-mono">${String(n).padStart(2, '0')}</div><div class="text-[9px] uppercase font-bold text-slate-500">${l}</div></div>`).join('');
+                $('tg-ket').textContent = ms > 0 ? 'Mulai ' + selisihTeks(ms) + ' lagi' : 'Memulai ujian...';
+                return ms;
+            };
+            gambar(); showView('tunggu');
+            clearInterval(tungguIv);
+            tungguIv = setInterval(() => { if (gambar() <= 0) { clearInterval(tungguIv); tungguRes = null; res(true); } }, 500);
         });
     }
     async function mulaiUjian(auto) {
@@ -1696,7 +1729,7 @@
             nama = c.siswa.n; absen = String(c.siswa.a); jk = c.siswa.j || jkPilih;   // JK dari daftar kelas; bila kosong pakai pilihan siswa
         }
         if (!jk) return galat(new Error('Pilih jenis kelamin: Laki-laki atau Perempuan, lalu tekan Mulai Ujian lagi.'), 'Data belum lengkap');
-        if (r.belum) { if (!await tungguJadwal(u)) return; return mulaiUjian(true); }   // belum waktunya: hitung mundur, lalu mulai otomatis
+        if (r.belum) { if (!await tungguJadwal(u, nama, absen)) return; return mulaiUjian(true); }   // belum waktunya: hitung mundur, lalu mulai otomatis
         const jadwalMs = u.jadwal ? Date.parse(u.jadwal) : 0, akhirJadwal = jadwalMs + u.durasi * 60000;
         const sisaMs = jadwalMs ? akhirJadwal - Date.now() : u.durasi * 60000, telatMs = jadwalMs ? Math.max(0, Date.now() - jadwalMs) : 0;
         if (jadwalMs && sisaMs <= 0) return galat(new Error('Waktu ujian ini sudah berakhir.'), 'Tidak bisa masuk ujian');
@@ -1704,7 +1737,7 @@
         const ok = auto && !telat ? { isConfirmed: true } : await Swal.fire({ title: u.judul, icon: 'info', showCancelButton: true, confirmButtonText: 'Mulai Sekarang', cancelButtonText: 'Batal',
             confirmButtonColor: '#059669', cancelButtonColor: '#334155',
             html: `<p class="text-sm"><b>${r.soal.length}</b> soal &bull; <b>${telat ? selisihTeks(sisaMs) + '</b> tersisa' : u.durasi + '</b> menit'}</p>`
-                + (telat ? `<p class="text-xs text-amber-300 mt-2"><i class="fas fa-clock mr-1"></i>Ujian sudah berjalan ${selisihTeks(telatMs)} sejak jam mulai. Waktu Anda berkurang dan berakhir bersama waktu kelas.</p>` : '')
+                + (telat ? `<p class="text-xs text-amber-300 mt-2"><i class="fas fa-clock mr-1"></i>Ujian sudah dimulai ${selisihTeks(telatMs)} yang lalu. Lama ujian ${u.durasi} menit, jadi waktu Anda tersisa ${selisihTeks(sisaMs)} dan berakhir bersama kelas.</p>` : '')
                 + `<p class="text-xs text-slate-400 mt-2">Waktu langsung berjalan setelah Anda menekan Mulai. Kerjakan dengan jujur dan selesaikan tepat waktu.</p>`
                 + (u.kamera ? `<p class="text-xs text-amber-300 mt-3"><i class="fas fa-camera mr-1"></i>Ujian ini memakai kamera. Foto wajah Anda diambil tiap ${u.kamera_detik || 60} detik dan hanya dilihat oleh guru. Izinkan kamera saat diminta browser.</p>` : '') });
         if (!ok.isConfirmed) return;
@@ -2118,8 +2151,7 @@
             if (!dukungSiswa()) return galat(new Error('Jadwal otomatis hanya tersedia untuk Firebase dan Mode Lokal. Matikan pilihan jadwal, atau ganti koneksi di Pengaturan.'), 'Jadwal belum bisa dipakai');
             const t = Date.parse($('f-jadwal').value);
             if (isNaN(t)) return galat(new Error('Isi tanggal dan jam mulai ujian.'), 'Jadwal belum diisi');
-            if (t + durasi * 60000 <= Date.now()) return galat(new Error('Jadwal ini sudah lewat (jam mulai + durasi sudah terlampaui). Pilih waktu yang akan datang.'), 'Jadwal tidak valid');
-            if (t < Date.now() && !await konfirmasi('Jam mulai sudah lewat', 'Ujian langsung dianggap berjalan. Siswa yang masuk sekarang mendapat sisa waktu saja.', 'Ya, lanjut')) return;
+                        if (t < Date.now() && !await konfirmasi('Jam mulai sudah lewat', 'Ujian langsung dianggap sudah dimulai, jadi siswa yang masuk sekarang langsung mengerjakan dengan sisa waktu sampai jam mulai + durasi. Jika jam mulai + durasi sudah lewat, tidak ada siswa yang bisa masuk.', 'Ya, lanjut')) return;
             jdwl = new Date(t).toISOString();
         }
         if (!soalPakai.length) return galat(new Error('File ini tidak punya soal ' + (jenisPilih === 'PG' ? 'pilihan ganda' : 'esai') + '. Ganti jenis soal atau pilih file lain.'), 'Soal belum ada');
