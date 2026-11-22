@@ -272,6 +272,7 @@
                 <button onclick="geserSoal(-1)" id="u-prev" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-3 rounded-xl transition"><i class="fas fa-chevron-left mr-1"></i>Sebelumnya</button>
                 <button onclick="geserSoal(1)" id="u-next" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-3 rounded-xl transition">Berikutnya<i class="fas fa-chevron-right ml-1"></i></button>
                 <button onclick="kumpulkan(false)" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-paper-plane mr-1"></i>Kumpulkan</button>
+                <button onclick="mintaKeluar()" title="Minta izin guru untuk keluar" class="bg-red-500/10 hover:bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-bold px-3 py-3 rounded-xl transition"><i class="fas fa-right-from-bracket mr-1"></i>Keluar</button>
             </div>
         </footer>
     </div>
@@ -799,6 +800,7 @@
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
     const ATT_KEY = APP.slug + '_attempt';
+    const KELUAR_KEY = APP.slug + '_keluar'; // permintaan keluar ujian (mode lokal)
     const RECALL_KEY = APP.slug + '_recall'; // attempt yang menunggu acc guru untuk lanjut
 
     let db = loadDB();
@@ -1178,6 +1180,33 @@
             try { await fs.deleteDoc(ref('recall_ok', docId)); } catch (e) { /* abaikan */ }
             return { ok: true };
         }
+        // ---- Minta keluar ujian (siswa) ----
+        if (action === 'mintaKeluar') {
+            const docId = String(b.hasilId || '');
+            if (!docId) throw new Error('ID permintaan tidak ditemukan.');
+            await fs.setDoc(ref('recall', docId), {
+                hasilId: docId, tipe: 'keluar',
+                kode: String(b.kode || ''), nama: String(b.nama || '').slice(0, 60), absen: String(b.absen || '').slice(0, 10),
+                judul: String(b.judul || '').slice(0, 150), waktu: new Date().toISOString(), status: 'menunggu'
+            });
+            return { ok: true };
+        }
+        if (action === 'cekKeluar') {
+            const docId = String(b.hasilId || '');
+            if (!docId) return { ok: true, status: 'menunggu' };
+            const snap = await fs.getDoc(ref('recall_ok', docId));
+            return { ok: true, status: !snap.exists() ? 'menunggu' : (snap.data().ditolak ? 'ditolak' : 'disetujui') };
+        }
+        if (action === 'hapusKeluar') {
+            const docId = String(b.hasilId || '');
+            if (docId) { try { await fs.deleteDoc(ref('recall_ok', docId)); } catch (e) {} }
+            return { ok: true };
+        }
+        if (action === 'batalKeluar') {
+            const docId = String(b.hasilId || '');
+            if (docId) { try { await fs.deleteDoc(ref('recall', docId)); } catch (e) {} }
+            return { ok: true };
+        }
         // Aksi guru: accLanjut dan tolakLanjut
         await C.auth.authStateReady();
         if (!C.auth.currentUser) throw new Error('PIN guru salah atau sesi habis. Masuk ulang sebagai guru.');
@@ -1204,6 +1233,12 @@
         }
         if (action === 'tolakLanjut') {
             const docId = String(b.hasilId || '');
+            try { await fs.deleteDoc(ref('recall', docId)); } catch (e) {}
+            return { ok: true };
+        }
+        if (action === 'accKeluar' || action === 'tolakKeluar') {
+            const docId = String(b.hasilId || '');
+            await fs.setDoc(ref('recall_ok', docId), { hasilId: docId, tipe: 'keluar', ditolak: action === 'tolakKeluar', kode: String(b.kode || ''), waktu_acc: new Date().toISOString() });
             try { await fs.deleteDoc(ref('recall', docId)); } catch (e) {}
             return { ok: true };
         }
@@ -1463,12 +1498,26 @@
             try { localStorage.removeItem(RECALL_KEY); } catch (e) {}
             return { ok: true };
         }
+        const kl = () => { try { return JSON.parse(localStorage.getItem(KELUAR_KEY) || 'null'); } catch (e) { return null; } };
+        if (action === 'mintaKeluar') {
+            localStorage.setItem(KELUAR_KEY, JSON.stringify({ hasilId: String(b.hasilId), tipe: 'keluar', kode: lkKode(b.kode), nama: b.nama, absen: b.absen, judul: b.judul, waktu: new Date().toISOString(), status: 'menunggu' }));
+            return { ok: true };
+        }
+        if (action === 'cekKeluar') { const k = kl(); return { ok: true, status: k && k.hasilId === String(b.hasilId) ? k.status : 'menunggu' }; }
+        if (action === 'hapusKeluar') { try { localStorage.removeItem(KELUAR_KEY); } catch (e) {} return { ok: true }; }
+        if (action === 'batalKeluar') { const k = kl(); if (k && k.status === 'menunggu') { try { localStorage.removeItem(KELUAR_KEY); } catch (e) {} } return { ok: true }; }
         const pinSimpan = localStorage.getItem(LK_PIN);
         if (!pinSimpan || sessionStorage.getItem(PIN_KEY) !== pinSimpan) throw new Error('PIN guru salah atau sesi habis.');
         if (action === 'daftarRecall') {
             const rc = (() => { try { return JSON.parse(localStorage.getItem(RECALL_KEY) || 'null'); } catch (e) { return null; } })();
             const daftar = (rc && rc.status === 'menunggu' && rc.attempt && rc.attempt.kode === lkKode(b.kode)) ? [rc] : [];
+            const k = kl(); if (k && k.status === 'menunggu' && k.kode === lkKode(b.kode)) daftar.push(k);
             return { ok: true, daftar };
+        }
+        if (action === 'accKeluar' || action === 'tolakKeluar') {
+            const k = kl(); if (!k) throw new Error('Tidak ada permintaan keluar.');
+            localStorage.setItem(KELUAR_KEY, JSON.stringify(Object.assign({}, k, { status: action === 'accKeluar' ? 'disetujui' : 'ditolak' })));
+            return { ok: true };
         }
         if (action === 'accLanjut') {
             const rc = (() => { try { return JSON.parse(localStorage.getItem(RECALL_KEY) || 'null'); } catch (e) { return null; } })();
@@ -1920,6 +1969,62 @@
                 $('btn-minta-lanjut').classList.add('hidden');
             }
         } catch (e) {}
+    }
+    function keluarUjianLangsung() {
+        clearInterval(timerId); kamTutup();
+        attempt = null; saveAttempt(); window.onbeforeunload = null;
+        try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+        pilihJK(''); showView('landing');
+    }
+    // Untuk guru yang uji coba lewat menu siswa: PIN (Google Sheets / Lokal) atau email + password (Firebase)
+    async function keluarSebagaiGuru() {
+        const id = db.settings.scriptId, fb = fbAktif(id);
+        const r = await Swal.fire({ title: 'Keluar sebagai guru', showCancelButton: true, confirmButtonText: 'Keluar', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: `<div class="text-left space-y-2 text-xs">${fb ? '<input id="kg-email" type="email" class="field" placeholder="Email guru" autocomplete="off">' : ''}<input id="kg-pin" type="password" class="field" placeholder="${fb ? 'Password guru' : 'PIN guru'}" autocomplete="off"><p class="text-slate-500">Jawaban yang belum dikumpulkan tidak tersimpan.</p></div>`,
+            showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                const pin = document.getElementById('kg-pin').value.trim(), email = fb ? document.getElementById('kg-email').value.trim() : '';
+                if (!pin || (fb && !email)) { Swal.showValidationMessage('Isi ' + (fb ? 'email dan password' : 'PIN') + ' guru'); return false; }
+                if (lkAktif(id) && !localStorage.getItem(LK_PIN)) { Swal.showValidationMessage('PIN lokal belum dibuat. Masuk dulu lewat menu Saya Guru.'); return false; }
+                try { const x = await api('ping', { pin, email }); if (!x.guru) { Swal.showValidationMessage(fb ? 'Email atau password salah' : 'PIN salah'); return false; } return true; }
+                catch (e) { Swal.showValidationMessage(e.message); return false; }
+            } });
+        if (!r.isConfirmed) return;
+        keluarUjianLangsung();
+        toast('Keluar dari ujian (guru)', 'info');
+    }
+    async function mintaKeluar() {
+        if (!attempt || submitting) return;
+        const ok = await Swal.fire({ title: 'Minta izin keluar?', icon: 'warning', showCancelButton: true, showDenyButton: true, confirmButtonText: 'Ya, kirim permintaan', denyButtonText: 'Saya guru (pakai PIN)', cancelButtonText: 'Batal', confirmButtonColor: '#059669', denyButtonColor: '#0ea5e9', cancelButtonColor: '#334155',
+            html: '<p class="text-sm">Anda tidak bisa keluar sendiri. Permintaan dikirim ke guru, dan Anda baru keluar setelah guru menyetujui.</p><p class="text-xs text-amber-300 mt-3"><i class="fas fa-triangle-exclamation mr-1"></i>Bila keluar, jawaban yang belum dikumpulkan tidak tersimpan. Pilih Kumpulkan bila ingin mengirim jawaban.</p>' });
+        if (ok.isDenied) return keluarSebagaiGuru();
+        if (!ok.isConfirmed) return;
+        const hid = 'KLR__' + attempt.kode + '__' + fbSlug(attempt.nama) + '__' + fbSlug(attempt.absen);
+        loading('Mengirim permintaan...');
+        try {
+            try { await recallApi('hapusKeluar', { hasilId: hid }); } catch (e) {}
+            await recallApi('mintaKeluar', { hasilId: hid, kode: attempt.kode, nama: attempt.nama, absen: attempt.absen, judul: attempt.judul });
+            Swal.close();
+        } catch (e) { Swal.close(); return galat(e, 'Gagal mengirim permintaan'); }
+        let status = 'menunggu';
+        const iv = setInterval(async () => {
+            try { const r = await recallApi('cekKeluar', { hasilId: hid }); if (r.status !== 'menunggu') { status = r.status; Swal.close(); } } catch (e) {}
+        }, 3000);
+        await Swal.fire({ title: 'Menunggu persetujuan guru', allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false, showCancelButton: true,
+            cancelButtonText: 'Batal, lanjut mengerjakan', cancelButtonColor: '#334155',
+            html: '<p class="text-sm text-slate-300"><i class="fas fa-hourglass-half mr-1.5 text-amber-400"></i>Permintaan sudah dikirim. Tunggu di halaman ini sampai guru menyetujui. Waktu ujian tetap berjalan.</p>' });
+        clearInterval(iv);
+        if (!attempt || submitting) return;
+        if (status === 'disetujui') {
+            try { await recallApi('hapusKeluar', { hasilId: hid }); } catch (e) {}
+            keluarUjianLangsung();
+            toast('Guru mengizinkan Anda keluar', 'info');
+        } else if (status === 'ditolak') {
+            try { await recallApi('hapusKeluar', { hasilId: hid }); } catch (e) {}
+            Swal.fire({ icon: 'info', title: 'Belum diizinkan', text: 'Guru belum mengizinkan Anda keluar. Silakan lanjutkan mengerjakan.', confirmButtonColor: '#059669' });
+        } else {
+            try { await recallApi('batalKeluar', { hasilId: hid }); } catch (e) {}
+        }
     }
     async function mintaLanjutKerjakan() {
         const ok = await Swal.fire({
@@ -3414,8 +3519,21 @@
         const mintaLanjutCount = rlRecallDaftar.length;
         $('rl-isi').innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 ${statCard('fa-users', 'Sudah Mengumpulkan', hs.length)}${statCard('fa-circle-check', 'Siap di-ACC', hs.filter(h => rlSiap(h) && !rlRilis[h.id]).length, 'sky')}
-                ${statCard('fa-bullhorn', 'Sudah Dirilis', dirilis)}${mintaLanjutCount ? statCard('fa-rotate-left', 'Minta Lanjut Kerjakan', mintaLanjutCount, 'amber') : statCard('fa-hourglass-half', 'Esai Belum Dinilai', hs.filter(h => !rlSiap(h)).length, 'amber')}</div>
+                ${statCard('fa-bullhorn', 'Sudah Dirilis', dirilis)}${mintaLanjutCount ? statCard('fa-bell', 'Permintaan Siswa', mintaLanjutCount, 'amber') : statCard('fa-hourglass-half', 'Esai Belum Dinilai', hs.filter(h => !rlSiap(h)).length, 'amber')}</div>
             ${rlRecallDaftar.map(rc => {
+                if (rc.tipe === 'keluar') {
+                    const hk = esc(rc.hasilId || '');
+                    return `<div class="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div class="flex-1">
+                    <p class="text-xs font-bold text-rose-300"><i class="fas fa-right-from-bracket mr-1.5"></i>Siswa minta izin KELUAR dari ujian</p>
+                    <p class="text-[11px] text-slate-400 mt-1">Siswa masih mengerjakan dan ingin keluar. Bila di-ACC, ia keluar <b class="text-slate-200">tanpa mengumpulkan</b> dan jawabannya tidak tersimpan.</p>
+                    <p class="text-[11px] font-bold text-slate-200 mt-2"><i class="fas fa-user mr-1 text-slate-400"></i>${esc(rc.nama || '')} &bull; Absen ${esc(String(rc.absen || ''))} &bull; ${esc(rc.judul || '')}</p>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <button onclick="rlKeluar('${hk}', false)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-xmark mr-1"></i>Tolak</button>
+                    <button onclick="rlKeluar('${hk}', true)" class="bg-rose-500 hover:bg-rose-400 text-white text-[11px] font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-check mr-1"></i>ACC Keluar</button>
+                </div></div>`;
+                }
                 const nama = esc(rc.nama || (rc.attempt && rc.attempt.nama) || '');
                 const absen = esc(String(rc.absen || (rc.attempt && rc.attempt.absen) || ''));
                 const judul = esc(rc.judul || (rc.attempt && rc.attempt.judul) || '');
@@ -3453,6 +3571,25 @@
             await muatRilis();
         } catch (e) { Swal.close(); galat(e, 'Gagal ACC Lanjut'); }
     }
+    async function rlKeluar(hasilId, setuju) {
+        const rc = rlRecallDaftar.find(x => x.hasilId === hasilId);
+        if (!rc) return;
+        if (setuju && !await konfirmasi('ACC ' + (rc.nama || 'siswa') + ' keluar?', 'Siswa akan keluar dari ujian tanpa mengumpulkan jawaban.', 'Ya, ACC Keluar')) return;
+        loading('Memproses...');
+        try {
+            await recallApi(setuju ? 'accKeluar' : 'tolakKeluar', { hasilId, kode: rc.kode });
+            Swal.close(); toast(setuju ? 'Siswa diizinkan keluar' : 'Permintaan keluar ditolak', setuju ? 'success' : 'info');
+            await muatRecallDaftar(); if (rlData) renderRilisTabel();
+        } catch (e) { Swal.close(); galat(e, 'Gagal memproses'); }
+    }
+    // Segarkan daftar permintaan otomatis selama menu Rilis Nilai terbuka
+    setInterval(async () => {
+        if (!sessionStorage.getItem(PIN_KEY) || !rlData || document.hidden || Swal.isVisible()) return;
+        const sec = $('tab-rilis-view'); if (!sec || sec.classList.contains('hidden')) return;
+        const sebelum = rlRecallDaftar.map(x => x.hasilId).join();
+        await muatRecallDaftar();
+        if (rlRecallDaftar.map(x => x.hasilId).join() !== sebelum) renderRilisTabel();
+    }, 5000);
     async function rlTolakLanjut(hasilId) {
         loading('Memproses...');
         try {
