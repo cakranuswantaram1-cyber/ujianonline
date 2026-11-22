@@ -478,6 +478,19 @@
                                     </select></label>
                                 <p class="text-[11px] text-slate-500">Satu file soal bisa dipakai untuk tiga jenis ujian. Pilihan ini menyaring soal saat ujian disimpan. Ujian esai saja baru punya nilai setelah Anda menilai jawaban siswa.</p>
                             </div>
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <label class="block text-[11px] font-semibold text-slate-400"><i class="fas fa-shuffle text-accent-400 mr-1.5"></i>Jumlah soal yang diujikan
+                                        <input id="f-jumlah" type="number" min="1" step="1" placeholder="Kosong = semua soal" oninput="renderPreview()" class="field mt-1">
+                                    </label>
+                                    <label class="block text-[11px] font-semibold text-slate-400">Cara memilih soal
+                                        <select id="f-jumlah-mode" onchange="renderPreview()" class="field mt-1">
+                                            <option value="acak">Diambil acak dari semua soal</option>
+                                            <option value="urut">Urut dari soal paling atas</option>
+                                        </select></label>
+                                </div>
+                                <p class="text-[11px] text-slate-500">Contoh: file punya 100 soal, isi 20, maka 20 soal dipilih dan semua siswa mengerjakan soal yang sama. Nilai tetap otomatis dihitung dari 0 sampai 100 berdasarkan soal yang diujikan saja. Kosongkan untuk memakai semua soal.</p>
+                            </div>
                             <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-3">
                                 <label class="flex items-center gap-2 text-xs text-slate-300"><input id="f-jadwal-on" type="checkbox" class="accent-emerald-500 w-4 h-4" onchange="jadwalToggle()"> <i class="fas fa-calendar-check text-accent-400"></i> Jadwalkan ujian (mulai otomatis pada tanggal dan jam tertentu)</label>
                                 <div id="f-jadwal-box" class="hidden space-y-2">
@@ -992,6 +1005,10 @@
         for (let i = 0; i < s.docs.length; i += 400) {
             const b = fs.writeBatch(D); s.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit();
         }
+        try {
+            const m = await fs.getDocs(fs.query(fs.collection(D, 'sudah'), fs.where('kode', '==', kode)));
+            for (let i = 0; i < m.docs.length; i += 400) { const b = fs.writeBatch(D); m.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit(); }
+        } catch (e) { /* Rules belum diperbarui */ }
     }
     const FOTO_OK = /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/;
     async function fbHapusFoto(C, kode, absen) {
@@ -1059,6 +1076,19 @@
                 soal: (ss.data().items || []).map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.opsi })) };
         }
 
+        // Siswa cek apakah sudah pernah mengumpulkan ujian ini (lewat tanda 'sudah'; bila Rules belum diperbarui, dianggap belum)
+        if (action === 'cekSudah') {
+            try {
+                const kode = lkKode(b.kode); if (!kode) return { ok: true, sudah: false };
+                const us = await fs.getDoc(ref('ujian', kode)); if (!us.exists()) return { ok: true, sudah: false };
+                let nama = String(b.nama || '').replace(/\s+/g, ' ').trim().slice(0, 60), absen = String(b.absen || '').trim().slice(0, 10);
+                if (!nama || !absen) return { ok: true, sudah: false };
+                if (Array.isArray(us.data().siswa) && us.data().siswa.length) { const k = cekKirim(us.data().siswa, nama, absen); nama = k.nama; absen = k.absen; }
+                const m = await fs.getDoc(ref('sudah', kode + '__' + fbSlug(nama) + '__' + fbSlug(absen)));
+                return { ok: true, sudah: m.exists() };
+            } catch (e) { return { ok: true, sudah: false }; }
+        }
+
         if (action === 'submit') {
             const kode = lkKode(b.kode); if (!kode) throw new Error('Ujian tidak ditemukan.');
             const us = await fs.getDoc(ref('ujian', kode));
@@ -1079,9 +1109,10 @@
                 await fs.setDoc(ref('hasil', docId), { id: docId, kode, nama, absen, waktu: new Date().toISOString(),
                     durasi: Math.max(0, Math.min(Math.round(Number(b.durasi) || 0), (us.data().durasi || 600) * 60)), jawaban: jaw, status_esai: adaEsai ? 'menunggu' : '', keluar: keluarCount });
             } catch (e) {
-                if (e.code === 'permission-denied') throw new Error('Anda sudah mengumpulkan ujian ini. Hubungi guru bila perlu mengulang.');
+                if (e.code === 'permission-denied') throw new Error('Anda sudah mengumpulkan ujian ini. Ujian tidak bisa diulang kecuali guru memberi izin remedial.');
                 throw e;
             }
+            try { await fs.setDoc(ref('sudah', docId), { kode, waktu: new Date().toISOString() }); } catch (e) { /* Rules belum diperbarui: pengecekan awal tidak aktif, pengecekan saat kirim tetap jalan */ }
             return { ok: true, tunda: true, ada_esai: adaEsai, nilai_pg: null, nilai_akhir: null, jumlah_pg: items.filter(q => q.jenis === 'PG').length, benar: null, hasil_id: docId };
         }
 
@@ -1245,6 +1276,7 @@
             const r = ref('hasil', String(b.id)), s = await fs.getDoc(r);
             if (!s.exists()) throw new Error('Data siswa tidak ditemukan.');
             await fs.deleteDoc(r);
+            try { await fs.deleteDoc(ref('sudah', String(b.id))); } catch (e) {}
             return { ok: true };
         }
 
@@ -1324,6 +1356,7 @@
             const docId = String(b.hasilId || '');
             // 1. Hapus jawaban hasil siswa agar bisa submit ulang
             try { await fs.deleteDoc(ref('hasil', docId)); } catch (e) { /* mungkin sudah tidak ada */ }
+            try { await fs.deleteDoc(ref('sudah', docId)); } catch (e) {}
             // 2. Tulis persetujuan ke recall_ok (siswa akan baca ini saat refresh)
             await fs.setDoc(ref('recall_ok', docId), {
                 hasilId: docId,
@@ -1459,6 +1492,13 @@
                 soal: ex.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.opsi })) };
         }
 
+        if (action === 'cekSudah') {
+            const kode = lkKode(b.kode), ex = lkEx(d, kode); if (!ex) return { ok: true, sudah: false };
+            let nama = String(b.nama || '').replace(/\s+/g, ' ').trim().slice(0, 60), absen = String(b.absen || '').trim().slice(0, 10);
+            try { if (Array.isArray(ex.ujian.siswa) && ex.ujian.siswa.length) { const k = cekKirim(ex.ujian.siswa, nama, absen); nama = k.nama; absen = k.absen; } } catch (e) { return { ok: true, sudah: false }; }
+            return { ok: true, sudah: d.hasil.some(h => h.kode === kode && lkNorm(h.nama) === lkNorm(nama) && String(h.absen) === absen) };
+        }
+
         if (action === 'submit') {
             const kode = lkKode(b.kode), ex = lkEx(d, kode);
             if (!ex) throw new Error('Ujian tidak ditemukan.');
@@ -1467,7 +1507,7 @@
             if (!nama || !absen) throw new Error('Nama dan nomor absen wajib diisi.');
             if (Array.isArray(ex.ujian.siswa) && ex.ujian.siswa.length) { const k = cekKirim(ex.ujian.siswa, nama, absen); nama = k.nama; absen = k.absen; }
             if (d.hasil.some(h => h.kode === kode && lkNorm(h.nama) === lkNorm(nama) && String(h.absen) === absen))
-                throw new Error('Anda sudah mengumpulkan ujian ini. Hubungi guru bila perlu mengulang.');
+                throw new Error('Anda sudah mengumpulkan ujian ini. Ujian tidak bisa diulang kecuali guru memberi izin remedial.');
             const kirim = (b.jawaban && typeof b.jawaban === 'object') ? b.jawaban : {};
             const jaw = {};
             ex.soal.forEach(q => {
@@ -2012,6 +2052,11 @@
             nama = c.siswa.n; absen = String(c.siswa.a); jk = c.siswa.j || jkPilih;   // JK dari daftar kelas; bila kosong pakai pilihan siswa
         }
         if (!jk) return galat(new Error('Pilih jenis kelamin: Laki-laki atau Perempuan, lalu tekan Mulai Ujian lagi.'), 'Data belum lengkap');
+        // Sudah pernah mengumpulkan: tidak boleh masuk lagi kecuali guru menghapus hasilnya (izin remedial)
+        try {
+            const cs = await api('cekSudah', { kode, nama: jk ? nama.slice(0, 54) + ' [' + jk + ']' : nama, absen });
+            if (cs && cs.sudah) return Swal.fire({ icon: 'info', title: 'Anda sudah mengerjakan ujian ini', text: 'Ujian tidak bisa diulang. Bila ada remedial atau perbaikan nilai, minta izin guru terlebih dulu.', confirmButtonText: 'Mengerti', confirmButtonColor: '#059669' });
+        } catch (e) { /* server lama / tidak didukung: pengecekan saat kirim tetap menolak pengiriman ganda */ }
         if (r.belum) { if (!await tungguJadwal(u, nama, absen)) return; return mulaiUjian(true); }   // belum waktunya: hitung mundur, lalu mulai otomatis
         const jadwalMs = u.jadwal ? Date.parse(u.jadwal) : 0, akhirJadwal = jadwalMs + u.durasi * 60000;
         const sisaMs = jadwalMs ? akhirJadwal - Date.now() : u.durasi * 60000, telatMs = jadwalMs ? Math.max(0, Date.now() - jadwalMs) : 0;
@@ -2463,6 +2508,15 @@
         const j = ($('f-jenis') || {}).value || 'semua';
         return j === 'semua' ? soalImpor.soal : soalImpor.soal.filter(q => q.jenis === j);
     }
+    // Jumlah soal yang diujikan: dari soal yang lolos filter jenis, ambil N soal (acak atau urut), urutan aslinya dijaga.
+    function jumlahDiminta() { const v = String(($('f-jumlah') || {}).value || '').trim(); const n = Math.floor(Number(v)); return v && n >= 1 ? n : 0; }
+    function soalDipakai() {
+        const semua = soalTerpilih(), n = jumlahDiminta();
+        if (!n || n >= semua.length) return semua;
+        const idx = semua.map((_, i) => i);
+        const pilih = (($('f-jumlah-mode') || {}).value === 'urut') ? idx.slice(0, n) : acakArray(idx).slice(0, n).sort((a, b) => a - b);
+        return pilih.map(i => semua[i]);
+    }
     function renderPreview() {
         const box = $('f-preview');
         if (!soalImpor) { box.innerHTML = ''; return; }
@@ -2473,6 +2527,7 @@
         if (jenis !== 'semua') h += s.length
             ? `<p class="text-accent-400"><i class="fas fa-filter mr-1.5"></i>Dipakai untuk ujian: <b>${s.length} soal ${jenis === 'PG' ? 'pilihan ganda' : 'esai'}</b>; ${semuaFile.length - s.length} soal jenis lain diabaikan.</p>`
             : `<p class="bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl p-3"><i class="fas fa-triangle-exclamation mr-1.5"></i>File ini tidak punya soal ${jenis === 'PG' ? 'pilihan ganda' : 'esai'}. Ganti pilihan jenis soal atau pilih file lain.</p>`;
+        { const n = jumlahDiminta(); if (n && s.length) h += n >= s.length ? `<p class="text-amber-300"><i class="fas fa-shuffle mr-1.5"></i>Jumlah yang diisi (${n}) sama atau lebih dari soal tersedia, jadi semua ${s.length} soal dipakai.</p>` : `<p class="text-accent-400"><i class="fas fa-shuffle mr-1.5"></i>Yang diujikan: <b>${n} dari ${s.length} soal</b> (${$('f-jumlah-mode').value === 'urut' ? 'urut dari atas' : 'dipilih acak saat ujian disimpan'}).</p>`; }
         if (soalImpor.galat.length) h += `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-3 space-y-1"><p class="font-bold">Perbaiki dulu ${soalImpor.galat.length} masalah ini lalu pilih file lagi:</p>${soalImpor.galat.slice(0, 8).map(g => `<p>&bull; ${esc(g)}</p>`).join('')}${soalImpor.galat.length > 8 ? `<p>...dan ${soalImpor.galat.length - 8} lainnya</p>` : ''}</div>`;
         if (s.length && !soalImpor.galat.length) h += `<div class="bg-slate-900 border border-slate-800 rounded-xl divide-y divide-slate-800">${s.slice(0, 3).map((q, i) => `<div class="p-3"><span class="text-[10px] font-bold text-accent-400">${i + 1}. ${q.jenis}</span><p class="text-slate-200 mt-0.5 truncate">${esc(q.soal)}</p></div>`).join('')}${s.length > 3 ? `<div class="p-2 text-center text-[11px] text-slate-500">+ ${s.length - 3} soal lainnya</div>` : ''}</div>`;
         box.innerHTML = h + '</div>';
@@ -2493,7 +2548,7 @@
         if (!(durasi >= 1 && durasi <= 600)) return galat(new Error('Durasi antara 1 sampai 600 menit'), 'Data belum lengkap');
         if (!soalImpor || !soalImpor.soal.length) return galat(new Error('Pilih file soal (Excel/CSV) terlebih dulu'), 'Soal belum ada');
         if (soalImpor.galat.length) return galat(new Error('Masih ada masalah pada file soal. Perbaiki lalu pilih file lagi.'), 'Soal belum benar');
-        const soalPakai = soalTerpilih(), jenisPilih = $('f-jenis').value;
+        const soalPakai = soalDipakai(), jenisPilih = $('f-jenis').value, totalTersedia = soalTerpilih().length;
         let jdwl = '';
         if ($('f-jadwal-on').checked) {
             if (!dukungSiswa()) return galat(new Error('Jadwal otomatis hanya tersedia untuk Firebase dan Mode Lokal. Matikan pilihan jadwal, atau ganti koneksi di Pengaturan.'), 'Jadwal belum bisa dipakai');
@@ -2506,6 +2561,7 @@
         if ($('f-kam').checked && !fbAktif(db.settings.scriptId)) return galat(new Error('Kamera pengawas hanya tersedia dengan koneksi Firebase. Matikan pilihan kamera, atau sambungkan Firebase di Pengaturan.'), 'Kamera belum bisa dipakai');
         if ($('f-suara').checked && !fbAktif(db.settings.scriptId)) return galat(new Error('Rekam suara hanya tersedia dengan koneksi Firebase. Matikan pilihan rekam suara, atau sambungkan Firebase di Pengaturan.'), 'Rekam suara belum bisa dipakai');
         if ($('f-suara').checked && Number($('f-suara-lama').value) >= Number($('f-suara-interval').value)) return galat(new Error('Lama tiap rekaman harus lebih pendek dari jarak antar rekaman.'), 'Pengaturan suara belum benar');
+        if ($('f-jumlah').value.trim() && !(jumlahDiminta() >= 1)) return galat(new Error('Jumlah soal harus berupa angka 1 atau lebih, atau kosongkan untuk memakai semua soal.'), 'Data belum lengkap');
         const ada = (cache.ujian || []).find(u => u.kode === kode);
         if (ada && !await konfirmasi('Kode sudah dipakai', `Ujian "${ada.judul}" akan diganti dengan soal baru.`, 'Ya, ganti')) return;
         let sw = [];
@@ -2523,8 +2579,8 @@
                 suara: $('f-suara').checked, suara_interval: Number($('f-suara-interval').value), suara_lama: Number($('f-suara-lama').value), suara_wajib: $('f-suara-wajib').value === '1', jadwal: jdwl }, soal: soalPakai }, dukungSiswa() ? { siswa: sw } : {}));
             db.penalti = db.penalti || {}; if ($('f-penalti-on').checked) db.penalti[kode] = Math.max(0, Math.min(Number($('f-penalti-poin').value) || 0, 100)); else delete db.penalti[kode]; saveDB();
             Swal.close();
-            toast(jdwl ? 'Ujian terjadwal dan dibuka otomatis' : 'Ujian tersimpan (status: Tutup)');
-            soalImpor = null; renderPreview(); $('f-judul').value = ''; $('f-jenis').value = 'semua'; $('f-jadwal-on').checked = false; $('f-jadwal').value = ''; $('f-jadwal-box').classList.add('hidden'); $('f-kam').checked = false; $('f-kam-opsi').classList.add('hidden'); $('f-suara').checked = false; $('f-suara-opsi').classList.add('hidden'); $('f-penalti-on').checked = false; $('f-penalti-box').classList.add('hidden'); acakKode();
+            toast((jdwl ? 'Ujian terjadwal dan dibuka otomatis' : 'Ujian tersimpan (status: Tutup)') + (soalPakai.length < totalTersedia ? ' - ' + soalPakai.length + ' dari ' + totalTersedia + ' soal' : ''));
+            soalImpor = null; renderPreview(); $('f-judul').value = ''; $('f-jenis').value = 'semua'; $('f-jadwal-on').checked = false; $('f-jadwal').value = ''; $('f-jadwal-box').classList.add('hidden'); $('f-kam').checked = false; $('f-kam-opsi').classList.add('hidden'); $('f-suara').checked = false; $('f-suara-opsi').classList.add('hidden'); $('f-penalti-on').checked = false; $('f-penalti-box').classList.add('hidden'); $('f-jumlah').value = ''; $('f-jumlah-mode').value = 'acak'; acakKode();
             await muatUjian(true);
         } catch (e) { Swal.close(); galat(e, 'Gagal menyimpan'); }
     }
@@ -2637,7 +2693,7 @@
                     ${d.ujian && d.ujian.kamera ? `<button onclick="lihatFoto('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Lihat foto kamera"><i class="fas fa-camera"></i></button>` : ''}
                     <button onclick="detailSiswa('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Detail / nilai esai"><i class="fas fa-eye"></i></button>
                     <button onclick="rvBuka('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Review jawaban benar/salah"><i class="fas fa-list-check"></i></button>
-                    <button onclick="resetSiswa('${esc(h.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Hapus agar siswa bisa mengulang"><i class="fas fa-rotate-left"></i></button>
+                    <button onclick="resetSiswa('${esc(h.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Izinkan remedial: hapus hasil agar siswa bisa mengulang"><i class="fas fa-rotate-left"></i></button>
                 </td></tr>`).join('')}</tbody></table></div>`;
     }
     async function lihatFoto(id) {
@@ -2732,6 +2788,14 @@ service cloud.firestore {
         && request.resource.data.jawaban is map
         && exists(/databases/$(database)/documents/ujian/$(request.resource.data.kode));
       allow read, update, delete: if guru();
+    }
+
+    // Tanda 'sudah mengumpulkan': siswa hanya bisa membuatnya bila jawabannya benar-benar sudah tersimpan; hanya guru yang bisa menghapus (izin remedial).
+    match /sudah/{id} {
+      allow get: if true;
+      allow create: if request.resource.data.keys().hasOnly(['kode','waktu'])
+        && exists(/databases/$(database)/documents/hasil/$(id));
+      allow list, update, delete: if guru();
     }
 
     // Nilai yang sudah di-ACC guru: siswa hanya bisa membaca satu dokumen miliknya.
@@ -2834,7 +2898,7 @@ service cloud.firestore {
     }
     async function resetSiswa(id) {
         const h = hasilData.hasil.find(x => x.id === id);
-        if (!h || !await konfirmasi('Hapus jawaban ' + h.nama + '?', 'Jawaban dan nilainya dihapus, sehingga siswa bisa mengerjakan ulang.', 'Ya, hapus')) return;
+        if (!h || !await konfirmasi('Hapus jawaban ' + h.nama + '?', 'Jawaban dan nilai lama dihapus, lalu siswa boleh masuk dan mengerjakan ulang (izin remedial/perbaikan nilai). Catat atau ekspor nilai lamanya dulu bila perlu.', 'Ya, izinkan ulang')) return;
         loading('Menghapus...');
         try { await api('resetStudent', { id }); Swal.close(); toast('Jawaban dihapus'); muatHasil(); }
         catch (e) { Swal.close(); galat(e); }
