@@ -392,7 +392,9 @@
                     <button onclick="switchTab('tim')" id="btn-tim" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-people-group w-5 text-center"></i><span>Kuis Langsung L vs P</span></button>
                     <button onclick="switchTab('bank')" id="btn-bank" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-box-archive w-5 text-center"></i><span>Bank Soal</span></button>
                     <button onclick="switchTab('analisis')" id="btn-analisis" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-chart-line w-5 text-center"></i><span>Analisis &amp; Remedial</span></button>
+                    <button onclick="switchTab('butir')" id="btn-butir" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-magnifying-glass-chart w-5 text-center"></i><span>Analisis Butir Soal</span></button>
                     <button onclick="switchTab('riwremedial')" id="btn-riwremedial" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-clock-rotate-left w-5 text-center"></i><span>Riwayat Remedial</span></button>
+                    <button onclick="switchTab('leger')" id="btn-leger" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-table-list w-5 text-center"></i><span>Leger Nilai</span></button>
                     <button onclick="switchTab('pantau')" id="btn-pantau" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-satellite-dish w-5 text-center"></i><span>Pantau Langsung</span><span id="badge-pantau" class="ml-auto text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-white hidden">0</span></button>
                     <button onclick="timProyektor()" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-tv w-5 text-center"></i><span>Papan Skor Layar</span></button>
                     <div class="my-2 border-t border-slate-800"></div>
@@ -498,6 +500,15 @@
                                         </select></label>
                                 </div>
                                 <p class="text-[11px] text-slate-500">Contoh: file punya 100 soal, isi 20, maka 20 soal dipilih dan semua siswa mengerjakan soal yang sama. Nilai tetap otomatis dihitung dari 0 sampai 100 berdasarkan soal yang diujikan saja. Kosongkan untuk memakai semua soal.</p>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+                                <label class="block text-[11px] font-semibold text-slate-400"><i class="fas fa-clone text-accent-400 mr-1.5"></i>Paket soal (A/B)
+                                    <select id="f-paket" class="field mt-1">
+                                        <option value="0">Tidak dipakai (semua siswa satu urutan, atau acak bila dicentang)</option>
+                                        <option value="2">2 paket: A dan B</option>
+                                        <option value="3">3 paket: A, B, dan C</option>
+                                    </select></label>
+                                <p class="text-[11px] text-slate-500">Untuk ujian di kelas yang sama. Paket dibagi otomatis dari nomor absen (dengan 2 paket: absen ganjil = A, genap = B), jadi teman sebangku yang absennya berdekatan mendapat urutan soal berbeda. Paket A memakai urutan di file; paket lain diacak tetap, sehingga semua siswa satu paket melihat urutan yang sama. Bila paket dipakai, pilihan <b class="text-slate-300">Acak urutan soal</b> diabaikan. Pilihan jawaban paket B dan C ikut diacak bila Acak pilihan jawaban dicentang. Hanya untuk Firebase dan Mode Lokal, dan paling berguna bila Data Siswa sudah lengkap dengan nomor absen.</p>
                             </div>
                             <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-3">
                                 <label class="flex items-center gap-2 text-xs text-slate-300"><input id="f-jadwal-on" type="checkbox" class="accent-emerald-500 w-4 h-4" onchange="jadwalToggle()"> <i class="fas fa-calendar-check text-accent-400"></i> Jadwalkan ujian (mulai otomatis pada tanggal dan jam tertentu)</label>
@@ -744,6 +755,7 @@
                             <span id="pt-status-dot" class="flex items-center gap-1.5 text-[11px] font-bold text-slate-500"><span class="w-2 h-2 rounded-full bg-slate-600 inline-block"></span>Tidak aktif</span>
                             <button onclick="pantauToggle()" id="pt-toggle-btn" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-play mr-1.5"></i>Mulai Pantau</button>
                             <button onclick="pantauMuat()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Segarkan</button>
+                            <button onclick="tambahWaktuManual()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Tambah waktu dengan mengetik nomor absen"><i class="fas fa-clock mr-1.5"></i>Tambah Waktu Siswa</button>
                         </div>
                         <p class="text-[11px] text-slate-400">Pantau siswa <b class="text-slate-200">selama ujian berlangsung</b>. Halaman ini diperbarui tiap 10 detik selama Pantau aktif. <b class="text-amber-300">Belum masuk</b>: belum ada jawaban terkirim. <b class="text-accent-400">Sudah selesai</b>: sudah mengumpulkan. <b class="text-red-400">Sering keluar</b>: keluar halaman ≥ 2 kali.</p>
                         <div id="pt-ringkasan" class="grid grid-cols-2 sm:grid-cols-4 gap-3 hidden">
@@ -887,6 +899,21 @@
     &amp;&amp; request.auth.token.email == "EMAIL_GURU@gmail.com";
 }</pre>
                         </details>
+                        <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-clock text-accent-400 mr-2"></i>Tambah waktu siswa (Firebase)</summary>
+                            <ol class="mt-3 space-y-1.5 text-[12px] text-slate-400 list-decimal pl-5">
+                                <li>Tambahkan blok Rules di bawah ini di dalam <span class="font-mono text-slate-300">match /databases/{database}/documents</span>, lalu Publish. Ganti email dengan email guru yang sama seperti aturan lain. Bila Anda memakai Rules lengkap dari menu ini (Salin Rules), blok ini sudah ada.</li>
+                                <li>Buka <b class="text-slate-200">Pantau Langsung</b>, pilih ujian, lalu tekan <b class="text-slate-200">+ Waktu</b> di baris siswa, atau <b class="text-slate-200">Tambah Waktu Siswa</b> lalu ketik nomor absen.</li>
+                                <li>Pilih jumlah menit. Hanya siswa itu yang bertambah waktunya, dan ia menerimanya maksimal 15 detik kemudian. Tambahan berikutnya dijumlahkan.</li>
+                                <li>Tambahkan sebelum waktu siswa habis. Siswa yang waktunya habis otomatis terkumpul.</li>
+                            </ol>
+                            <pre class="mt-2 bg-slate-950 border border-slate-700 rounded-xl p-3 text-[11px] text-slate-300 overflow-x-auto">match /extra_time/{id} {
+  allow get: if true;
+  allow list, create, update, delete:
+    if request.auth != null
+    &amp;&amp; request.auth.token.email == "EMAIL_GURU@gmail.com";
+}</pre>
+                        </details>
                         <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800" ontoggle="rulesIsi()">
                             <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-file-code text-accent-400 mr-2"></i>Rules Firestore lengkap (salin / unduh, untuk Firebase baru)</summary>
                             <p class="mt-3 text-[12px] text-slate-400">Cocok untuk guru yang baru membuat proyek Firebase. Ketik email guru, tekan <b class="text-slate-200">Salin</b> atau <b class="text-slate-200">Unduh</b>, lalu tempel ke Firebase. Rules sudah lengkap: ujian, soal, kunci, hasil, nilai, kamera, dan rekam suara.</p>
@@ -931,6 +958,33 @@
                         </details>
                     </section>
 
+                    <!-- TAB: Leger Nilai -->
+                    <section id="tab-leger-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <label class="text-[11px] font-semibold text-slate-400 flex items-center gap-2"><i class="fas fa-people-roof text-accent-400"></i>Kelas
+                                <select id="lg-kelas" onchange="rosPilihKelas(this.value)" class="field !w-auto"></select></label>
+                            <button onclick="renderLeger(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
+                            <button onclick="legerEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Rekap nilai semua ujian untuk satu kelas dalam satu tabel. Centang ujian yang dimasukkan, tentukan kategorinya (Harian, Tengah Semester, atau Akhir Semester), atur bobot, lalu ekspor ke Excel untuk e-Rapot. Siswa dicocokkan dengan menu Data Siswa lewat nomor absen dan nama. Nilai remedial yang dipakai adalah yang tertinggi.</p>
+                        <div id="lg-set"></div>
+                        <div id="lg-isi"></div>
+                    </section>
+
+                    <!-- TAB: Analisis Butir Soal -->
+                    <section id="tab-butir-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="bt-kuis" onchange="renderButir(false)" class="field flex-1 min-w-[12rem]"></select>
+                            <select id="bt-urut" onchange="renderButirHasil()" class="field !w-auto">
+                                <option value="no">Urut nomor soal</option><option value="sulit">Paling banyak salah dulu</option><option value="pembeda">Pembeda terendah dulu</option>
+                            </select>
+                            <button onclick="renderButir(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
+                            <button onclick="butirEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                        </div>
+                        <p class="text-[11px] text-slate-400"><b class="text-slate-200">Tingkat kesulitan</b> = persentase siswa yang menjawab benar (di bawah 30% sulit, di atas 70% mudah). <b class="text-slate-200">Daya pembeda</b> = selisih persen benar antara 27% siswa teratas dan 27% terbawah; nilai negatif biasanya berarti kunci jawaban keliru. Daya pembeda baru dihitung bila ada minimal 8 siswa. Siswa yang menunggu perbaikan tidak dihitung.</p>
+                        <div id="bt-isi"></div>
+                    </section>
+
                     <!-- TAB:END -->
                 </main>
             </div>
@@ -946,7 +1000,7 @@
     // Opsional: isi ID/alamat skrip di sini bila ingin tertanam permanen di aplikasi (tanpa tautan ?s=).
     const SCRIPT_DEFAULT = '';
     const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
-    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', riwremedial: 'Riwayat Remedial', pantau: 'Pantau Langsung', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
+    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', riwremedial: 'Riwayat Remedial', leger: 'Leger Nilai', butir: 'Analisis Butir Soal', pantau: 'Pantau Langsung', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', panduan: 'Panduan', pengaturan: 'Pengaturan' };
     const SCREENS = ['landing', 'siswa', 'tunggu', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
@@ -1147,7 +1201,7 @@
             const belum = cekJadwal(u);
             const info = { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi, siswa: u.siswa || null,
                 kamera: !!u.kamera, kamera_detik: u.kamera_detik || 60, kamera_wajib: !!u.kamera_wajib, jadwal: u.jadwal || '',
-                suara: !!u.suara, suara_interval: u.suara_interval || 60, suara_lama: u.suara_lama || 10, suara_wajib: !!u.suara_wajib };
+                suara: !!u.suara, suara_interval: u.suara_interval || 60, suara_lama: u.suara_lama || 10, suara_wajib: !!u.suara_wajib, paket: paketNum(u.paket) };
             if (belum) return { ok: true, belum: true, ujian: info, soal: [] };
             const ss = await fs.getDoc(ref('soal', kode));
             if (!ss.exists()) throw new Error('Soal ujian tidak ditemukan.');
@@ -1302,7 +1356,7 @@
             bt.set(ref('ujian', kode), { kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, penalti_poin: Math.max(0, Math.min(Number(u.penalti_poin) || 0, 100)),
                 kamera: !!u.kamera, kamera_detik: [30, 60, 120].includes(Number(u.kamera_detik)) ? Number(u.kamera_detik) : 60, kamera_wajib: !!u.kamera_wajib,
                 suara: !!u.suara, suara_interval: [60, 120, 180, 300, 600].includes(Number(u.suara_interval)) ? Number(u.suara_interval) : 60, suara_lama: [10, 15, 20, 30].includes(Number(u.suara_lama)) ? Number(u.suara_lama) : 10, suara_wajib: !!u.suara_wajib,
-                jadwal: rapikanJadwal(u.jadwal), status: rapikanJadwal(u.jadwal) ? 'buka' : 'tutup', dibuat: new Date().toISOString(), jumlah_soal: items.length, jumlah_pg: pg, jumlah_esai: items.length - pg, siswa: rapikanSiswa(b.siswa) });
+                jadwal: rapikanJadwal(u.jadwal), status: rapikanJadwal(u.jadwal) ? 'buka' : 'tutup', paket: paketNum(u.paket), dibuat: new Date().toISOString(), jumlah_soal: items.length, jumlah_pg: pg, jumlah_esai: items.length - pg, siswa: rapikanSiswa(b.siswa) });
             bt.set(ref('soal', kode), { items });
             bt.set(ref('kunci', kode), { k: kunci });
             await bt.commit();
@@ -1365,6 +1419,7 @@
             if (!s.exists()) throw new Error('Data siswa tidak ditemukan.');
             await fs.deleteDoc(r);
             try { await fs.deleteDoc(ref('sudah', String(b.id))); } catch (e) {}
+            try { const hd = s.data(); await fs.deleteDoc(ref('extra_time', hd.kode + '_' + fbSlug(normAbsen(hd.absen)))); } catch (e) {}
             return { ok: true };
         }
 
@@ -1444,27 +1499,26 @@
             if (docId) { try { await fs.deleteDoc(ref('recall', docId)); } catch (e) {} }
             return { ok: true };
         }
-        // Cek sinyal tambah waktu (dipanggil siswa tiap 15 detik, tanpa auth)
+        // Cek tambahan waktu (dipanggil siswa tiap 15 detik, tanpa auth). Dokumen tidak dihapus; siswa mencatat total yang sudah dipakainya.
         if (action === 'cekTambahWaktu') {
-            const docId = lkKode(b.kode) + '_' + String(b.absen || '').trim();
             try {
-                const sn = await fs.getDoc(ref('extra_time', docId));
-                if (!sn.exists()) return { ok: true, menit: 0 };
-                const d = sn.data(); const menit = Number(d.menit || 0);
-                if (menit > 0) await fs.deleteDoc(ref('extra_time', docId)); // sekali baca, langsung hapus
-                return { ok: true, menit };
-            } catch (e) { return { ok: true, menit: 0 }; }
+                const sn = await fs.getDoc(ref('extra_time', lkKode(b.kode) + '_' + fbSlug(normAbsen(b.absen))));
+                if (!sn.exists()) return { ok: true, total: 0 };
+                const d = sn.data();
+                return { ok: true, total: Number(d.total || 0), waktu: String(d.waktu || '') };
+            } catch (e) { return { ok: true, total: 0 }; }
         }
         // Aksi guru: accLanjut dan tolakLanjut
         await C.auth.authStateReady();
         if (!C.auth.currentUser) throw new Error('PIN guru salah atau sesi habis. Masuk ulang sebagai guru.');
-        // Tambah waktu siswa (guru)
+        // Tambah waktu siswa (guru): jumlahnya dijumlahkan dengan tambahan sebelumnya
         if (action === 'tambahWaktu') {
-            const kode = lkKode(b.kode), absen = String(b.absen || '').trim();
-            const menit = Math.max(1, Math.min(Number(b.menit || 0), 120));
-            const docId = kode + '_' + absen;
-            await fs.setDoc(ref('extra_time', docId), { kode, absen, menit, oleh: 'guru', waktu: new Date().toISOString() });
-            return { ok: true };
+            const kode = lkKode(b.kode), absen = normAbsen(b.absen);
+            const menit = Math.max(1, Math.min(Math.round(Number(b.menit || 0)), 120));
+            const r = ref('extra_time', kode + '_' + fbSlug(absen));
+            const sn = await fs.getDoc(r), total = Math.min((sn.exists() ? Number(sn.data().total || 0) : 0) + menit, 600);
+            await fs.setDoc(r, { kode, absen, total, menit_terakhir: menit, waktu: new Date().toISOString() });
+            return { ok: true, total };
         }
         if (action === 'daftarRecall') {
             const col = fs.collection(D, 'recall');
@@ -1518,6 +1572,24 @@
     const kataNama = s => String(s ?? '').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
     const namaSimpan = s => (s.j ? String(s.n).slice(0, 54) + ' [' + s.j + ']' : String(s.n)).replace(/\s+/g, ' ').trim().slice(0, 60);
     const rapikanJadwal = v => { const t = Date.parse(v); return v && !isNaN(t) ? new Date(t).toISOString() : ''; };
+    /* ---------- Paket soal A/B/C: urutan soal berbeda per kelompok duduk. Paket dibagi dari nomor absen (absen 1 = A, 2 = B, 3 = A, dst). ---------- */
+    const paketNum = v => [2, 3].includes(Number(v)) ? Number(v) : 0;
+    function paketLabel(absen, n) {
+        const a = parseInt(normAbsen(absen), 10);
+        const i = isNaN(a) ? String(absen).split('').reduce((x, c) => x + c.charCodeAt(0), 0) % n : (((a - 1) % n) + n) % n;
+        return 'ABC'[i];
+    }
+    function seedRng(str) {
+        let h = 2166136261; for (const c of String(str)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+        let a = h >>> 0;
+        return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    }
+    function acakSeed(arr, seed) {
+        const r = seedRng(seed), a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+        return a;
+    }
+    const paketBadge = (absen, u) => u && paketNum(u.paket) ? ' <span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-slate-700 text-slate-200" title="Paket soal">' + paketLabel(absen, paketNum(u.paket)) + '</span>' : '';
     function selisihTeks(ms) {
         const t = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(t / 86400), j = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60);
         return h > 0 ? h + ' hari ' + j + ' jam' : j > 0 ? j + ' jam ' + m + ' menit' : m > 0 ? m + ' menit' : (t % 60) + ' detik';
@@ -1605,7 +1677,7 @@
             if (!ex) throw new Error('Kode ujian tidak ditemukan. Periksa kembali kodenya.');
             if (ex.ujian.status !== 'buka') throw new Error('Ujian ini belum dibuka oleh guru.');
             const u = ex.ujian, belum = cekJadwal(u);
-            const info = { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi, siswa: u.siswa || null, jadwal: u.jadwal || '' };
+            const info = { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi, siswa: u.siswa || null, jadwal: u.jadwal || '', paket: paketNum(u.paket) };
             if (belum) return { ok: true, belum: true, ujian: info, soal: [] };
             return { ok: true, ujian: info,
                 soal: ex.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.opsi })) };
@@ -1689,7 +1761,7 @@
             });
             // Kode yang sama diganti total; nilai lama ikut dihapus karena tidak cocok lagi dengan soal baru.
             d.ujian = d.ujian.filter(x => x.kode !== kode); d.soal = d.soal.filter(x => x.kode !== kode); d.hasil = d.hasil.filter(x => x.kode !== kode);
-            d.ujian.push({ kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, penalti_poin: Math.max(0, Math.min(Number(u.penalti_poin) || 0, 100)), jadwal: rapikanJadwal(u.jadwal), status: rapikanJadwal(u.jadwal) ? 'buka' : 'tutup', dibuat: new Date().toISOString(), siswa: rapikanSiswa(b.siswa) });
+            d.ujian.push({ kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, penalti_poin: Math.max(0, Math.min(Number(u.penalti_poin) || 0, 100)), jadwal: rapikanJadwal(u.jadwal), status: rapikanJadwal(u.jadwal) ? 'buka' : 'tutup', paket: paketNum(u.paket), dibuat: new Date().toISOString(), siswa: rapikanSiswa(b.siswa) });
             d.soal.push(...baris);
             lkTulis(d);
             return { ok: true };
@@ -1740,7 +1812,8 @@
         }
 
         if (action === 'resetStudent') {
-            const n = d.hasil.length;
+            const n = d.hasil.length, hh = d.hasil.find(x => x.id === String(b.id));
+            if (hh) { try { localStorage.removeItem(WAKTU_KEY + hh.kode + '_' + normAbsen(hh.absen)); } catch (e) {} }
             d.hasil = d.hasil.filter(x => x.id !== String(b.id));
             if (d.hasil.length === n) throw new Error('Data siswa tidak ditemukan.');
             lkTulis(d);
@@ -1784,19 +1857,19 @@
         if (action === 'hapusKeluar') { try { localStorage.removeItem(KELUAR_KEY); } catch (e) {} return { ok: true }; }
         if (action === 'batalKeluar') { const k = kl(); if (k && k.status === 'menunggu') { try { localStorage.removeItem(KELUAR_KEY); } catch (e) {} } return { ok: true }; }
         if (action === 'cekTambahWaktu') {
-            const key = WAKTU_KEY + lkKode(b.kode) + '_' + String(b.absen || '').trim();
-            try { const v = JSON.parse(localStorage.getItem(key) || 'null'); if (v && v.menit) { localStorage.removeItem(key); return { ok: true, menit: Number(v.menit) }; } } catch (e) {}
-            return { ok: true, menit: 0 };
-        }
-        if (action === 'tambahWaktu') {
-            const kode = lkKode(b.kode), absen = String(b.absen || '').trim();
-            const menit = Math.max(1, Math.min(Number(b.menit || 0), 120));
-            const key = WAKTU_KEY + kode + '_' + absen;
-            try { localStorage.setItem(key, JSON.stringify({ kode, absen, menit, waktu: new Date().toISOString() })); } catch (e) {}
-            return { ok: true };
+            const key = WAKTU_KEY + lkKode(b.kode) + '_' + normAbsen(b.absen);
+            try { const v = JSON.parse(localStorage.getItem(key) || 'null'); if (v && v.total) return { ok: true, total: Number(v.total), waktu: String(v.waktu || '') }; } catch (e) {}
+            return { ok: true, total: 0 };
         }
         const pinSimpan = localStorage.getItem(LK_PIN);
         if (!pinSimpan || sessionStorage.getItem(PIN_KEY) !== pinSimpan) throw new Error('PIN guru salah atau sesi habis.');
+        if (action === 'tambahWaktu') {
+            const kode = lkKode(b.kode), absen = normAbsen(b.absen), key = WAKTU_KEY + kode + '_' + absen;
+            const menit = Math.max(1, Math.min(Math.round(Number(b.menit || 0)), 120));
+            let total = menit; try { const v = JSON.parse(localStorage.getItem(key) || 'null'); if (v && v.total) total = Math.min(Number(v.total) + menit, 600); } catch (e) {}
+            localStorage.setItem(key, JSON.stringify({ kode, absen, total, waktu: new Date().toISOString() }));
+            return { ok: true, total };
+        }
         if (action === 'daftarRecall') {
             const rc = (() => { try { return JSON.parse(localStorage.getItem(RECALL_KEY) || 'null'); } catch (e) { return null; } })();
             const daftar = (rc && rc.status === 'menunggu' && rc.attempt && rc.attempt.kode === lkKode(b.kode)) ? [rc] : [];
@@ -1883,8 +1956,10 @@
         if (id === 'rilis') renderRilis(true);
         if (id === 'analisis') renderAnalisis(true);
         if (id === 'riwremedial') renderRiwRemedial();
+        if (id === 'leger') renderLeger(true);
+        if (id === 'butir') renderButir(true);
         if (id === 'pantau') { pantauIsiKuis().then(() => pantauMuat()); }
-        if (['ujian', 'akun', 'absensi'].includes(id)) rosIsiKelas();
+        if (['ujian', 'akun', 'absensi', 'leger'].includes(id)) rosIsiKelas();
         if (id === 'roster') renderRoster();
         if (id === 'akun') renderAkun();
         if (id === 'absensi') renderAbsensi();
@@ -2240,10 +2315,12 @@
             const adaMic = await suaraMinta();
             if (!adaMic && u.suara_wajib) return galat(new Error('Ujian ini mewajibkan mikrofon. Izinkan akses mikrofon di browser, lalu tekan Mulai Ujian lagi.'), 'Mikrofon belum diizinkan');
         }
-        let soal = r.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.jenis === 'PG' && u.acak_opsi ? acakArray(q.opsi) : q.opsi }));
-        if (u.acak_soal) soal = acakArray(soal);
+        const pkN = paketNum(u.paket), pkL = pkN ? paketLabel(absen, pkN) : '';
+        let soal = r.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.jenis === 'PG' && u.acak_opsi ? (pkN ? (pkL === 'A' ? q.opsi : acakSeed(q.opsi, u.kode + '|' + pkL + '|' + q.no)) : acakArray(q.opsi)) : q.opsi }));
+        if (pkN) { if (pkL !== 'A') soal = acakSeed(soal, u.kode + '|' + pkL); }
+        else if (u.acak_soal) soal = acakArray(soal);
         const now = Date.now();
-        attempt = { kode: u.kode, judul: u.judul, nama, absen, jk, mulai: now, akhir: jadwalMs ? akhirJadwal : now + u.durasi * 60000, durasi: u.durasi, jadwal: u.jadwal || '', soal, jawaban: {}, idx: 0, kam: u.kamera ? { detik: u.kamera_detik || 60, wajib: !!u.kamera_wajib } : null, suara: u.suara ? { interval: u.suara_interval || 60, lama: u.suara_lama || 10, wajib: !!u.suara_wajib } : null };
+        attempt = { kode: u.kode, judul: u.judul, nama, absen, jk, mulai: now, akhir: jadwalMs ? akhirJadwal : now + u.durasi * 60000, durasi: u.durasi, jadwal: u.jadwal || '', paket: pkL, soal, jawaban: {}, idx: 0, kam: u.kamera ? { detik: u.kamera_detik || 60, wajib: !!u.kamera_wajib } : null, suara: u.suara ? { interval: u.suara_interval || 60, lama: u.suara_lama || 10, wajib: !!u.suara_wajib } : null };
         saveAttempt();
         tampilUjian();
     }
@@ -2251,7 +2328,7 @@
     function tampilUjian() {
         showView('ujian');
         $('u-judul').textContent = attempt.judul;
-        $('u-nama').textContent = attempt.nama + ' • absen ' + attempt.absen;
+        $('u-nama').textContent = attempt.nama + ' • absen ' + attempt.absen + (attempt.paket ? ' • Paket ' + attempt.paket : '');
         window.onbeforeunload = e => { e.preventDefault(); e.returnValue = ''; return ''; };
         try { if (document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
         clearInterval(timerId);
@@ -2275,10 +2352,13 @@
         if (!submitting && now - _xtLastCek >= 15000) {
             _xtLastCek = now;
             recallApi('cekTambahWaktu', { kode: attempt.kode, absen: attempt.absen }).then(r => {
-                if (r && r.menit > 0) {
-                    attempt.akhir += r.menit * 60000;
-                    saveAttempt();
-                    pjBanner('\u23F1 Guru menambahkan ' + r.menit + ' menit untuk Anda. Semangat!');
+                if (!attempt || submitting || !r) return;
+                const sudah = attempt.xtTotal || 0;
+                if (r.total > sudah && (!r.waktu || r.waktu > new Date(attempt.mulai).toISOString())) {
+                    const tambah = r.total - sudah;
+                    attempt.akhir += tambah * 60000; attempt.xtTotal = r.total;
+                    saveAttempt(); tickUjian();
+                    pjBanner('\u23F1 Guru menambahkan ' + tambah + ' menit untuk Anda. Semangat!');
                 }
             }).catch(() => {});
         }
@@ -2745,17 +2825,18 @@
             if (!sw.length) { if (!await konfirmasi('Data Siswa masih kosong', 'Siswa akan masuk dengan cara lama (nama lengkap + jenis kelamin), tanpa pencocokan nomor absen. Isi menu Data Siswa dulu bila ingin login dengan absen + nama.', 'Ya, simpan tanpa daftar')) return; }
             else if (s.tanpaAbsen.length && !await konfirmasi(s.tanpaAbsen.length + ' siswa belum punya nomor absen', 'Mereka tidak bisa masuk ujian: ' + s.tanpaAbsen.slice(0, 5).map(x => x.nama).join(', ') + (s.tanpaAbsen.length > 5 ? ', dan lainnya' : '') + '. Lengkapi nomor absen di Data Siswa, atau lanjut simpan.', 'Ya, lanjut simpan')) return;
         }
+        if (Number($('f-paket').value) && !dukungSiswa()) return galat(new Error('Paket soal hanya tersedia untuk Firebase dan Mode Lokal. Pilih "Tidak dipakai", atau ganti koneksi di Pengaturan.'), 'Paket belum bisa dipakai');
         if ($('f-penalti-on').checked && !(Number($('f-penalti-poin').value) > 0)) return galat(new Error('Isi jumlah pengurangan nilai lebih dari 0, atau matikan pilihan pengurangan nilai.'), 'Data belum lengkap');
         loading('Menyimpan ujian...');
         try {
             await api('saveExam', Object.assign({ ujian: { kode, judul, durasi, acak_soal: $('f-acak-soal').checked, acak_opsi: $('f-acak-opsi').checked,
                 penalti_poin: $('f-penalti-on').checked ? Math.max(0, Math.min(Number($('f-penalti-poin').value) || 0, 100)) : 0,
                 kamera: $('f-kam').checked, kamera_detik: Number($('f-kam-detik').value), kamera_wajib: $('f-kam-wajib').value === '1',
-                suara: $('f-suara').checked, suara_interval: Number($('f-suara-interval').value), suara_lama: Number($('f-suara-lama').value), suara_wajib: $('f-suara-wajib').value === '1', jadwal: jdwl }, soal: soalPakai }, dukungSiswa() ? { siswa: sw } : {}));
+                suara: $('f-suara').checked, suara_interval: Number($('f-suara-interval').value), suara_lama: Number($('f-suara-lama').value), suara_wajib: $('f-suara-wajib').value === '1', jadwal: jdwl, paket: Number($('f-paket').value) || 0 }, soal: soalPakai }, dukungSiswa() ? { siswa: sw } : {}));
             db.penalti = db.penalti || {}; if ($('f-penalti-on').checked) db.penalti[kode] = Math.max(0, Math.min(Number($('f-penalti-poin').value) || 0, 100)); else delete db.penalti[kode]; saveDB();
             Swal.close();
             toast((jdwl ? 'Ujian terjadwal dan dibuka otomatis' : 'Ujian tersimpan (status: Tutup)') + (soalPakai.length < totalTersedia ? ' - ' + soalPakai.length + ' dari ' + totalTersedia + ' soal' : ''));
-            soalImpor = null; renderPreview(); $('f-judul').value = ''; $('f-jenis').value = 'semua'; $('f-jadwal-on').checked = false; $('f-jadwal').value = ''; $('f-jadwal-box').classList.add('hidden'); $('f-kam').checked = false; $('f-kam-opsi').classList.add('hidden'); $('f-suara').checked = false; $('f-suara-opsi').classList.add('hidden'); $('f-penalti-on').checked = false; $('f-penalti-box').classList.add('hidden'); $('f-jumlah').value = ''; $('f-jumlah-mode').value = 'acak'; acakKode();
+            soalImpor = null; renderPreview(); $('f-judul').value = ''; $('f-jenis').value = 'semua'; $('f-jadwal-on').checked = false; $('f-jadwal').value = ''; $('f-jadwal-box').classList.add('hidden'); $('f-kam').checked = false; $('f-kam-opsi').classList.add('hidden'); $('f-suara').checked = false; $('f-suara-opsi').classList.add('hidden'); $('f-penalti-on').checked = false; $('f-penalti-box').classList.add('hidden'); $('f-jumlah').value = ''; $('f-jumlah-mode').value = 'acak'; $('f-paket').value = '0'; acakKode();
             await muatUjian(true);
         } catch (e) { Swal.close(); galat(e, 'Gagal menyimpan'); }
     }
@@ -2782,6 +2863,7 @@
                 <p class="text-[11px] text-slate-400">${u.jumlah_soal} soal (${u.jumlah_pg} PG, ${u.jumlah_esai} esai) &bull; ${u.jumlah_hasil} jawaban masuk${u.menunggu ? ` &bull; <span class="text-amber-400">${u.menunggu} esai belum dinilai</span>` : ''}</p>
                 ${u.kamera ? `<p class="text-[11px] text-slate-400"><i class="fas fa-camera mr-1"></i>Kamera pengawas: foto tiap ${u.kamera_detik || 60} detik${u.kamera_wajib ? ' (wajib)' : ''}</p>` : ''}
                 ${u.suara ? `<p class="text-[11px] text-slate-400"><i class="fas fa-microphone mr-1"></i>Rekam suara: ${u.suara_lama || 10} detik tiap ${(u.suara_interval || 60) / 60} menit${u.suara_wajib ? ' (wajib)' : ''}</p>` : ''}
+                ${paketNum(u.paket) ? `<p class="text-[11px] text-slate-400"><i class="fas fa-clone mr-1"></i>${paketNum(u.paket)} paket soal (${'ABC'.slice(0, paketNum(u.paket)).split('').join(', ')}), dibagi dari nomor absen</p>` : ''}
                 ${u.jadwal ? `<p class="text-[11px] text-sky-300"><i class="fas fa-calendar-check mr-1"></i>${ketJadwal(u)}</p>` : ''}
                 <p class="text-[11px] ${u.siswa && u.siswa.length ? 'text-slate-400' : 'text-amber-300'}"><i class="fas fa-id-card mr-1"></i>${u.siswa && u.siswa.length ? 'Login: absen + nama (' + u.siswa.length + ' siswa terdaftar)' : 'Login lama: nama lengkap + jenis kelamin (tanpa daftar siswa)'}</p>
                 <div class="flex flex-wrap gap-2">
@@ -2856,7 +2938,7 @@
             <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider"><tr>
                 <th class="px-4 py-3 text-left">Nama</th><th class="px-3 py-3 text-center">Absen</th><th class="px-3 py-3 text-center">JK</th><th class="px-3 py-3 text-center">Nilai PG</th><th class="px-3 py-3 text-center">Esai</th><th class="px-3 py-3 text-center">Nilai Akhir</th><th class="px-3 py-3 text-center" title="Berapa kali siswa keluar/pindah dari halaman ujian">Keluar</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
             <tbody class="divide-y divide-slate-800 bg-slate-900">${hs.map(h => `<tr class="hover:bg-slate-800/60">
-                <td class="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}</td>
+                <td class="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}${paketBadge(h.absen, d.ujian)}</td>
                 <td class="px-3 py-3 text-center text-slate-400">${esc(h.absen)}</td>
                 <td class="px-3 py-3 text-center">${badgeJK(h.jk)}</td>
                 <td class="px-3 py-3 text-center text-slate-300">${fmtNilai(h.nilai_pg)}</td>
@@ -3004,6 +3086,12 @@ service cloud.firestore {
         && request.resource.data.klip is list
         && request.resource.data.klip.size() <= 3;
       allow get, list, update, delete: if guru();
+    }
+
+    // Tambah waktu per siswa: siswa hanya membaca dokumennya, guru yang menulis.
+    match /extra_time/{id} {
+      allow get: if true;
+      allow list, write: if guru();
     }
 
     match /{other=**} {
@@ -3954,7 +4042,7 @@ service cloud.firestore {
     function rosIsiKelas() {
         const ds = rosKelasDaftar(), adaTanpa = ds.length > 0 && rosBaca().some(x => !rosKelasNama(x)), aktif = rosAktif();
         const opsi = '<option value="*">Semua kelas</option>' + ds.map(k => `<option value="${esc(k)}">${esc(k)}</option>`).join('') + (adaTanpa ? '<option value="__none">(Tanpa kelas)</option>' : '');
-        ['ros-kelas', 'absn-kelas', 'ak-kelas'].forEach(id => { const el = $(id); if (el) { el.innerHTML = opsi; el.value = aktif; } });
+        ['ros-kelas', 'absn-kelas', 'ak-kelas', 'lg-kelas'].forEach(id => { const el = $(id); if (el) { el.innerHTML = opsi; el.value = aktif; } });
         const f = $('f-kelas'); if (f) { const lama = f.value; f.innerHTML = opsi; f.value = lama && [...f.options].some(o => o.value === lama) ? lama : aktif; }
         const dl = $('ros-kelas-dl'); if (dl) dl.innerHTML = ds.map(k => `<option value="${esc(k)}">`).join('');
         const inp = $('ros-kelas-in'); if (inp && !inp.value && aktif !== '*' && aktif !== '__none') inp.value = aktif;
@@ -3963,6 +4051,7 @@ service cloud.firestore {
         db.settings.kelasAktif = v; saveDB();
         const inp = $('ros-kelas-in'); if (inp) inp.value = (v !== '*' && v !== '__none') ? v : '';
         rosIsiKelas(); renderRoster();
+        { const lg = $('tab-leger-view'); if (lg && !lg.classList.contains('hidden')) renderLeger(false); }
         if ($('absn-tgl')) { renderAbsnHari(); renderAbsnRekap(); }
         if ($('ak-list')) akunRender();
     }
@@ -4629,10 +4718,10 @@ service cloud.firestore {
             const arsip = await arsipBaca(kode);
 
             // Daftar siswa resmi dari ujian (bila ada)
-            const daftarSiswa = Array.isArray(ujian.siswa) ? ujian.siswa : [];
+            const daftarSiswa = (Array.isArray(ujian.siswa) ? ujian.siswa : []).map(x => ({ absen: x.absen ?? x.a ?? x.no ?? '', nama: x.nama ?? x.n ?? '', jk: x.jk ?? x.j ?? '' }));
             // Set absen siswa yang sudah mengumpulkan
             const sudahMap = {}; // absen → hasil
-            hasil.forEach(h => { sudahMap[String(h.absen).trim()] = h; });
+            hasil.forEach(h => { sudahMap[normAbsen(h.absen)] = h; });
 
             // Hitung yang sedang menunggu perbaikan (punya arsip, belum submit baru)
             const arsipKeys = Object.keys(arsip);
@@ -4652,7 +4741,7 @@ service cloud.firestore {
             // 2) Siswa dari daftar resmi yang belum ada di hasil
             if (daftarSiswa.length) {
                 daftarSiswa.forEach(s => {
-                    const ab = String(s.absen || s.no || '').trim();
+                    const ab = normAbsen(s.absen);
                     if (!sudahMap[ab]) barisBelum.push(s);
                 });
             }
@@ -4715,13 +4804,14 @@ service cloud.firestore {
                         <span class="ml-auto text-xs font-black text-sky-400">${barisMenunggu.length} siswa</span>
                     </div>
                     <div class="overflow-x-auto"><table class="w-full text-xs">
-                    <thead><tr><th class="${thS}">No</th><th class="${thS}">Nama</th><th class="${thS} text-center">JK</th><th class="${thS} text-center">Nilai Lama</th></tr></thead>
+                    <thead><tr><th class="${thS}">No</th><th class="${thS}">Nama</th><th class="${thS} text-center">JK</th><th class="${thS} text-center">Nilai Lama</th><th class="${thS} text-right">Aksi</th></tr></thead>
                     <tbody class="divide-y divide-slate-800">
                     ${barisMenunggu.map(h => `<tr class="hover:bg-slate-800/60">
                         <td class="px-3 py-2.5 text-slate-400">${esc(h.absen)}</td>
                         <td class="px-3 py-2.5 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}</td>
                         <td class="px-3 py-2.5 text-center">${badgeJK(h.jk)}</td>
                         <td class="px-3 py-2.5 text-center font-black text-slate-400">${fmtNilai(h.nilai_lama)}</td>
+                        <td class="px-3 py-2.5 text-right whitespace-nowrap">${xtBadge(kode, h.absen)}<button onclick="tambahWaktuSiswa('${esc(kode)}','${encodeURIComponent(String(h.absen))}')" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition" title="Tambah waktu"><i class="fas fa-clock mr-1"></i>+ Waktu</button></td>
                     </tr>`).join('')}
                     </tbody></table></div></div>`;
             }
@@ -4736,12 +4826,13 @@ service cloud.firestore {
                         <span class="ml-auto text-xs font-black text-amber-400">${barisBelum.length} siswa</span>
                     </div>
                     <div class="overflow-x-auto"><table class="w-full text-xs">
-                    <thead><tr><th class="${thS}">No</th><th class="${thS}">Nama</th><th class="${thS} text-center">JK</th></tr></thead>
+                    <thead><tr><th class="${thS}">No</th><th class="${thS}">Nama</th><th class="${thS} text-center">JK</th><th class="${thS} text-right">Aksi</th></tr></thead>
                     <tbody class="divide-y divide-slate-800">
                     ${barisBelum.map(s => `<tr class="hover:bg-slate-800/60">
                         <td class="px-3 py-2.5 text-slate-400">${esc(String(s.absen || s.no || ''))}</td>
                         <td class="px-3 py-2.5 font-semibold text-amber-200 whitespace-nowrap">${esc(s.nama || '')}</td>
                         <td class="px-3 py-2.5 text-center">${badgeJK(s.jk || '')}</td>
+                        <td class="px-3 py-2.5 text-right whitespace-nowrap">${xtBadge(kode, s.absen)}<button onclick="tambahWaktuSiswa('${esc(kode)}','${encodeURIComponent(String(s.absen))}')" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition" title="Tambah waktu untuk siswa ini"><i class="fas fa-clock mr-1"></i>+ Waktu</button></td>
                     </tr>`).join('')}
                     </tbody></table></div></div>`;
             } else if (!daftarSiswa.length && !barisSudah.length && !barisMenunggu.length) {
@@ -4781,38 +4872,47 @@ service cloud.firestore {
         }
     }
 
-    async function tambahWaktuSiswa(kode, absen, nama) {
-        const { value: menit } = await Swal.fire({
-            title: 'Tambah Waktu untuk ' + nama,
-            icon: 'clock',
-            input: 'number',
-            inputLabel: 'Berapa menit yang ditambahkan?',
-            inputValue: 10,
-            inputAttributes: { min: 1, max: 120, step: 1 },
-            showCancelButton: true,
-            confirmButtonText: 'Tambahkan',
-            cancelButtonText: 'Batal',
-            confirmButtonColor: '#059669',
-            cancelButtonColor: '#334155',
-            html: `<p class="text-sm text-slate-300 mb-3">Tambahkan waktu untuk <b>${esc(nama)}</b> (absen ${esc(String(absen))}). Siswa akan otomatis mendapat tambahan waktu selama mengerjakan.</p><input id="swal2-input" type="number" class="swal2-input" min="1" max="120" step="1" value="10">`,
-            preConfirm: () => {
-                const v = Number(document.getElementById('swal2-input').value);
-                if (!v || v < 1 || v > 120) { Swal.showValidationMessage('Masukkan angka 1–120 menit'); return false; }
-                return v;
-            }
-        });
-        if (!menit) return;
-        loading('Mengirim sinyal tambah waktu...');
+    /* ---------- Tambah waktu untuk satu siswa (HP mati, sinyal putus, dll.). Waktu siswa lain tidak berubah. ---------- */
+    const xtTotal = (kode, absen) => (db.waktuLog || []).filter(x => x.kode === kode && normAbsen(x.absen) === normAbsen(absen)).reduce((a, x) => a + x.menit, 0);
+    const xtBadge = (kode, absen) => { const t = xtTotal(kode, absen); return t ? `<span class="text-[10px] font-bold text-sky-300 mr-2" title="Total tambahan waktu yang Anda berikan">+${t} mnt</span>` : ''; };
+    function ptNamaDari(absen) {
+        const a = normAbsen(absen), semua = ptData ? [].concat(ptData.barisBelum || [], ptData.barisMenunggu || [], ptData.barisSudah || []) : [];
+        const x = semua.find(r => normAbsen(r.absen) === a);
+        return x ? x.nama : '';
+    }
+    async function tambahWaktuManual() {
+        const kode = $('pt-kuis').value;
+        if (!kode) return toast('Pilih ujian dulu', 'info');
+        const r = await Swal.fire({ title: 'Tambah waktu siswa', input: 'text', inputLabel: 'Nomor absen siswa', inputPlaceholder: 'Contoh: 7', showCancelButton: true, confirmButtonText: 'Lanjut', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155', inputAttributes: { maxlength: 10 }, inputValidator: v => String(v).trim() ? null : 'Isi nomor absen' });
+        if (r.isConfirmed) tambahWaktuSiswa(kode, encodeURIComponent(String(r.value).trim()));
+    }
+    async function tambahWaktuSiswa(kode, absenEnc, nama) {
+        const absen = decodeURIComponent(absenEnc || '').trim();
+        if (!dukungSiswa()) return galat(new Error('Tambah waktu hanya tersedia untuk Firebase dan Mode Lokal.'), 'Belum bisa dipakai');
+        nama = nama || ptNamaDari(absen) || ('absen ' + absen);
+        const sebelum = xtTotal(kode, absen);
+        const r = await Swal.fire({ title: 'Tambah waktu', showCancelButton: true, confirmButtonText: 'Tambahkan', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: `<div class="text-left space-y-3 text-xs"><p class="text-slate-300"><b>${esc(nama)}</b> (absen ${esc(absen)})${sebelum ? ` <span class="text-sky-300">sudah ditambah ${sebelum} menit</span>` : ''}</p>
+                <div class="flex flex-wrap gap-2">${[5, 10, 15, 30].map(n => `<button type="button" onclick="document.getElementById('xt-menit').value=${n}" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-2 rounded-lg">${n} menit</button>`).join('')}</div>
+                <label class="block text-slate-400 font-semibold">Berapa menit yang ditambahkan<input id="xt-menit" type="number" min="1" max="120" step="1" value="10" class="field mt-1"></label>
+                <p class="text-slate-500">Hanya siswa ini yang bertambah waktunya, siswa lain tidak berubah. Ia menerimanya maksimal 15 detik kemudian, selama masih mengerjakan. Siswa yang waktunya sudah habis otomatis terkumpul, jadi tambahkan sebelum waktu habis.</p></div>`,
+            preConfirm: () => { const v = Math.round(Number(document.getElementById('xt-menit').value)); if (!(v >= 1 && v <= 120)) { Swal.showValidationMessage('Isi angka 1 sampai 120 menit'); return false; } return v; } });
+        if (!r.isConfirmed) return;
+        const menit = r.value;
+        loading('Menambah waktu...');
         try {
-            await recallApi('tambahWaktu', { kode, absen: String(absen), menit });
+            await recallApi('tambahWaktu', { kode, absen, menit });
             Swal.close();
-            toast(menit + ' menit ditambahkan untuk ' + nama + '. Siswa akan menerimanya dalam 15 detik.', 'success');
-            // Simpan log tambah waktu di db lokal untuk riwayat (opsional)
             db.waktuLog = db.waktuLog || [];
-            db.waktuLog.push({ kode, absen: String(absen), nama, menit, waktu: new Date().toISOString() });
-            if (db.waktuLog.length > 200) db.waktuLog = db.waktuLog.slice(-200);
+            db.waktuLog.push({ kode, absen, nama, menit, waktu: new Date().toISOString() });
+            if (db.waktuLog.length > 300) db.waktuLog = db.waktuLog.slice(-300);
             saveDB();
-        } catch (e) { Swal.close(); galat(e, 'Gagal menambah waktu'); }
+            toast('+' + menit + ' menit untuk ' + nama);
+            if (ptData && !$('tab-pantau-view').classList.contains('hidden')) pantauMuat();
+        } catch (e) {
+            Swal.close();
+            galat(new Error(e.message + (/ditolak|permission/i.test(e.message) ? ' Pastikan Rules Firestore sudah memuat blok extra_time (menu Panduan, bagian Tambah waktu siswa).' : '')), 'Gagal menambah waktu');
+        }
     }
 
     // Hentikan timer pantau otomatis bila tab bukan pantau
@@ -4847,6 +4947,213 @@ service cloud.firestore {
             <p class="text-xs text-slate-400 mt-1">${esc(n.nama)}</p>
             <p class="text-5xl font-black text-accent-400 mt-2">${fmtNilai(n.nilai_akhir)}</p>
             ${n.jumlah_pg ? `<p class="text-xs text-slate-400 mt-2">Benar ${esc(n.benar)} dari ${esc(n.jumlah_pg)} soal pilihan ganda</p>` : ''}</div>`;
+    }
+
+    /* ============================================================
+       LEGER NILAI: rekap semua ujian per kelas, dengan kategori dan bobot, siap diekspor ke Excel
+       Pengaturan (ujian terpilih, kategori, bobot) tersimpan di perangkat guru.
+       ============================================================ */
+    const LG_KEY = APP.slug + '_leger', lgCache = {};
+    const LG_KAT = { H: 'Harian', T: 'Tengah Semester', A: 'Akhir Semester' };
+    const LG_SING = { H: 'Harian', T: 'UTS', A: 'UAS' };
+    function lgBaca() {
+        const d = bacaJson(LG_KEY, {}), o = d && typeof d === 'object' && !Array.isArray(d) ? d : {};
+        return { bobot: Object.assign({ H: 40, T: 30, A: 30 }, o.bobot || {}), kat: o.kat || {}, pilih: o.pilih || {} };
+    }
+    const lgTulis = d => tulisJson(LG_KEY, d);
+    const lgTebakKat = j => /uas|pas\b|akhir|semester genap|sas\b/i.test(j) && !/tengah/i.test(j) ? 'A' : /uts|pts|tengah/i.test(j) ? 'T' : 'H';
+    function lgUjian(st) {
+        return (cache.ujian || []).map(u => ({ kode: u.kode, judul: u.judul, dibuat: u.dibuat, kat: st.kat[u.kode] || lgTebakKat(u.judul), pilih: st.pilih[u.kode] !== false }))
+            .sort((a, b) => String(a.dibuat || '').localeCompare(String(b.dibuat || '')));
+    }
+    async function renderLeger(paksa) {
+        rosIsiKelas();
+        const set = $('lg-set'), box = $('lg-isi');
+        try { await muatUjian(!!paksa); } catch (e) { box.innerHTML = pesanGalat(e); return; }
+        if (!(cache.ujian || []).length) { set.innerHTML = ''; box.innerHTML = kosongBox('fa-inbox', 'Belum ada ujian'); return; }
+        lgPengaturan();
+        box.innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat nilai...</div>';
+        const pilih = lgUjian(lgBaca()).filter(u => u.pilih);
+        try { await Promise.all(pilih.map(async u => { if (paksa || !lgCache[u.kode]) lgCache[u.kode] = (await ambilHasil(u.kode)).hasil; })); }
+        catch (e) { box.innerHTML = pesanGalat(e); return; }
+        lgTabel();
+    }
+    function lgPengaturan() {
+        const st = lgBaca(), us = lgUjian(st), tot = st.bobot.H + st.bobot.T + st.bobot.A;
+        $('lg-set').innerHTML = `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-sliders text-accent-400 mr-2"></i>Ujian &amp; Bobot</h3>
+            <div class="space-y-2">${us.map(u => `<div class="flex flex-wrap items-center gap-3 p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                <input type="checkbox" class="accent-emerald-500 w-4 h-4 shrink-0" ${u.pilih ? 'checked' : ''} onchange="lgPilih('${esc(u.kode)}', this.checked)">
+                <span class="flex-1 min-w-[10rem] text-xs font-semibold text-slate-100">${esc(u.judul)} <span class="font-mono text-accent-400">${esc(u.kode)}</span></span>
+                <select class="field !w-auto" onchange="lgKat('${esc(u.kode)}', this.value)">${Object.keys(LG_KAT).map(k => `<option value="${k}" ${u.kat === k ? 'selected' : ''}>${LG_KAT[k]}</option>`).join('')}</select></div>`).join('')}</div>
+            <div class="grid grid-cols-3 gap-3">${Object.keys(LG_KAT).map(k => `<label class="block text-[11px] font-semibold text-slate-400">Bobot ${LG_KAT[k]} (%)
+                <input type="number" min="0" max="100" step="1" value="${st.bobot[k]}" class="field mt-1" onchange="lgBobot('${k}', this.value)"></label>`).join('')}</div>
+            <p class="text-[11px] ${tot === 100 ? 'text-slate-500' : 'text-amber-300'}">Total bobot: <b>${tot}</b>%${tot === 100 ? '' : ' (disarankan 100). Nilai akhir tetap dihitung proporsional.'} Bila siswa belum punya nilai di salah satu kategori, nilai akhir dihitung dari kategori yang ada dan diberi tanda *.</p></div>`;
+    }
+    function lgPilih(kode, on) { const st = lgBaca(); st.pilih[kode] = !!on; lgTulis(st); renderLeger(false); }
+    function lgKat(kode, v) { const st = lgBaca(); st.kat[kode] = v; lgTulis(st); lgTabel(); }
+    function lgBobot(k, v) { const st = lgBaca(), n = Math.max(0, Math.min(100, Number(v) || 0)); st.bobot[k] = n; lgTulis(st); lgPengaturan(); lgTabel(); }
+    const lgCocok = (s, h) => {
+        if (normAbsen(s.absen) !== normAbsen(h.absen)) return false;
+        const a = lkNorm(s.nama), b = lkNorm(h.nama);
+        if (a === b) return true;
+        const w = kataNama(a); return kataNama(b).some(k => k.length > 1 && w.includes(k));
+    };
+    const lgBulat = n => n === null || n === undefined ? null : Math.round(n * 10) / 10;
+    function lgBangun() {
+        const st = lgBaca(), us = lgUjian(st).filter(u => u.pilih), ros = rosUrut(rosFilter()), kkm = anaKkm();
+        const katAda = ['H', 'T', 'A'].filter(k => us.some(u => u.kat === k));
+        const pakai = new Set();
+        const baris = ros.map(s => {
+            const nilai = {};
+            us.forEach(u => {
+                const h = (lgCache[u.kode] || []).find(x => lgCocok(s, x));
+                if (h) pakai.add(u.kode + '|' + h.id);
+                nilai[u.kode] = h && !nilaiKosong(h) ? Number(h.nilai_akhir) : null;
+            });
+            const rata = {};
+            katAda.forEach(k => {
+                const v = us.filter(u => u.kat === k).map(u => nilai[u.kode]).filter(x => x !== null);
+                rata[k] = v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+            });
+            let sw = 0, sn = 0;
+            katAda.forEach(k => { if (rata[k] !== null && st.bobot[k] > 0) { sw += st.bobot[k]; sn += rata[k] * st.bobot[k]; } });
+            const akhir = sw > 0 ? sn / sw : null;
+            const lengkap = katAda.filter(k => st.bobot[k] > 0).every(k => rata[k] !== null);
+            return { s, nilai, rata, akhir, lengkap, ket: akhir === null ? '' : akhir >= kkm ? 'Tuntas' : 'Remedial' };
+        });
+        let tanpaCocok = 0;
+        if (rosAktif() === '*') us.forEach(u => (lgCache[u.kode] || []).forEach(h => { if (!pakai.has(u.kode + '|' + h.id)) tanpaCocok++; }));
+        return { st, us, katAda, baris, kkm, tanpaCocok };
+    }
+    function lgTabel() {
+        const box = $('lg-isi'), ros = rosFilter();
+        if (!ros.length) { box.innerHTML = kosongBox('fa-user-group', 'Belum ada data siswa', '<button onclick="switchTab(\'roster\')" class="font-bold text-accent-400 underline">Isi Data Siswa dulu</button>'); return; }
+        const d = lgBangun();
+        if (!d.us.length) { box.innerHTML = kosongBox('fa-square-check', 'Belum ada ujian dicentang', 'Centang minimal satu ujian di atas.'); return; }
+        const adaAkhir = d.baris.filter(b => b.akhir !== null), rata = adaAkhir.length ? adaAkhir.reduce((a, b) => a + b.akhir, 0) / adaAkhir.length : null;
+        const tuntas = adaAkhir.filter(b => b.akhir >= d.kkm).length, kurang = d.baris.filter(b => !b.lengkap).length;
+        const th = 'px-3 py-3 text-center';
+        box.innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">${statCard('fa-users', 'Siswa', d.baris.length)}${statCard('fa-chart-simple', 'Rata-rata Nilai Akhir', fmtNilai(rata), 'sky')}${statCard('fa-circle-check', 'Tuntas (KKM ' + d.kkm + ')', tuntas)}${statCard('fa-triangle-exclamation', 'Nilai Belum Lengkap', kurang, 'amber')}</div>
+            <div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs">
+            <thead class="${thTabel}"><tr><th class="${th}">Absen</th><th class="px-3 py-3 text-left">Nama</th><th class="${th}">JK</th>
+                ${d.us.map(u => `<th class="${th}" title="${esc(u.judul)}"><div class="max-w-[7rem] truncate mx-auto">${esc(u.judul)}</div><div class="text-[9px] text-accent-400 normal-case">${LG_SING[u.kat]}</div></th>`).join('')}
+                ${d.katAda.map(k => `<th class="${th} text-sky-300">Rata ${LG_SING[k]}<div class="text-[9px] normal-case text-slate-500">${d.st.bobot[k]}%</div></th>`).join('')}
+                <th class="${th} text-accent-400">Nilai Akhir</th><th class="${th}">Ket.</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${d.baris.map(b => `<tr class="hover:bg-slate-800/60">
+                <td class="${th} text-slate-400 font-bold">${esc(b.s.absen) || '—'}</td><td class="px-3 py-2.5 font-semibold text-slate-100 whitespace-nowrap">${esc(b.s.nama)}</td><td class="${th}">${badgeJK(b.s.jk)}</td>
+                ${d.us.map(u => `<td class="${th} text-slate-300">${fmtNilai(b.nilai[u.kode])}</td>`).join('')}
+                ${d.katAda.map(k => `<td class="${th} text-sky-300 font-bold">${fmtNilai(b.rata[k])}</td>`).join('')}
+                <td class="${th} font-black text-sm ${b.akhir === null ? 'text-slate-600' : b.akhir < d.kkm ? 'text-rose-400' : 'text-accent-400'}">${fmtNilai(b.akhir)}${b.akhir !== null && !b.lengkap ? '<span class="text-amber-400" title="Belum lengkap: ada kategori tanpa nilai">*</span>' : ''}</td>
+                <td class="${th}">${b.ket ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${b.ket === 'Tuntas' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30'}">${b.ket}</span>` : '<span class="text-slate-600">—</span>'}</td></tr>`).join('')}</tbody></table></div>
+            ${d.tanpaCocok ? `<p class="text-[11px] text-amber-300"><i class="fas fa-circle-info mr-1"></i>${d.tanpaCocok} jawaban tidak cocok dengan siswa mana pun di Data Siswa (absen atau nama berbeda), jadi tidak masuk leger.</p>` : ''}
+            <p class="text-[11px] text-slate-500">Sel kosong (—) berarti siswa belum mengumpulkan atau esainya belum dinilai. Tanda <span class="text-amber-400">*</span> berarti nilai akhir dihitung tanpa kategori yang belum ada nilainya.</p>`;
+    }
+    function legerEkspor() {
+        if (!rosFilter().length) return toast('Belum ada data siswa', 'info');
+        const d = lgBangun(); if (!d.us.length) return toast('Centang ujian dulu', 'info');
+        const k = rosAktif(), kelas = k === '*' || k === '__none' ? '' : k;
+        const head = ['No', 'Absen', 'Nama', 'JK'].concat(d.us.map(u => u.judul + ' (' + LG_SING[u.kat] + ')'), d.katAda.map(x => 'Rata-rata ' + LG_SING[x] + ' (' + d.st.bobot[x] + '%)'), ['Nilai Akhir', 'Keterangan', 'Catatan']);
+        const rows = [['LEGER NILAI' + (kelas ? ' - KELAS ' + kelas : '')], [db.settings.sekolah || ''], [], head];
+        d.baris.forEach((b, i) => rows.push([i + 1, b.s.absen, b.s.nama, b.s.jk].concat(
+            d.us.map(u => b.nilai[u.kode] === null ? '' : lgBulat(b.nilai[u.kode])), d.katAda.map(x => b.rata[x] === null ? '' : lgBulat(b.rata[x])),
+            [b.akhir === null ? '' : lgBulat(b.akhir), b.ket, b.akhir !== null && !b.lengkap ? 'Belum lengkap' : ''])));
+        const ok = d.baris.filter(b => b.akhir !== null);
+        rows.push([], ['', '', 'Rata-rata kelas'].concat(d.us.map(u => { const v = d.baris.map(b => b.nilai[u.kode]).filter(x => x !== null); return v.length ? lgBulat(v.reduce((a, b) => a + b, 0) / v.length) : ''; }), d.katAda.map(() => ''), [ok.length ? lgBulat(ok.reduce((a, b) => a + b.akhir, 0) / ok.length) : '']));
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!cols'] = [{ wch: 5 }, { wch: 7 }, { wch: 30 }, { wch: 5 }].concat(d.us.map(() => ({ wch: 16 })), d.katAda.map(() => ({ wch: 16 })), [{ wch: 12 }, { wch: 12 }, { wch: 16 }]);
+        const pr = [['Pengaturan Leger'], ['KKM', d.kkm]].concat(Object.keys(LG_KAT).map(x => ['Bobot ' + LG_KAT[x] + ' (%)', d.st.bobot[x]]), [[], ['Ujian', 'Kode', 'Kategori']], d.us.map(u => [u.judul, u.kode, LG_KAT[u.kat]]));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Leger'); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pr), 'Pengaturan');
+        XLSX.writeFile(wb, 'leger-nilai' + (kelas ? '-' + kelas.replace(/[^A-Za-z0-9]+/g, '-') : '') + '.xlsx');
+    }
+
+    /* ============================================================
+       ANALISIS BUTIR SOAL: kesulitan, daya pembeda, dan sebaran pilihan jawaban per soal
+       ============================================================ */
+    const btCache = {};
+    let btData = null;
+    async function renderButir(paksa) {
+        const sel = $('bt-kuis'), box = $('bt-isi');
+        let list;
+        try { list = await muatUjian(!!paksa); } catch (e) { box.innerHTML = pesanGalat(e); return; }
+        if (!list.length) { sel.innerHTML = '<option value="">(belum ada ujian)</option>'; box.innerHTML = kosongBox('fa-inbox', 'Belum ada ujian'); return; }
+        const lama = sel.value;
+        sel.innerHTML = list.map(u => `<option value="${esc(u.kode)}">${esc(u.judul)} (${esc(u.kode)})</option>`).join('');
+        if ([...sel.options].some(o => o.value === lama)) sel.value = lama;
+        const kode = sel.value;
+        box.innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>';
+        try { if (paksa || !btCache[kode]) btCache[kode] = await ambilHasil(kode); }
+        catch (e) { box.innerHTML = pesanGalat(e); return; }
+        btData = butirHitung(btCache[kode]);
+        renderButirHasil();
+    }
+    function butirHitung(d) {
+        const hs = d.hasil.filter(h => !h.menunggu_perbaikan), jw = (h, q) => String((h.jawaban || {})[q.no] || '').toUpperCase();
+        const pgSemua = d.soal.filter(q => q.jenis === 'PG'), pg = pgSemua.filter(q => q.kunci), n = hs.length;
+        const tot = new Map();
+        hs.forEach(h => tot.set(h.id, pg.filter(q => jw(h, q) === q.kunci).length));
+        const urut = hs.slice().sort((a, b) => tot.get(b.id) - tot.get(a.id)), bisaD = n >= 8, g = Math.max(2, Math.round(n * 0.27));
+        const atas = urut.slice(0, g), bawah = urut.slice(-g);
+        const items = pg.map(q => {
+            const dist = {}; q.opsi.forEach(o => { dist[o.k] = 0; });
+            let kosong = 0, benar = 0;
+            hs.forEach(h => { const j = jw(h, q); if (!j || !(j in dist)) kosong++; else { dist[j]++; if (j === q.kunci) benar++; } });
+            const p = n ? benar / n : null, bn = a => a.filter(h => jw(h, q) === q.kunci).length;
+            const dp = bisaD ? (bn(atas) - bn(bawah)) / g : null, cat = [];
+            if (p !== null) { if (p < 0.3) cat.push(['Sulit', 'rose']); else if (p > 0.7) cat.push(['Mudah', 'sky']); }
+            if (dp !== null) { if (dp < 0) cat.push(['Periksa kunci jawaban', 'rose']); else if (dp < 0.2) cat.push(['Pembeda lemah', 'amber']); }
+            if (n >= 10) {
+                const mati = q.opsi.filter(o => o.k !== q.kunci && dist[o.k] / n < 0.05).map(o => o.k);
+                if (mati.length) cat.push(['Pengecoh ' + mati.join(', ') + ' hampir tidak dipilih', 'amber']);
+            }
+            const kuat = q.opsi.filter(o => o.k !== q.kunci && dist[o.k] > benar && dist[o.k] > 0).map(o => o.k);
+            if (kuat.length) cat.push(['Pilihan ' + kuat.join(', ') + ' lebih banyak dipilih dari kunci', 'rose']);
+            return { q, n, benar, salah: n - benar - kosong, kosong, p, dp, dist, cat };
+        });
+        const es = d.soal.filter(q => q.jenis === 'ESAI').map(q => {
+            const v = hs.filter(h => h.status_esai === 'selesai' && h.skor && h.skor[q.no] !== undefined && h.skor[q.no] !== null).map(h => Number(h.skor[q.no]));
+            return { q, n: v.length, rata: v.length ? v.reduce((a, b) => a + b, 0) / v.length : null };
+        });
+        return { n, items, es, tanpaKunci: pgSemua.length - pg.length, bisaD, ujian: d.ujian };
+    }
+    const btKes = p => p === null ? ['—', 'slate'] : p < 0.3 ? ['Sulit', 'rose'] : p > 0.7 ? ['Mudah', 'sky'] : ['Sedang', 'emerald'];
+    const btBadge = (t, w) => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-${w}-500/15 text-${w}-400 border-${w}-500/30 whitespace-nowrap">${esc(t)}</span>`;
+    function renderButirHasil() {
+        const box = $('bt-isi'), d = btData; if (!d) return;
+        if (!d.n) { box.innerHTML = kosongBox('fa-inbox', 'Belum ada jawaban masuk', 'Analisis muncul setelah siswa mengumpulkan.'); return; }
+        if (!d.items.length && !d.es.length) { box.innerHTML = kosongBox('fa-circle-question', 'Tidak ada soal yang bisa dianalisis', 'Soal pilihan ganda butuh kunci jawaban (Firebase atau Mode Lokal).'); return; }
+        const ur = $('bt-urut').value, it = d.items.slice();
+        if (ur === 'sulit') it.sort((a, b) => (a.p ?? 2) - (b.p ?? 2));
+        else if (ur === 'pembeda') it.sort((a, b) => (a.dp ?? 2) - (b.dp ?? 2));
+        const rata = d.items.length ? d.items.reduce((a, x) => a + (x.p || 0), 0) / d.items.length : null;
+        const sulit = d.items.filter(x => x.p !== null && x.p < 0.3).length, revisi = d.items.filter(x => x.cat.some(c => /kunci|lemah/.test(c[0]))).length;
+        const prioritas = d.items.slice().sort((a, b) => (a.p ?? 2) - (b.p ?? 2)).filter(x => x.p !== null && x.p < 0.7).slice(0, 5);
+        box.innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">${statCard('fa-users', 'Siswa Dianalisis', d.n)}${statCard('fa-gauge', 'Rata-rata Benar per Soal', rata === null ? '—' : Math.round(rata * 100) + '%', 'sky')}${statCard('fa-mountain', 'Soal Sulit', sulit, 'rose')}${statCard('fa-screwdriver-wrench', 'Soal Perlu Dicek', revisi, 'amber')}</div>
+            ${prioritas.length ? `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-2"><h3 class="text-sm font-bold text-slate-100"><i class="fas fa-rotate-left text-rose-400 mr-2"></i>Materi yang perlu diulang</h3><p class="text-[11px] text-slate-500">Soal dengan persen benar paling rendah. Ulas kembali materi di soal-soal ini di kelas.</p>
+                ${prioritas.map(x => `<div class="flex items-start gap-3 text-xs"><span class="w-12 shrink-0 font-black text-rose-400 text-right">${Math.round(x.p * 100)}%</span><span class="text-slate-300 min-w-0 break-words"><b class="text-slate-100">Soal ${esc(x.q.no)}.</b> ${esc(x.q.soal.length > 140 ? x.q.soal.slice(0, 140) + '...' : x.q.soal)}</span></div>`).join('')}</div>` : ''}
+            ${it.length ? `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-3 py-3">No</th><th class="px-3 py-3 text-left">Soal</th><th class="px-3 py-3">Benar</th><th class="px-3 py-3">Kesulitan</th><th class="px-3 py-3">Pembeda</th><th class="px-3 py-3 text-left">Sebaran jawaban</th><th class="px-3 py-3 text-left">Catatan</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${it.map(x => { const k = btKes(x.p); return `<tr class="align-top hover:bg-slate-800/60">
+                <td class="px-3 py-3 text-center font-bold text-slate-400">${esc(x.q.no)}</td>
+                <td class="px-3 py-3 text-slate-200 min-w-[12rem] max-w-[18rem]"><p class="line-clamp-3 break-words" title="${esc(x.q.soal)}">${esc(x.q.soal)}</p></td>
+                <td class="px-3 py-3 text-center"><b class="text-slate-100">${x.p === null ? '—' : Math.round(x.p * 100) + '%'}</b><div class="text-[10px] text-slate-500">${x.benar}/${x.n}</div></td>
+                <td class="px-3 py-3 text-center">${btBadge(k[0], k[1])}</td>
+                <td class="px-3 py-3 text-center font-bold ${x.dp === null ? 'text-slate-600' : x.dp < 0 ? 'text-rose-400' : x.dp < 0.2 ? 'text-amber-400' : 'text-emerald-400'}">${x.dp === null ? '—' : (Math.round(x.dp * 100) / 100).toString().replace('.', ',')}</td>
+                <td class="px-3 py-3"><div class="flex flex-wrap gap-1.5">${x.q.opsi.map(o => `<span class="px-2 py-1 rounded-lg border text-[10px] font-bold ${o.k === x.q.kunci ? 'border-emerald-500/60 bg-emerald-500/10 text-emerald-300' : 'border-slate-700 bg-slate-950 text-slate-300'}" title="${esc(o.t)}">${esc(o.k)}${o.k === x.q.kunci ? ' ✓' : ''}: ${x.dist[o.k]} (${x.n ? Math.round(x.dist[o.k] / x.n * 100) : 0}%)</span>`).join('')}${x.kosong ? `<span class="px-2 py-1 rounded-lg border border-slate-700 bg-slate-950 text-[10px] font-bold text-slate-500">Kosong: ${x.kosong}</span>` : ''}</div></td>
+                <td class="px-3 py-3"><div class="flex flex-col gap-1 items-start">${x.cat.length ? x.cat.map(c => btBadge(c[0], c[1])).join('') : '<span class="text-slate-600">—</span>'}</div></td></tr>`; }).join('')}</tbody></table></div>` : ''}
+            ${d.es.length ? `<h3 class="text-sm font-bold text-slate-100 pt-2"><i class="fas fa-pen text-sky-400 mr-2"></i>Soal Esai</h3><div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-3 py-3">No</th><th class="px-3 py-3 text-left">Soal</th><th class="px-3 py-3">Rata-rata Nilai</th><th class="px-3 py-3">Sudah Dinilai</th></tr></thead><tbody class="divide-y divide-slate-800 bg-slate-900">${d.es.map(e => `<tr><td class="px-3 py-3 text-center font-bold text-slate-400">${esc(e.q.no)}</td><td class="px-3 py-3 text-slate-200 max-w-[22rem]"><p class="line-clamp-2 break-words">${esc(e.q.soal)}</p></td><td class="px-3 py-3 text-center font-black text-accent-400">${e.rata === null ? '—' : fmtNilai(e.rata) + ' / ' + fmtNilai(e.q.bobot)}</td><td class="px-3 py-3 text-center text-slate-400">${e.n}</td></tr>`).join('')}</tbody></table></div>` : ''}
+            ${d.tanpaKunci ? `<p class="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3"><i class="fas fa-triangle-exclamation mr-1.5"></i>${d.tanpaKunci} soal pilihan ganda tidak punya kunci di data ini (biasanya skrip Google Sheets lama), jadi tidak ikut dianalisis.</p>` : ''}
+            ${d.bisaD ? '' : '<p class="text-[11px] text-slate-500"><i class="fas fa-circle-info mr-1"></i>Daya pembeda belum dihitung karena siswa yang mengumpulkan kurang dari 8.</p>'}`;
+    }
+    function butirEkspor() {
+        const d = btData; if (!d || !d.n) return toast('Belum ada data untuk diekspor', 'info');
+        const rows = [['No', 'Soal', 'Kunci', 'Benar', 'Salah', 'Kosong', 'Responden', '% Benar', 'Kesulitan', 'Daya Pembeda', 'Sebaran Jawaban', 'Catatan']];
+        d.items.forEach(x => rows.push([x.q.no, x.q.soal, x.q.kunci, x.benar, x.salah, x.kosong, x.n, x.p === null ? '' : Math.round(x.p * 1000) / 10, btKes(x.p)[0], x.dp === null ? '' : Math.round(x.dp * 100) / 100,
+            x.q.opsi.map(o => o.k + ':' + x.dist[o.k]).join(' '), x.cat.map(c => c[0]).join('; ')]));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Butir PG');
+        if (d.es.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['No', 'Soal', 'Bobot', 'Rata-rata Nilai', 'Sudah Dinilai']].concat(d.es.map(e => [e.q.no, e.q.soal, e.q.bobot, e.rata === null ? '' : Math.round(e.rata * 10) / 10, e.n]))), 'Esai');
+        XLSX.writeFile(wb, 'analisis-butir-' + ((d.ujian && d.ujian.kode) || 'ujian') + '.xlsx');
     }
 
     /* ============================================================
