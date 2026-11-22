@@ -1118,8 +1118,10 @@
                 let nama = String(b.nama || '').replace(/\s+/g, ' ').trim().slice(0, 60), absen = String(b.absen || '').trim().slice(0, 10);
                 if (!nama || !absen) return { ok: true, sudah: false };
                 if (Array.isArray(us.data().siswa) && us.data().siswa.length) { const k = cekKirim(us.data().siswa, nama, absen); nama = k.nama; absen = k.absen; }
-                const m = await fs.getDoc(ref('sudah', kode + '__' + fbSlug(nama) + '__' + fbSlug(absen)));
-                return { ok: true, sudah: m.exists() };
+                const did = kode + '__' + fbSlug(nama) + '__' + fbSlug(absen);
+                const m = await fs.getDoc(ref('sudah', did)); if (m.exists()) return { ok: true, sudah: true };
+                try { const n = await fs.getDoc(ref('nilai', did)); if (n.exists()) return { ok: true, sudah: true }; } catch (e) {}
+                return { ok: true, sudah: false };
             } catch (e) { return { ok: true, sudah: false }; }
         }
 
@@ -1285,7 +1287,13 @@
             const [ss, ks, hs] = await Promise.all([fs.getDoc(ref('soal', kode)), fs.getDoc(ref('kunci', kode)), fs.getDocs(fs.query(col('hasil'), fs.where('kode', '==', kode)))]);
             const items = ss.exists() ? (ss.data().items || []) : [], kunci = ks.exists() ? (ks.data().k || {}) : {};
             const hasil = hs.docs.map(d => fbHitung(items, kunci, d.data())).sort((a, b) => String(a.waktu).localeCompare(String(b.waktu)));
-            return { ok: true, ujian: us.data(), soal: items.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot, opsi: q.opsi || [], kunci: kunci[q.no] || '' })), hasil };
+            // Pastikan setiap siswa yang sudah mengumpulkan punya tanda 'sudah' (jawaban lama / tanda yang gagal terkirim)
+            let rulesSudahGagal = false;
+            try {
+                const sq = await fs.getDocs(fs.query(col('sudah'), fs.where('kode', '==', kode))), adaS = new Set(sq.docs.map(d => d.id));
+                await Promise.all(hs.docs.filter(d => !adaS.has(d.id)).map(d => fs.setDoc(ref('sudah', d.id), { kode, waktu: new Date().toISOString() })));
+            } catch (e) { rulesSudahGagal = true; }
+            return { ok: true, rules_sudah_gagal: rulesSudahGagal, ujian: us.data(), soal: items.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot, opsi: q.opsi || [], kunci: kunci[q.no] || '' })), hasil };
         }
 
         if (action === 'gradeEssay') {
@@ -2091,7 +2099,7 @@
         // Sudah pernah mengumpulkan: tidak boleh masuk lagi kecuali guru menghapus hasilnya (izin remedial)
         try {
             const cs = await api('cekSudah', { kode, nama: jk ? nama.slice(0, 54) + ' [' + jk + ']' : nama, absen });
-            if (cs && cs.sudah) return Swal.fire({ icon: 'info', title: 'Anda sudah mengerjakan ujian ini', text: 'Nilai Anda sudah tercatat dan ujian tidak bisa diulang. Bila ingin memperbaiki nilai, minta izin guru dulu. Setelah guru mengizinkan, nilai yang dipakai adalah yang paling besar.', confirmButtonText: 'Mengerti', confirmButtonColor: '#059669' });
+            if (cs && cs.sudah) return Swal.fire({ icon: 'warning', title: 'Anda sudah mengerjakan ujian ini', text: 'Nilai Anda sudah tercatat, jadi Anda tidak boleh masuk ke soal lagi. Bila ingin memperbaiki nilai, minta izin guru dulu. Setelah guru mengizinkan, nilai yang dipakai adalah yang paling besar.', confirmButtonText: 'Mengerti', confirmButtonColor: '#059669' });
         } catch (e) { /* server lama / tidak didukung: pengecekan saat kirim tetap menolak pengiriman ganda */ }
         if (r.belum) { if (!await tungguJadwal(u, nama, absen)) return; return mulaiUjian(true); }   // belum waktunya: hitung mundur, lalu mulai otomatis
         const jadwalMs = u.jadwal ? Date.parse(u.jadwal) : 0, akhirJadwal = jadwalMs + u.durasi * 60000;
@@ -3583,6 +3591,10 @@ service cloud.firestore {
         const r = await api('getResults', { kode }); r.hasil = r.hasil.map(parseJK);
         r.penalti = poinPenalti(kode, r.ujian);
         r.hasil = r.hasil.map(h => terapkanPenalti(h, r.penalti));
+        if (r.rules_sudah_gagal && !window._warnSudah) {
+            window._warnSudah = true;
+            Swal.fire({ icon: 'warning', title: 'Rules Firebase perlu diperbarui', html: '<p class="text-sm">Blokir login ulang untuk siswa yang sudah mengerjakan belum aktif, karena Rules belum punya blok <b>sudah</b>. Buka <b>Pengaturan</b>, salin Rules terbaru, tempel di Firebase, lalu Publish.</p>', confirmButtonColor: '#059669' });
+        }
         const ars = await arsipBaca(kode), ada = new Set();
         r.hasil.forEach(h => {
             const a = ars[arsipKey(h)]; if (!a) return; ada.add(arsipKey(h));
