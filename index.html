@@ -123,6 +123,21 @@
             .pr-ttd div { width: 42%; text-align: center; font-size: 10pt; }
             .pr-ttd .gap { height: 46px; }
             .pr-foot { margin-top: 8px; font-size: 8pt; color: #94a3b8; text-align: right; }
+            /* Rekap nilai 1 lembar */
+            .pr-one { page-break-after: avoid; break-after: avoid; max-height: 262mm; overflow: hidden; }
+            .pr-sum { display: flex; gap: 6px; margin-bottom: 8px; }
+            .pr-sum div { flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px; text-align: center; background: #f8fafc; }
+            .pr-sum b { display: block; font-size: 11pt; font-weight: 800; }
+            .pr-sum span { font-size: 7pt; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
+            .pr-cols { display: flex; gap: 8px; align-items: flex-start; }
+            .pr-cols > table { flex: 1; min-width: 0; }
+            .pr-rk { width: 100%; border-collapse: collapse; }
+            .pr-rk th { background: #0f172a !important; color: #fff !important; font-size: 8pt; text-transform: uppercase; padding: 3px 4px; border: 1px solid #0f172a; text-align: center; }
+            .pr-rk td { border: 1px solid #cbd5e1; padding: 2px 4px; vertical-align: middle; }
+            .pr-rk td.c { text-align: center; } .pr-rk td.n { font-weight: 800; text-align: center; }
+            .pr-rk tr.rem td { background: #fef2f2 !important; } .pr-rk tr.rem td.n { color: #b91c1c; }
+            .pr-rk.k1 { font-size: 10pt; } .pr-rk.k1 td { padding: 3px 5px; }
+            .pr-rk.k2 { font-size: 8.5pt; } .pr-rk.k3 { font-size: 7.5pt; } .pr-rk.k3 td { padding: 1.5px 3px; }
         }
     </style>
 </head>
@@ -416,6 +431,23 @@
                                 <label class="flex items-center gap-2"><input id="f-acak-soal" type="checkbox" checked class="accent-emerald-500 w-4 h-4"> Acak urutan soal</label>
                                 <label class="flex items-center gap-2"><input id="f-acak-opsi" type="checkbox" checked class="accent-emerald-500 w-4 h-4"> Acak pilihan jawaban</label>
                             </div>
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+                                <label class="block text-[11px] font-semibold text-slate-400"><i class="fas fa-list-check text-accent-400 mr-1.5"></i>Jenis soal yang dipakai pada ujian ini
+                                    <select id="f-jenis" class="field mt-1" onchange="renderPreview()">
+                                        <option value="semua">Campuran: pilihan ganda + esai (semua soal di file)</option>
+                                        <option value="PG">Hanya pilihan ganda (soal esai di file diabaikan)</option>
+                                        <option value="ESAI">Hanya esai (soal pilihan ganda di file diabaikan)</option>
+                                    </select></label>
+                                <p class="text-[11px] text-slate-500">Satu file soal bisa dipakai untuk tiga jenis ujian. Pilihan ini menyaring soal saat ujian disimpan. Ujian esai saja baru punya nilai setelah Anda menilai jawaban siswa.</p>
+                            </div>
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-3">
+                                <label class="flex items-center gap-2 text-xs text-slate-300"><input id="f-jadwal-on" type="checkbox" class="accent-emerald-500 w-4 h-4" onchange="jadwalToggle()"> <i class="fas fa-calendar-check text-accent-400"></i> Jadwalkan ujian (mulai otomatis pada tanggal dan jam tertentu)</label>
+                                <div id="f-jadwal-box" class="hidden space-y-2">
+                                    <label class="block text-[11px] font-semibold text-slate-400">Tanggal &amp; jam mulai
+                                        <input id="f-jadwal" type="datetime-local" style="color-scheme:dark" class="field mt-1"></label>
+                                    <p class="text-[11px] text-slate-500">Ujian langsung berstatus <b class="text-slate-300">Dibuka</b>. Sebelum jam mulai, siswa yang login hanya melihat hitung mundur (soal belum dikirim) dan ujian mulai sendiri tepat waktu. Ujian berakhir pada jam mulai + durasi: siswa yang terlambat login tetap bisa masuk, tetapi sisa waktunya berkurang. Hanya untuk Firebase dan Mode Lokal. Jam mengikuti jam perangkat masing-masing siswa.</p>
+                                </div>
+                            </div>
                             <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-3">
                                 <label class="flex items-center gap-2 text-xs text-slate-300"><input id="f-kam" type="checkbox" class="accent-emerald-500 w-4 h-4" onchange="$('f-kam-opsi').classList.toggle('hidden', !this.checked)"> <i class="fas fa-camera text-accent-400"></i> Kamera pengawas (foto siswa berkala)</label>
                                 <div id="f-kam-opsi" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -436,7 +468,7 @@
                                 <div id="f-preview"></div>
                             </div>
                             <button id="btn-simpan-ujian" onclick="simpanUjian()" class="bg-gradient-to-r from-accent-600 to-accent-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-accent-500/20 hover:brightness-110 transition"><i class="fas fa-cloud-arrow-up mr-1.5"></i>Simpan ke Google Sheets</button>
-                            <p class="text-[10px] text-slate-500">Ujian baru berstatus <b>Tutup</b>. Buka saat kelas siap dimulai.</p>
+                            <p class="text-[10px] text-slate-500">Ujian baru berstatus <b>Tutup</b> (kecuali dijadwalkan: langsung Dibuka dan mulai otomatis pada jamnya). Buka saat kelas siap dimulai.</p>
                         </div>
 
                         <div class="flex items-center justify-between">
@@ -451,6 +483,7 @@
                             <select id="h-kode" onchange="muatHasil()" class="field flex-1 min-w-[12rem]"></select>
                             <button onclick="muatHasil()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Muat ulang"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
                             <button onclick="ekspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                            <button onclick="cetakRekap(hasilData)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Cetak semua nilai dalam 1 lembar"><i class="fas fa-print mr-1.5"></i>Cetak Nilai 1 Lembar</button>
                             <button onclick="hapusSemuaFoto()" class="bg-slate-800 hover:bg-slate-700 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Hapus semua foto kamera ujian ini"><i class="fas fa-camera-rotate mr-1.5"></i>Hapus Foto</button>
                         </div>
                         <div id="h-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
@@ -475,8 +508,9 @@
                                 <button onclick="rvMuat(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
                                 <button onclick="rvCetak(false)" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-pdf mr-1.5"></i>Cetak PDF Siswa Ini</button>
                                 <button onclick="rvCetak(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-print mr-1.5"></i>Cetak Semua Siswa</button>
+                                <button onclick="cetakRekap(rvData)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Hemat kertas: semua nilai dalam 1 lembar"><i class="fas fa-file-lines mr-1.5"></i>Cetak Nilai 1 Lembar</button>
                             </div>
-                            <p class="text-[10px] text-slate-500">Tombol cetak membuka jendela cetak. Pilih <b class="text-slate-300">Simpan sebagai PDF</b> (di HP: Cetak lalu Simpan PDF). Cetak Semua: satu halaman per siswa.</p>
+                            <p class="text-[10px] text-slate-500">Tombol cetak membuka jendela cetak. Pilih <b class="text-slate-300">Simpan sebagai PDF</b> (di HP: Cetak lalu Simpan PDF). Cetak Semua: satu halaman per siswa. <b class="text-slate-300">Cetak Nilai 1 Lembar</b>: rekap seluruh kelas dalam satu lembar (hemat kertas).</p>
                         </div>
                         <div id="rv-isi"></div>
                     </section>
@@ -917,10 +951,13 @@
             if (!us.exists()) throw new Error('Kode ujian tidak ditemukan. Periksa kembali kodenya.');
             const u = us.data();
             if (u.status !== 'buka') throw new Error('Ujian ini belum dibuka oleh guru.');
+            const belum = cekJadwal(u);
+            const info = { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi, siswa: u.siswa || null,
+                kamera: !!u.kamera, kamera_detik: u.kamera_detik || 60, kamera_wajib: !!u.kamera_wajib, jadwal: u.jadwal || '' };
+            if (belum) return { ok: true, belum: true, ujian: info, soal: [] };
             const ss = await fs.getDoc(ref('soal', kode));
             if (!ss.exists()) throw new Error('Soal ujian tidak ditemukan.');
-            return { ok: true, ujian: { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi, siswa: u.siswa || null,
-                kamera: !!u.kamera, kamera_detik: u.kamera_detik || 60, kamera_wajib: !!u.kamera_wajib },
+            return { ok: true, ujian: info,
                 soal: (ss.data().items || []).map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.opsi })) };
         }
 
@@ -1022,7 +1059,7 @@
             try { await fbHapusFoto(C, kode, null); } catch (e) { /* Rules foto belum dipasang: abaikan */ }
             const bt = fs.writeBatch(D);
             bt.set(ref('ujian', kode), { kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi,
-                kamera: !!u.kamera, kamera_detik: [30, 60, 120].includes(Number(u.kamera_detik)) ? Number(u.kamera_detik) : 60, kamera_wajib: !!u.kamera_wajib, status: 'tutup', dibuat: new Date().toISOString(), jumlah_soal: items.length, jumlah_pg: pg, jumlah_esai: items.length - pg, siswa: rapikanSiswa(b.siswa) });
+                kamera: !!u.kamera, kamera_detik: [30, 60, 120].includes(Number(u.kamera_detik)) ? Number(u.kamera_detik) : 60, kamera_wajib: !!u.kamera_wajib, jadwal: rapikanJadwal(u.jadwal), status: rapikanJadwal(u.jadwal) ? 'buka' : 'tutup', dibuat: new Date().toISOString(), jumlah_soal: items.length, jumlah_pg: pg, jumlah_esai: items.length - pg, siswa: rapikanSiswa(b.siswa) });
             bt.set(ref('soal', kode), { items });
             bt.set(ref('kunci', kode), { k: kunci });
             await bt.commit();
@@ -1164,6 +1201,24 @@
     const normAbsen = s => String(s ?? '').trim().replace(/^0+(?=\d)/, '');
     const kataNama = s => String(s ?? '').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
     const namaSimpan = s => (s.j ? String(s.n).slice(0, 54) + ' [' + s.j + ']' : String(s.n)).replace(/\s+/g, ' ').trim().slice(0, 60);
+    const rapikanJadwal = v => { const t = Date.parse(v); return v && !isNaN(t) ? new Date(t).toISOString() : ''; };
+    function selisihTeks(ms) {
+        const t = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(t / 86400), j = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60);
+        return h > 0 ? h + ' hari ' + j + ' jam' : j > 0 ? j + ' jam ' + m + ' menit' : m > 0 ? m + ' menit' : (t % 60) + ' detik';
+    }
+    const fmtJadwal = iso => new Date(iso).toLocaleString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    function ketJadwal(u) {
+        const mulai = Date.parse(u.jadwal), akhir = mulai + u.durasi * 60000, now = Date.now(), tgl = fmtJadwal(u.jadwal);
+        if (now < mulai) return 'Terjadwal: ' + tgl + ' &bull; mulai ' + selisihTeks(mulai - now) + ' lagi';
+        if (now < akhir) return 'Terjadwal: ' + tgl + ' &bull; sedang berlangsung (sisa ' + selisihTeks(akhir - now) + ')';
+        return 'Terjadwal: ' + tgl + ' &bull; sudah berakhir';
+    }
+    // Memeriksa jadwal di sisi server/lokal: lewat batas akhir = ditolak; sebelum mulai = soal tidak dikirim.
+    function cekJadwal(u) {
+        const jd = u.jadwal ? Date.parse(u.jadwal) : 0;
+        if (jd && Date.now() > jd + (u.durasi || 0) * 60000) throw new Error('Waktu ujian ini sudah berakhir.');
+        return jd && Date.now() < jd;
+    }
     function rapikanSiswa(arr) {
         if (!Array.isArray(arr)) return [];
         return arr.slice(0, 300).map(x => ({ a: String(x && x.a != null ? x.a : '').trim().slice(0, 10), n: String(x && x.n != null ? x.n : '').replace(/\s+/g, ' ').trim().slice(0, 54), j: x && (x.j === 'L' || x.j === 'P') ? x.j : '' })).filter(x => x.a && x.n);
@@ -1233,8 +1288,10 @@
             const ex = lkEx(d, lkKode(b.kode));
             if (!ex) throw new Error('Kode ujian tidak ditemukan. Periksa kembali kodenya.');
             if (ex.ujian.status !== 'buka') throw new Error('Ujian ini belum dibuka oleh guru.');
-            const u = ex.ujian;
-            return { ok: true, ujian: { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi, siswa: u.siswa || null },
+            const u = ex.ujian, belum = cekJadwal(u);
+            const info = { kode: u.kode, judul: u.judul, durasi: u.durasi, acak_soal: u.acak_soal, acak_opsi: u.acak_opsi, siswa: u.siswa || null, jadwal: u.jadwal || '' };
+            if (belum) return { ok: true, belum: true, ujian: info, soal: [] };
+            return { ok: true, ujian: info,
                 soal: ex.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.opsi })) };
         }
 
@@ -1307,7 +1364,7 @@
             });
             // Kode yang sama diganti total; nilai lama ikut dihapus karena tidak cocok lagi dengan soal baru.
             d.ujian = d.ujian.filter(x => x.kode !== kode); d.soal = d.soal.filter(x => x.kode !== kode); d.hasil = d.hasil.filter(x => x.kode !== kode);
-            d.ujian.push({ kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, status: 'tutup', dibuat: new Date().toISOString(), siswa: rapikanSiswa(b.siswa) });
+            d.ujian.push({ kode, judul, durasi, acak_soal: !!u.acak_soal, acak_opsi: !!u.acak_opsi, jadwal: rapikanJadwal(u.jadwal), status: rapikanJadwal(u.jadwal) ? 'buka' : 'tutup', dibuat: new Date().toISOString(), siswa: rapikanSiswa(b.siswa) });
             d.soal.push(...baris);
             lkTulis(d);
             return { ok: true };
@@ -1605,7 +1662,21 @@
         ['L', 'P'].forEach(c => { const b = $('jk-' + c), on = c === v;
             b.style.background = on ? 'rgb(var(--a500) / .2)' : ''; b.style.borderColor = on ? 'rgb(var(--a500))' : ''; b.style.color = on ? '#fff' : ''; });
     }
-    async function mulaiUjian() {
+    // Layar hitung mundur untuk ujian terjadwal. true = waktu mulai tiba, false = siswa membatalkan.
+    function tungguJadwal(u) {
+        return new Promise(res => {
+            let iv = null;
+            const kotak = ms => { let t = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(t / 86400); t %= 86400; const j = Math.floor(t / 3600); t %= 3600; const m = Math.floor(t / 60), d = t % 60;
+                return [[h, 'Hari'], [j, 'Jam'], [m, 'Menit'], [d, 'Detik']].map(([n, l]) => `<div style="flex:1;background:#020617;border:1px solid #334155;border-radius:12px;padding:10px 2px"><div style="font-size:26px;font-weight:900;color:rgb(var(--a400));font-variant-numeric:tabular-nums">${String(n).padStart(2, '0')}</div><div style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:700">${l}</div></div>`).join(''); };
+            const mulai = Date.parse(u.jadwal);
+            Swal.fire({ title: 'Ujian belum dimulai', showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Batal', cancelButtonColor: '#334155', allowOutsideClick: false,
+                html: `<p class="text-sm"><b>${esc(u.judul)}</b></p><p class="text-xs text-slate-400 mt-1">Mulai ${esc(fmtJadwal(u.jadwal))}</p><div id="jd-hit" style="display:flex;gap:8px;margin-top:16px">${kotak(mulai - Date.now())}</div><p class="text-xs text-slate-400 mt-4">Biarkan halaman ini tetap terbuka. Ujian akan mulai sendiri tepat waktu.</p>`,
+                didOpen: () => { iv = setInterval(() => { const ms = mulai - Date.now(); if (ms <= 0) { clearInterval(iv); res(true); Swal.close(); return; } const el = document.getElementById('jd-hit'); if (el) el.innerHTML = kotak(ms); }, 500); },
+                willClose: () => clearInterval(iv) }).then(r => { if (r.dismiss === Swal.DismissReason.cancel) res(false); });
+        });
+    }
+    async function mulaiUjian(auto) {
+        auto = auto === true;
         const kode = $('s-kode').value.trim().toUpperCase();
         let nama = $('s-nama').value.trim();
         let absen = $('s-absen').value.trim();
@@ -1625,9 +1696,16 @@
             nama = c.siswa.n; absen = String(c.siswa.a); jk = c.siswa.j || jkPilih;   // JK dari daftar kelas; bila kosong pakai pilihan siswa
         }
         if (!jk) return galat(new Error('Pilih jenis kelamin: Laki-laki atau Perempuan, lalu tekan Mulai Ujian lagi.'), 'Data belum lengkap');
-        const ok = await Swal.fire({ title: u.judul, icon: 'info', showCancelButton: true, confirmButtonText: 'Mulai Sekarang', cancelButtonText: 'Batal',
+        if (r.belum) { if (!await tungguJadwal(u)) return; return mulaiUjian(true); }   // belum waktunya: hitung mundur, lalu mulai otomatis
+        const jadwalMs = u.jadwal ? Date.parse(u.jadwal) : 0, akhirJadwal = jadwalMs + u.durasi * 60000;
+        const sisaMs = jadwalMs ? akhirJadwal - Date.now() : u.durasi * 60000, telatMs = jadwalMs ? Math.max(0, Date.now() - jadwalMs) : 0;
+        if (jadwalMs && sisaMs <= 0) return galat(new Error('Waktu ujian ini sudah berakhir.'), 'Tidak bisa masuk ujian');
+        const telat = telatMs >= 30000;
+        const ok = auto && !telat ? { isConfirmed: true } : await Swal.fire({ title: u.judul, icon: 'info', showCancelButton: true, confirmButtonText: 'Mulai Sekarang', cancelButtonText: 'Batal',
             confirmButtonColor: '#059669', cancelButtonColor: '#334155',
-            html: `<p class="text-sm"><b>${r.soal.length}</b> soal &bull; <b>${u.durasi}</b> menit</p><p class="text-xs text-slate-400 mt-2">Waktu langsung berjalan setelah Anda menekan Mulai. Kerjakan dengan jujur dan selesaikan tepat waktu.</p>`
+            html: `<p class="text-sm"><b>${r.soal.length}</b> soal &bull; <b>${telat ? selisihTeks(sisaMs) + '</b> tersisa' : u.durasi + '</b> menit'}</p>`
+                + (telat ? `<p class="text-xs text-amber-300 mt-2"><i class="fas fa-clock mr-1"></i>Ujian sudah berjalan ${selisihTeks(telatMs)} sejak jam mulai. Waktu Anda berkurang dan berakhir bersama waktu kelas.</p>` : '')
+                + `<p class="text-xs text-slate-400 mt-2">Waktu langsung berjalan setelah Anda menekan Mulai. Kerjakan dengan jujur dan selesaikan tepat waktu.</p>`
                 + (u.kamera ? `<p class="text-xs text-amber-300 mt-3"><i class="fas fa-camera mr-1"></i>Ujian ini memakai kamera. Foto wajah Anda diambil tiap ${u.kamera_detik || 60} detik dan hanya dilihat oleh guru. Izinkan kamera saat diminta browser.</p>` : '') });
         if (!ok.isConfirmed) return;
         if (u.kamera) {
@@ -1637,7 +1715,7 @@
         let soal = r.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, opsi: q.jenis === 'PG' && u.acak_opsi ? acakArray(q.opsi) : q.opsi }));
         if (u.acak_soal) soal = acakArray(soal);
         const now = Date.now();
-        attempt = { kode: u.kode, judul: u.judul, nama, absen, jk, mulai: now, akhir: now + u.durasi * 60000, durasi: u.durasi, soal, jawaban: {}, idx: 0, kam: u.kamera ? { detik: u.kamera_detik || 60, wajib: !!u.kamera_wajib } : null };
+        attempt = { kode: u.kode, judul: u.judul, nama, absen, jk, mulai: now, akhir: jadwalMs ? akhirJadwal : now + u.durasi * 60000, durasi: u.durasi, jadwal: u.jadwal || '', soal, jawaban: {}, idx: 0, kam: u.kamera ? { detik: u.kamera_detik || 60, wajib: !!u.kamera_wajib } : null };
         saveAttempt();
         tampilUjian();
     }
@@ -1894,6 +1972,15 @@
     }
 
     /* ---------- Buat ujian & impor soal ---------- */
+    function jadwalToggle() {
+        const on = $('f-jadwal-on').checked;
+        $('f-jadwal-box').classList.toggle('hidden', !on);
+        if (on && !$('f-jadwal').value) {
+            const t = new Date(Date.now() + 3600000); t.setMinutes(0, 0, 0);
+            const z = n => String(n).padStart(2, '0');
+            $('f-jadwal').value = t.getFullYear() + '-' + z(t.getMonth() + 1) + '-' + z(t.getDate()) + 'T' + z(t.getHours()) + ':00';
+        }
+    }
     function acakKode() {
         const abj = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         $('f-kode').value = Array.from({ length: 5 }, () => abj[Math.floor(Math.random() * abj.length)]).join('');
@@ -1989,11 +2076,22 @@
         return { soal, galat: galatList };
     }
 
+    // Soal dari file yang lolos penyaringan jenis (Campuran / Hanya PG / Hanya Esai)
+    function soalTerpilih() {
+        if (!soalImpor) return [];
+        const j = ($('f-jenis') || {}).value || 'semua';
+        return j === 'semua' ? soalImpor.soal : soalImpor.soal.filter(q => q.jenis === j);
+    }
     function renderPreview() {
         const box = $('f-preview');
         if (!soalImpor) { box.innerHTML = ''; return; }
-        const s = soalImpor.soal, pg = s.filter(q => q.jenis === 'PG').length, es = s.length - pg;
-        let h = `<div class="text-xs text-slate-300 space-y-2"><p><i class="fas fa-file-lines text-accent-400 mr-1.5"></i><b>${esc(soalImpor.namaFile)}</b> &mdash; ${s.length} soal terbaca (${pg} pilihan ganda, ${es} esai)</p>`;
+        const semuaFile = soalImpor.soal, jenis = $('f-jenis').value, s = soalTerpilih();
+        const pgF = semuaFile.filter(q => q.jenis === 'PG').length, esF = semuaFile.length - pgF;
+        const pg = s.filter(q => q.jenis === 'PG').length, es = s.length - pg;
+        let h = `<div class="text-xs text-slate-300 space-y-2"><p><i class="fas fa-file-lines text-accent-400 mr-1.5"></i><b>${esc(soalImpor.namaFile)}</b> &mdash; ${semuaFile.length} soal terbaca (${pgF} pilihan ganda, ${esF} esai)</p>`;
+        if (jenis !== 'semua') h += s.length
+            ? `<p class="text-accent-400"><i class="fas fa-filter mr-1.5"></i>Dipakai untuk ujian: <b>${s.length} soal ${jenis === 'PG' ? 'pilihan ganda' : 'esai'}</b>; ${semuaFile.length - s.length} soal jenis lain diabaikan.</p>`
+            : `<p class="bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl p-3"><i class="fas fa-triangle-exclamation mr-1.5"></i>File ini tidak punya soal ${jenis === 'PG' ? 'pilihan ganda' : 'esai'}. Ganti pilihan jenis soal atau pilih file lain.</p>`;
         if (soalImpor.galat.length) h += `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-3 space-y-1"><p class="font-bold">Perbaiki dulu ${soalImpor.galat.length} masalah ini lalu pilih file lagi:</p>${soalImpor.galat.slice(0, 8).map(g => `<p>&bull; ${esc(g)}</p>`).join('')}${soalImpor.galat.length > 8 ? `<p>...dan ${soalImpor.galat.length - 8} lainnya</p>` : ''}</div>`;
         if (s.length && !soalImpor.galat.length) h += `<div class="bg-slate-900 border border-slate-800 rounded-xl divide-y divide-slate-800">${s.slice(0, 3).map((q, i) => `<div class="p-3"><span class="text-[10px] font-bold text-accent-400">${i + 1}. ${q.jenis}</span><p class="text-slate-200 mt-0.5 truncate">${esc(q.soal)}</p></div>`).join('')}${s.length > 3 ? `<div class="p-2 text-center text-[11px] text-slate-500">+ ${s.length - 3} soal lainnya</div>` : ''}</div>`;
         box.innerHTML = h + '</div>';
@@ -2014,6 +2112,17 @@
         if (!(durasi >= 1 && durasi <= 600)) return galat(new Error('Durasi antara 1 sampai 600 menit'), 'Data belum lengkap');
         if (!soalImpor || !soalImpor.soal.length) return galat(new Error('Pilih file soal (Excel/CSV) terlebih dulu'), 'Soal belum ada');
         if (soalImpor.galat.length) return galat(new Error('Masih ada masalah pada file soal. Perbaiki lalu pilih file lagi.'), 'Soal belum benar');
+        const soalPakai = soalTerpilih(), jenisPilih = $('f-jenis').value;
+        let jdwl = '';
+        if ($('f-jadwal-on').checked) {
+            if (!dukungSiswa()) return galat(new Error('Jadwal otomatis hanya tersedia untuk Firebase dan Mode Lokal. Matikan pilihan jadwal, atau ganti koneksi di Pengaturan.'), 'Jadwal belum bisa dipakai');
+            const t = Date.parse($('f-jadwal').value);
+            if (isNaN(t)) return galat(new Error('Isi tanggal dan jam mulai ujian.'), 'Jadwal belum diisi');
+            if (t + durasi * 60000 <= Date.now()) return galat(new Error('Jadwal ini sudah lewat (jam mulai + durasi sudah terlampaui). Pilih waktu yang akan datang.'), 'Jadwal tidak valid');
+            if (t < Date.now() && !await konfirmasi('Jam mulai sudah lewat', 'Ujian langsung dianggap berjalan. Siswa yang masuk sekarang mendapat sisa waktu saja.', 'Ya, lanjut')) return;
+            jdwl = new Date(t).toISOString();
+        }
+        if (!soalPakai.length) return galat(new Error('File ini tidak punya soal ' + (jenisPilih === 'PG' ? 'pilihan ganda' : 'esai') + '. Ganti jenis soal atau pilih file lain.'), 'Soal belum ada');
         if ($('f-kam').checked && !fbAktif(db.settings.scriptId)) return galat(new Error('Kamera pengawas hanya tersedia dengan koneksi Firebase. Matikan pilihan kamera, atau sambungkan Firebase di Pengaturan.'), 'Kamera belum bisa dipakai');
         const ada = (cache.ujian || []).find(u => u.kode === kode);
         if (ada && !await konfirmasi('Kode sudah dipakai', `Ujian "${ada.judul}" akan diganti dengan soal baru.`, 'Ya, ganti')) return;
@@ -2026,10 +2135,10 @@
         loading('Menyimpan ujian...');
         try {
             await api('saveExam', Object.assign({ ujian: { kode, judul, durasi, acak_soal: $('f-acak-soal').checked, acak_opsi: $('f-acak-opsi').checked,
-                kamera: $('f-kam').checked, kamera_detik: Number($('f-kam-detik').value), kamera_wajib: $('f-kam-wajib').value === '1' }, soal: soalImpor.soal }, dukungSiswa() ? { siswa: sw } : {}));
+                kamera: $('f-kam').checked, kamera_detik: Number($('f-kam-detik').value), kamera_wajib: $('f-kam-wajib').value === '1', jadwal: jdwl }, soal: soalPakai }, dukungSiswa() ? { siswa: sw } : {}));
             Swal.close();
-            toast('Ujian tersimpan (status: Tutup)');
-            soalImpor = null; renderPreview(); $('f-judul').value = ''; $('f-kam').checked = false; $('f-kam-opsi').classList.add('hidden'); acakKode();
+            toast(jdwl ? 'Ujian terjadwal dan dibuka otomatis' : 'Ujian tersimpan (status: Tutup)');
+            soalImpor = null; renderPreview(); $('f-judul').value = ''; $('f-jenis').value = 'semua'; $('f-jadwal-on').checked = false; $('f-jadwal').value = ''; $('f-jadwal-box').classList.add('hidden'); $('f-kam').checked = false; $('f-kam-opsi').classList.add('hidden'); acakKode();
             await muatUjian(true);
         } catch (e) { Swal.close(); galat(e, 'Gagal menyimpan'); }
     }
@@ -2055,6 +2164,7 @@
                 </div>
                 <p class="text-[11px] text-slate-400">${u.jumlah_soal} soal (${u.jumlah_pg} PG, ${u.jumlah_esai} esai) &bull; ${u.jumlah_hasil} jawaban masuk${u.menunggu ? ` &bull; <span class="text-amber-400">${u.menunggu} esai belum dinilai</span>` : ''}</p>
                 ${u.kamera ? `<p class="text-[11px] text-slate-400"><i class="fas fa-camera mr-1"></i>Kamera pengawas: foto tiap ${u.kamera_detik || 60} detik${u.kamera_wajib ? ' (wajib)' : ''}</p>` : ''}
+                ${u.jadwal ? `<p class="text-[11px] text-sky-300"><i class="fas fa-calendar-check mr-1"></i>${ketJadwal(u)}</p>` : ''}
                 <p class="text-[11px] ${u.siswa && u.siswa.length ? 'text-slate-400' : 'text-amber-300'}"><i class="fas fa-id-card mr-1"></i>${u.siswa && u.siswa.length ? 'Login: absen + nama (' + u.siswa.length + ' siswa terdaftar)' : 'Login lama: nama lengkap + jenis kelamin (tanpa daftar siswa)'}</p>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="ubahStatus('${esc(u.kode)}','${buka ? 'tutup' : 'buka'}')" class="${buka ? 'bg-slate-800 hover:bg-slate-700 text-slate-200' : 'bg-accent-600 hover:bg-accent-500 text-white'} text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fas ${buka ? 'fa-lock' : 'fa-door-open'} mr-1.5"></i>${buka ? 'Tutup Ujian' : 'Buka Ujian'}</button>
@@ -2330,6 +2440,42 @@
             <table class="pr-tbl"><thead><tr><th class="no">No</th><th>Soal</th><th>Jawaban Siswa</th><th>Jawaban Benar</th><th class="ht">Hasil</th></tr></thead><tbody>${baris}</tbody></table>
             <div class="pr-ttd"><div>Guru Mata Pelajaran<div class="gap"></div>(................................)</div></div>
             <div class="pr-foot">Dicetak ${tgl}</div></section>`;
+    }
+    // Rekap nilai seluruh siswa dalam SATU lembar A4 (otomatis 1, 2, atau 3 kolom sesuai jumlah siswa)
+    function cetakRekap(d) {
+        if (!d || !d.hasil || !d.hasil.length) return toast('Belum ada jawaban untuk dicetak', 'info');
+        const u = d.ujian || {}, kkm = anaKkm(), sekolah = db.settings.sekolah || '', kelas = db.settings.kelas || '';
+        const hs = d.hasil.slice().sort((a, b) => (Number(a.absen) || 9999) - (Number(b.absen) || 9999) || String(a.nama).localeCompare(String(b.nama), 'id'));
+        const n = hs.length, kol = n <= 28 ? 1 : n <= 56 ? 2 : 3, per = Math.ceil(n / kol);
+        const adaEsai = (d.soal || []).some(q => q.jenis === 'ESAI'), adaPG = (d.soal || []).some(q => q.jenis === 'PG');
+        const nil = hs.filter(h => !nilaiKosong(h)).map(h => Number(h.nilai_akhir));
+        const rata = nil.length ? nil.reduce((a, b) => a + b, 0) / nil.length : null, tuntas = nil.filter(x => x >= kkm).length;
+        const tabel = (arr, mulai) => {
+            const head = kol === 1 ? `<th style="width:6%">No</th><th>Nama</th><th style="width:9%">Absen</th><th style="width:7%">JK</th>${adaPG ? '<th style="width:12%">Nilai PG</th>' : ''}${adaEsai ? '<th style="width:12%">Esai</th>' : ''}<th style="width:13%">Nilai</th><th style="width:13%">Ket.</th>`
+                : kol === 2 ? '<th style="width:9%">No</th><th>Nama</th><th style="width:10%">JK</th><th style="width:16%">Nilai</th>' : '<th style="width:10%">No</th><th>Nama</th><th style="width:20%">Nilai</th>';
+            const rows = arr.map((h, i) => {
+                const k = nilaiKosong(h) ? null : Number(h.nilai_akhir), rem = k !== null && k < kkm, no = mulai + i + 1;
+                const nm = esc(h.nama), jk = h.jk || '';
+                const esai = h.status_esai === 'selesai' ? 'Dinilai' : h.status_esai === 'menunggu' ? 'Belum' : '-';
+                const ket = k === null ? '-' : rem ? 'Remedial' : 'Tuntas';
+                const isi = kol === 1 ? `<td class="c">${no}</td><td>${nm}</td><td class="c">${esc(h.absen)}</td><td class="c">${jk}</td>${adaPG ? `<td class="c">${fmtNilai(h.nilai_pg)}</td>` : ''}${adaEsai ? `<td class="c">${esai}</td>` : ''}<td class="n">${fmtNilai(k)}</td><td class="c">${ket}</td>`
+                    : kol === 2 ? `<td class="c">${no}</td><td>${nm}</td><td class="c">${jk}</td><td class="n">${fmtNilai(k)}</td>` : `<td class="c">${no}</td><td>${nm}</td><td class="n">${fmtNilai(k)}</td>`;
+                return `<tr class="${rem ? 'rem' : ''}">${isi}</tr>`;
+            }).join('');
+            return `<table class="pr-rk k${kol}"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+        };
+        let tabs = ''; for (let i = 0; i < kol; i++) tabs += tabel(hs.slice(i * per, (i + 1) * per), i * per);
+        const tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const html = `<section class="pr-one"><div class="pr-kop">${sekolah ? `<div class="sk">${esc(sekolah)}</div>` : ''}<div class="jd">REKAP NILAI UJIAN</div><div class="sj">${esc(u.judul || '')}${kelas ? ' &bull; ' + esc(kelas) : ''} &bull; Kode ${esc(u.kode || '')}</div></div>
+            <div class="pr-sum"><div><b>${n}</b><span>Peserta</span></div><div><b>${fmtNilai(rata)}</b><span>Rata-rata</span></div><div><b>${nil.length ? fmtNilai(Math.max(...nil)) : '—'}</b><span>Tertinggi</span></div><div><b>${nil.length ? fmtNilai(Math.min(...nil)) : '—'}</b><span>Terendah</span></div><div><b>${tuntas} / ${nil.length}</b><span>Tuntas (KKM ${kkm})</span></div></div>
+            <div class="pr-cols">${tabs}</div>
+            <div class="pr-ttd"><div>Guru Mata Pelajaran<div class="gap"></div>(................................)</div></div>
+            <div class="pr-foot">Dicetak ${tgl}${nil.length < n ? ' &bull; ' + (n - nil.length) + ' siswa belum punya nilai akhir (esai belum dinilai)' : ''}</div></section>`;
+        $('print-area').innerHTML = html;
+        const judulLama = document.title; document.title = 'Rekap-Nilai-' + (u.kode || 'ujian');
+        const beres = () => { document.title = judulLama; $('print-area').innerHTML = ''; window.removeEventListener('afterprint', beres); };
+        window.addEventListener('afterprint', beres);
+        setTimeout(() => window.print(), 100);
     }
     function rvCetak(semua) {
         if (!rvData || !rvData.hasil.length) return toast('Belum ada jawaban untuk dicetak', 'info');
