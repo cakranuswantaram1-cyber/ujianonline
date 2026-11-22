@@ -1663,6 +1663,12 @@
                 Swal.close();
                 break;
             } catch (e) {
+                if (/Ujian tidak ditemukan|Soal ujian tidak ditemukan/i.test(e.message)) {
+                    // Ujian sudah dihapus guru: jawaban tidak mungkin dikirim, siswa harus bisa keluar
+                    Swal.close(); kamTutup(); attempt = null; saveAttempt(); submitting = false;
+                    await Swal.fire({ icon: 'warning', title: 'Ujian sudah dihapus', text: 'Ujian ini sudah dihapus oleh guru, jadi jawaban tidak bisa dikirim. Tanyakan ke guru.', confirmButtonText: 'Keluar', confirmButtonColor: '#059669' });
+                    showView('landing'); return;
+                }
                 if (/sudah mengumpulkan/i.test(e.message)) {
                     Swal.close(); kamTutup(); attempt = null; saveAttempt(); submitting = false;
                     await Swal.fire({ icon: 'info', title: 'Sudah terkirim', text: e.message, confirmButtonColor: '#059669' });
