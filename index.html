@@ -799,7 +799,7 @@
                                 <li>Buka <b class="text-slate-200">Kelola Ujian</b>, isi judul dan durasi, lalu impor soal dari Excel/CSV (atau pakai Bank Soal). Unduh template bila perlu.</li>
                                 <li>Simpan ujian. Ujian baru berstatus <b class="text-slate-200">Tutup</b>; buka saat kelas siap dimulai.</li>
                                 <li>Bagikan tautan siswa dari Pengaturan atau dari kartu ujian. Siswa masuk dengan <b class="text-slate-200">kode ujian, nomor absen, dan satu kata dari nama</b> (depan, tengah, atau belakang). Absen dan nama harus sama dengan menu Data Siswa; bila beda, siswa tidak bisa masuk. Daftar siswa disalin ke ujian saat <b class="text-slate-200">Simpan Ujian</b> dan setiap kali ujian <b class="text-slate-200">Dibuka</b>, jadi isi Data Siswa dulu (lengkap dengan absen dan L/P). Berlaku untuk Firebase dan Mode Lokal; ujian tanpa daftar siswa memakai login lama.</li>
-                                <li>Lihat nilai di <b class="text-slate-200">Hasil &amp; Nilai</b>. Soal esai dinilai lewat ikon mata; ikon putar-balik menghapus jawaban agar siswa bisa mengulang.</li>
+                                <li>Lihat nilai di <b class="text-slate-200">Hasil &amp; Nilai</b>. Soal esai dinilai lewat ikon mata; ikon putar-balik memberi izin perbaikan: nilai lama disimpan, siswa boleh mengerjakan ulang, dan nilai yang dipakai adalah yang paling besar. Tanpa izin guru, siswa yang sudah mengumpulkan tidak bisa masuk lagi.</li>
                             </ol>
                         </details>
                         <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
@@ -2091,7 +2091,7 @@
         // Sudah pernah mengumpulkan: tidak boleh masuk lagi kecuali guru menghapus hasilnya (izin remedial)
         try {
             const cs = await api('cekSudah', { kode, nama: jk ? nama.slice(0, 54) + ' [' + jk + ']' : nama, absen });
-            if (cs && cs.sudah) return Swal.fire({ icon: 'info', title: 'Anda sudah mengerjakan ujian ini', text: 'Ujian tidak bisa diulang. Bila ada remedial atau perbaikan nilai, minta izin guru terlebih dulu.', confirmButtonText: 'Mengerti', confirmButtonColor: '#059669' });
+            if (cs && cs.sudah) return Swal.fire({ icon: 'info', title: 'Anda sudah mengerjakan ujian ini', text: 'Nilai Anda sudah tercatat dan ujian tidak bisa diulang. Bila ingin memperbaiki nilai, minta izin guru dulu. Setelah guru mengizinkan, nilai yang dipakai adalah yang paling besar.', confirmButtonText: 'Mengerti', confirmButtonColor: '#059669' });
         } catch (e) { /* server lama / tidak didukung: pengecekan saat kirim tetap menolak pengiriman ganda */ }
         if (r.belum) { if (!await tungguJadwal(u, nama, absen)) return; return mulaiUjian(true); }   // belum waktunya: hitung mundur, lalu mulai otomatis
         const jadwalMs = u.jadwal ? Date.parse(u.jadwal) : 0, akhirJadwal = jadwalMs + u.durasi * 60000;
@@ -2662,7 +2662,7 @@
     async function hapusUjian(kode) {
         if (!await konfirmasi('Hapus ujian ' + kode + '?', 'Soal dan semua nilai siswa untuk ujian ini ikut terhapus dari penyimpanan.', 'Ya, hapus')) return;
         loading('Menghapus...');
-        try { await api('deleteExam', { kode }); Swal.close(); toast('Ujian dihapus'); if (hasilKode === kode) { hasilKode = ''; hasilData = null; } await muatUjian(true); }
+        try { await api('deleteExam', { kode }); try { await arsipApi('hapus', kode); } catch (e) {} Swal.close(); toast('Ujian dihapus'); if (hasilKode === kode) { hasilKode = ''; hasilData = null; } await muatUjian(true); }
         catch (e) { Swal.close(); galat(e); }
     }
     function lihatHasil(kode) { hasilKode = kode; switchTab('hasil'); }
@@ -2721,15 +2721,16 @@
                 <td class="px-3 py-3 text-center text-slate-400">${esc(h.absen)}</td>
                 <td class="px-3 py-3 text-center">${badgeJK(h.jk)}</td>
                 <td class="px-3 py-3 text-center text-slate-300">${fmtNilai(h.nilai_pg)}</td>
-                <td class="px-3 py-3 text-center">${badge(h)}</td>
-                <td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(h.nilai_akhir)}${h.potongan > 0 ? `<div class="text-[10px] font-bold text-red-400" title="Nilai sebelum pengurangan: ${fmtNilai(h.nilai_akhir_asli)}">−${fmtNilai(h.potongan)}</div>` : ''}</td>
+                <td class="px-3 py-3 text-center">${h.menunggu_perbaikan ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">Menunggu perbaikan</span>' : badge(h)}</td>
+                <td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(h.nilai_akhir)}${h.nilai_lama !== undefined && !h.menunggu_perbaikan ? `<div class="text-[10px] font-bold text-sky-300" title="Nilai yang dipakai adalah yang tertinggi">${h.dari_arsip ? 'Dipakai nilai lama' : (h.nilai_baru === null || h.nilai_baru === undefined ? 'Nilai baru belum ada' : 'Dipakai nilai baru')} · lama ${fmtNilai(h.nilai_lama)}, baru ${fmtNilai(h.nilai_baru)}</div>` : ''}${h.potongan > 0 ? `<div class="text-[10px] font-bold text-red-400" title="Nilai sebelum pengurangan: ${fmtNilai(h.nilai_akhir_asli)}">−${fmtNilai(h.potongan)}</div>` : ''}</td>
                 <td class="px-3 py-3 text-center">${badgeKeluar(h.keluar)}</td>
                 <td class="px-3 py-3 text-right whitespace-nowrap">
+                    ${h.menunggu_perbaikan ? '<span class="text-[10px] text-slate-500">Belum mengerjakan ulang</span>' : `
                     ${d.ujian && d.ujian.suara ? `<button onclick="lihatSuara('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Dengarkan rekaman suara"><i class="fas fa-microphone"></i></button>` : ''}
                     ${d.ujian && d.ujian.kamera ? `<button onclick="lihatFoto('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Lihat foto kamera"><i class="fas fa-camera"></i></button>` : ''}
                     <button onclick="detailSiswa('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Detail / nilai esai"><i class="fas fa-eye"></i></button>
                     <button onclick="rvBuka('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Review jawaban benar/salah"><i class="fas fa-list-check"></i></button>
-                    <button onclick="resetSiswa('${esc(h.id)}')" class="text-slate-600 hover:text-red-400 px-2" title="Izinkan remedial: hapus hasil agar siswa bisa mengulang"><i class="fas fa-rotate-left"></i></button>
+                    <button onclick="resetSiswa('${esc(h.id)}')" class="text-slate-600 hover:text-sky-400 px-2" title="Izinkan perbaikan: nilai lama disimpan, nilai tertinggi yang dipakai"><i class="fas fa-rotate-left"></i></button>`}
                 </td></tr>`).join('')}</tbody></table></div>`;
     }
     async function lihatFoto(id) {
@@ -2934,10 +2935,17 @@ service cloud.firestore {
     }
     async function resetSiswa(id) {
         const h = hasilData.hasil.find(x => x.id === id);
-        if (!h || !await konfirmasi('Hapus jawaban ' + h.nama + '?', 'Jawaban dan nilai lama dihapus, lalu siswa boleh masuk dan mengerjakan ulang (izin remedial/perbaikan nilai). Catat atau ekspor nilai lamanya dulu bila perlu.', 'Ya, izinkan ulang')) return;
-        loading('Menghapus...');
-        try { await api('resetStudent', { id }); Swal.close(); toast('Jawaban dihapus'); muatHasil(); }
-        catch (e) { Swal.close(); galat(e); }
+        if (!h || h.menunggu_perbaikan) return;
+        const adaNilai = h.nilai_akhir !== null && h.nilai_akhir !== undefined && h.nilai_akhir !== '';
+        const ket = adaNilai
+            ? 'Nilai <b>' + fmtNilai(h.nilai_akhir) + '</b> disimpan sebagai nilai lama. Siswa boleh mengerjakan ulang satu kali, dan nilai yang dipakai nanti adalah yang <b>paling besar</b> antara nilai lama dan nilai baru.'
+            : 'Siswa ini belum punya nilai akhir (esai belum dinilai), jadi tidak ada nilai lama yang disimpan. Jawaban dihapus lalu siswa boleh mengerjakan ulang.';
+        if (!h || !await konfirmasi('Izinkan ' + h.nama + ' perbaikan?', ket, 'Ya, izinkan perbaikan')) return;
+        loading('Menyimpan...');
+        try {
+            if (adaNilai && !h.dari_arsip) await arsipApi('simpan', hasilKode, { key: arsipKey(h), entri: { id: h.id, nama: h.nama, absen: h.absen, jk: h.jk || '', nilai_akhir: h.nilai_akhir, nilai_pg: h.nilai_pg ?? null, benar: h.benar ?? null, jumlah_pg: h.jumlah_pg ?? null, waktu: h.waktu || '' } });
+            await api('resetStudent', { id }); Swal.close(); toast('Siswa diizinkan perbaikan. Nilai lama tersimpan.'); muatHasil();
+        } catch (e) { Swal.close(); galat(e); }
     }
 
     /* ============================================================
@@ -2978,7 +2986,7 @@ service cloud.firestore {
         const siswaLama = rvPilih || $('rv-siswa').value; rvPilih = '';
         $('rv-isi').innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>';
         try { rvData = await ambilHasil(kode); } catch (e) { rvData = null; $('rv-isi').innerHTML = pesanGalat(e); return; }
-        const hs = rvData.hasil.slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id'));
+        const hs = rvData.hasil.filter(h => !h.menunggu_perbaikan).sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id'));
         rvData.hasil = hs;
         $('rv-siswa').innerHTML = hs.length ? hs.map(h => `<option value="${esc(h.id)}">${esc(h.nama)} (absen ${esc(h.absen)}) - nilai ${fmtNilai(h.nilai_akhir)}</option>`).join('') : '<option value="">(belum ada yang mengumpulkan)</option>';
         if (hs.some(h => String(h.id) === siswaLama)) $('rv-siswa').value = siswaLama;
@@ -3548,10 +3556,47 @@ service cloud.firestore {
         }
         return h;
     }
+    /* ---------- Arsip nilai lama (izin perbaikan): nilai yang dipakai selalu yang TERTINGGI ----------
+       Saat guru memberi izin perbaikan, nilai lama disimpan dulu di arsip, baru jawaban lama dihapus.
+       Firebase: dokumen kunci/<kode>__arsip (Rules 'kunci' sudah hanya untuk guru, tidak perlu ubah Rules).
+       Mode Lokal dan Google Sheets: tersimpan di perangkat guru. */
+    const arsipKey = h => lkNorm(parseJK(h).nama) + '|' + String(h.absen).trim();
+    async function arsipApi(aksi, kode, data) {
+        const id = db.settings.scriptId;
+        if (fbAktif(id)) {
+            const C = await fbInit(id), fs = C.fs, r = fs.doc(C.db, 'kunci', kode + '__arsip');
+            await C.auth.authStateReady();
+            if (!C.auth.currentUser) throw new Error('Sesi guru habis. Masuk ulang sebagai guru.');
+            const sn = await fs.getDoc(r), cur = sn.exists() ? (sn.data().arsip || {}) : {};
+            if (aksi === 'baca') return cur;
+            if (aksi === 'simpan') { cur[data.key] = data.entri; await fs.setDoc(r, { arsip: cur }); return cur; }
+            if (aksi === 'hapus') { await fs.deleteDoc(r); return {}; }
+        }
+        // Mode Lokal & Google Sheets: simpan di perangkat guru
+        db.arsip = db.arsip || {};
+        if (aksi === 'baca') return db.arsip[kode] || {};
+        if (aksi === 'simpan') { (db.arsip[kode] = db.arsip[kode] || {})[data.key] = data.entri; saveDB(); return db.arsip[kode]; }
+        if (aksi === 'hapus') { delete db.arsip[kode]; saveDB(); return {}; }
+    }
+    const arsipBaca = kode => fbT(arsipApi('baca', kode)).catch(() => ({}));   // gagal baca: tampilkan nilai apa adanya
     async function ambilHasil(kode) {
         const r = await api('getResults', { kode }); r.hasil = r.hasil.map(parseJK);
         r.penalti = poinPenalti(kode, r.ujian);
         r.hasil = r.hasil.map(h => terapkanPenalti(h, r.penalti));
+        const ars = await arsipBaca(kode), ada = new Set();
+        r.hasil.forEach(h => {
+            const a = ars[arsipKey(h)]; if (!a) return; ada.add(arsipKey(h));
+            const baru = h.nilai_akhir; h.nilai_lama = a.nilai_akhir; h.nilai_baru = baru;
+            if (baru === null || baru === undefined || Number(a.nilai_akhir) > Number(baru)) {
+                if (baru !== null && baru !== undefined) { h.dari_arsip = true; h.nilai_akhir = a.nilai_akhir; h.nilai_akhir_asli = a.nilai_akhir; h.potongan = 0; if (a.nilai_pg !== null && a.nilai_pg !== undefined) h.nilai_pg = Math.max(Number(h.nilai_pg ?? 0), Number(a.nilai_pg)); }
+            }
+        });
+        // Siswa yang sudah diberi izin perbaikan tetapi belum mengerjakan lagi: nilai lamanya tetap tampil
+        Object.keys(ars).forEach(k => {
+            if (ada.has(k)) return; const a = ars[k];
+            r.hasil.push({ id: a.id || ('arsip-' + k), kode, nama: a.nama, absen: a.absen, jk: a.jk || '', nilai_pg: a.nilai_pg ?? null, nilai_akhir: a.nilai_akhir, nilai_akhir_asli: a.nilai_akhir, potongan: 0,
+                benar: a.benar ?? null, jumlah_pg: a.jumlah_pg ?? null, status_esai: '', keluar: null, jawaban: {}, skor: {}, waktu: a.waktu, menunggu_perbaikan: true, nilai_lama: a.nilai_akhir });
+        });
         return r;
     }
     async function aturPenalti() {
