@@ -159,7 +159,7 @@
     <!-- ================= BERANDA ================= -->
     <div id="view-landing" class="screen hidden fixed inset-0 z-[30] overflow-y-auto screen-fixed bg-gradient-to-br from-[#0f172a] to-[#0b1329]">
         <div class="min-h-full flex flex-col items-center justify-center p-6">
-            <div class="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl flex items-center justify-center text-white shadow-2xl mb-5">
+            <div id="landing-logo" onclick="logoGuruTap()" class="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl flex items-center justify-center text-white shadow-2xl mb-5">
                 <i class="fas fa-graduation-cap text-4xl"></i>
             </div>
             <h1 id="landing-nama" class="text-2xl font-black text-white tracking-tight text-center">Ujian Online Kelas</h1>
@@ -169,7 +169,7 @@
                     <i class="fas fa-pen-to-square text-2xl w-8 text-center"></i>
                     <span><span class="block text-base">Saya Siswa</span><span class="block text-[11px] font-medium opacity-80">Kerjakan ujian dengan kode dari guru</span></span>
                 </button>
-                <button onclick="bukaGuru()" class="w-full bg-slate-900 border border-slate-800 hover:border-slate-600 text-slate-100 font-bold px-5 py-4 rounded-2xl transition flex items-center gap-4 text-left">
+                <button id="btn-guru-landing" onclick="bukaGuru()" class="w-full bg-slate-900 border border-slate-800 hover:border-slate-600 text-slate-100 font-bold px-5 py-4 rounded-2xl transition flex items-center gap-4 text-left">
                     <i class="fas fa-chalkboard-user text-2xl w-8 text-center text-accent-400"></i>
                     <span><span class="block text-base">Saya Guru</span><span class="block text-[11px] font-medium text-slate-400">Buat ujian, impor soal, lihat nilai</span></span>
                 </button>
@@ -760,11 +760,15 @@
                             <button onclick="pantauMuat()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Segarkan</button>
                             <button onclick="tambahWaktuManual()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Tambah waktu dengan mengetik nomor absen"><i class="fas fa-clock mr-1.5"></i>Tambah Waktu Siswa</button>
                         </div>
-                        <p class="text-[11px] text-slate-400">Pantau siswa <b class="text-slate-200">selama ujian berlangsung</b>. Halaman ini diperbarui tiap 10 detik selama Pantau aktif. <b class="text-amber-300">Belum masuk</b>: belum ada jawaban terkirim. <b class="text-accent-400">Sudah selesai</b>: sudah mengumpulkan. <b class="text-red-400">Sering keluar</b>: keluar halaman ≥ 2 kali.</p>
-                        <div id="pt-ringkasan" class="grid grid-cols-2 sm:grid-cols-4 gap-3 hidden">
+                        <p class="text-[11px] text-slate-400">Pantau siswa <b class="text-slate-200">selama ujian berlangsung</b>. Halaman ini diperbarui tiap 10 detik selama Pantau aktif. <b class="text-sky-300">Sedang mengerjakan</b>: sudah masuk ruang soal (nama dan jam masuk tercatat), belum mengumpulkan. <b class="text-amber-300">Belum masuk</b>: belum masuk ruang soal. <b class="text-accent-400">Sudah selesai</b>: sudah mengumpulkan. <b class="text-red-400">Sering keluar</b>: keluar halaman ≥ 2 kali.</p>
+                        <div id="pt-ringkasan" class="grid grid-cols-2 sm:grid-cols-5 gap-3 hidden">
                             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
                                 <p class="text-[10px] uppercase font-black text-slate-500">Terdaftar</p>
                                 <p id="pt-n-daftar" class="text-2xl font-black text-slate-100 mt-1">-</p>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
+                                <p class="text-[10px] uppercase font-black text-slate-500">Sedang Mengerjakan</p>
+                                <p id="pt-n-kerja" class="text-2xl font-black text-sky-400 mt-1">-</p>
                             </div>
                             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
                                 <p class="text-[10px] uppercase font-black text-slate-500">Sudah Selesai</p>
@@ -929,6 +933,25 @@
     &amp;&amp; request.auth.token.email == "EMAIL_GURU@gmail.com";
 }</pre>
                         </details>
+                        <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-door-open text-accent-400 mr-2"></i>Catat siapa masuk ruang soal (Firebase)</summary>
+                            <ol class="mt-3 space-y-1.5 text-[12px] text-slate-400 list-decimal pl-5">
+                                <li>Tambahkan blok Rules di bawah ini di dalam <span class="font-mono text-slate-300">match /databases/{database}/documents</span>, lalu Publish. Fungsi <span class="font-mono text-slate-300">guru()</span> sudah ada bila Anda memakai Rules lengkap dari menu ini; bila belum, pakai Salin Rules di bawah.</li>
+                                <li>Setelah itu, setiap siswa yang menekan Mulai Sekarang tercatat: nama, nomor absen, dan jam masuk.</li>
+                                <li>Lihat di <b class="text-slate-200">Pantau Langsung</b>, bagian <b class="text-slate-200">Sedang Mengerjakan</b>. Siswa yang keluar lalu masuk lagi diberi tanda masuk ulang.</li>
+                            </ol>
+                            <pre class="mt-2 bg-slate-950 border border-slate-700 rounded-xl p-3 text-[11px] text-slate-300 overflow-x-auto">match /masuk/{id} {
+  allow create: if request.resource.data.keys().hasOnly(['kode','absen','nama','jk','paket','waktu'])
+    &amp;&amp; request.resource.data.kode is string
+    &amp;&amp; id.matches(request.resource.data.kode + '__.*')
+    &amp;&amp; request.resource.data.nama is string &amp;&amp; request.resource.data.nama.size() &lt;= 70
+    &amp;&amp; request.resource.data.absen is string &amp;&amp; request.resource.data.absen.size() &gt; 0 &amp;&amp; request.resource.data.absen.size() &lt;= 10
+    &amp;&amp; exists(/databases/$(database)/documents/ujian/$(request.resource.data.kode));
+  allow read, update, delete:
+    if request.auth != null
+    &amp;&amp; request.auth.token.email == "EMAIL_GURU@gmail.com";
+}</pre>
+                        </details>
                         <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800" ontoggle="rulesIsi()">
                             <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-file-code text-accent-400 mr-2"></i>Rules Firestore lengkap (salin / unduh, untuk Firebase baru)</summary>
                             <p class="mt-3 text-[12px] text-slate-400">Cocok untuk guru yang baru membuat proyek Firebase. Ketik email guru, tekan <b class="text-slate-200">Salin</b> atau <b class="text-slate-200">Unduh</b>, lalu tempel ke Firebase. Rules sudah lengkap: ujian, soal, kunci, hasil, nilai, kamera, dan rekam suara.</p>
@@ -1023,6 +1046,8 @@
     const KELUAR_KEY = APP.slug + '_keluar'; // permintaan keluar ujian (mode lokal)
     const REMEDIAL_KEY = APP.slug + '_remedial'; // permintaan remedial siswa (mode lokal)
     const RECALL_KEY = APP.slug + '_recall'; // attempt yang menunggu acc guru untuk lanjut
+    const SISWA_KEY  = APP.slug + '_modesiswa'; // perangkat ini dibuka lewat tautan siswa: menu guru disembunyikan
+    const MASUK_KEY  = APP.slug + '_masuk';  // catatan siapa masuk ruang soal (mode lokal)
     const WAKTU_KEY  = APP.slug + '_xt_';    // tambah waktu per siswa: prefix + kode + '_' + absen
 
     let db = loadDB();
@@ -1157,6 +1182,14 @@
             const m = await fs.getDocs(fs.query(fs.collection(D, 'sudah'), fs.where('kode', '==', kode)));
             for (let i = 0; i < m.docs.length; i += 400) { const b = fs.writeBatch(D); m.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit(); }
         } catch (e) { /* Rules belum diperbarui */ }
+        try { await fbHapusMasuk(C, kode); } catch (e) { /* Rules masuk belum dipasang */ }
+    }
+    // Hapus catatan masuk ruang soal satu ujian (absen kosong) atau satu siswa saja.
+    async function fbHapusMasuk(C, kode, absen) {
+        const { fs, db: D } = C;
+        const m = await fs.getDocs(fs.query(fs.collection(D, 'masuk'), fs.where('kode', '==', lkKode(kode))));
+        const target = m.docs.filter(d => absen === undefined || normAbsen(d.data().absen) === normAbsen(absen));
+        for (let i = 0; i < target.length; i += 400) { const b = fs.writeBatch(D); target.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit(); }
     }
     const FOTO_OK = /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/;
     async function fbHapusFoto(C, kode, absen) {
@@ -1447,6 +1480,7 @@
             await fs.deleteDoc(r);
             try { await fs.deleteDoc(ref('sudah', String(b.id))); } catch (e) {}
             try { const hd = s.data(); await fs.deleteDoc(ref('extra_time', hd.kode + '_' + fbSlug(normAbsen(hd.absen)))); } catch (e) {}
+            try { const hd = s.data(); await fbHapusMasuk(C, hd.kode, hd.absen); } catch (e) {}
             return { ok: true };
         }
 
@@ -1458,6 +1492,14 @@
     // Wrapper khusus untuk aksi recall yang boleh dilakukan siswa (tanpa auth guru)
     async function apiFBRecall(action, b, id) {
         const C = await fbInit(id), fs = C.fs, D = C.db, ref = (c, d) => fs.doc(D, c, d);
+        // Siswa tercatat masuk ruang soal (tanpa auth). Satu dokumen baru tiap masuk, jadi masuk ulang ikut terlihat.
+        if (action === 'catatMasuk') {
+            const kode = lkKode(b.kode), absen = String(b.absen || '').trim().slice(0, 10);
+            if (!kode || !absen) return { ok: true };
+            const id = kode + '__' + fbSlug(normAbsen(absen)) + '__' + Date.now().toString(36);
+            await fs.setDoc(ref('masuk', id), { kode, absen, nama: String(b.nama || '').slice(0, 60), jk: String(b.jk || '').slice(0, 1), paket: String(b.paket || '').slice(0, 2), waktu: fs.serverTimestamp() });
+            return { ok: true };
+        }
         if (action === 'mintaLanjut') {
             // Siswa create dokumen recall (Rules: siswa boleh create)
             const docId = String(b.hasilId || '');
@@ -1538,6 +1580,10 @@
         // Aksi guru: accLanjut dan tolakLanjut
         await C.auth.authStateReady();
         if (!C.auth.currentUser) throw new Error('PIN guru salah atau sesi habis. Masuk ulang sebagai guru.');
+        if (action === 'daftarMasuk') {
+            const q = await fs.getDocs(fs.query(fs.collection(D, 'masuk'), fs.where('kode', '==', lkKode(b.kode))));
+            return { ok: true, daftar: q.docs.map(d => { const x = d.data(); const w = x.waktu && x.waktu.toDate ? x.waktu.toDate().toISOString() : String(x.waktu || ''); return Object.assign({}, x, { waktu: w }); }) };
+        }
         // Tambah waktu siswa (guru): jumlahnya dijumlahkan dengan tambahan sebelumnya
         if (action === 'tambahWaktu') {
             const kode = lkKode(b.kode), absen = normAbsen(b.absen);
@@ -1554,6 +1600,7 @@
         }
         if (action === 'accLanjut') {
             const docId = String(b.hasilId || '');
+            try { await fbHapusMasuk(C, b.kode, b.absen); } catch (e) {}
             // 1. Hapus jawaban hasil siswa agar bisa submit ulang
             try { await fs.deleteDoc(ref('hasil', docId)); } catch (e) { /* mungkin sudah tidak ada */ }
             try { await fs.deleteDoc(ref('sudah', docId)); } catch (e) {}
@@ -1892,6 +1939,16 @@
             try { const v = JSON.parse(localStorage.getItem(key) || 'null'); if (v && v.total) return { ok: true, total: Number(v.total), waktu: String(v.waktu || '') }; } catch (e) {}
             return { ok: true, total: 0 };
         }
+        if (action === 'catatMasuk') {
+            let a = []; try { a = JSON.parse(localStorage.getItem(MASUK_KEY) || '[]'); } catch (e) {}
+            a.push({ kode: lkKode(b.kode), absen: String(b.absen || ''), nama: String(b.nama || ''), jk: String(b.jk || ''), paket: String(b.paket || ''), waktu: new Date().toISOString() });
+            try { localStorage.setItem(MASUK_KEY, JSON.stringify(a.slice(-500))); } catch (e) {}
+            return { ok: true };
+        }
+        if (action === 'daftarMasuk') {
+            let a = []; try { a = JSON.parse(localStorage.getItem(MASUK_KEY) || '[]'); } catch (e) {}
+            return { ok: true, daftar: a.filter(x => x.kode === lkKode(b.kode)) };
+        }
         const pinSimpan = localStorage.getItem(LK_PIN);
         if (!pinSimpan || sessionStorage.getItem(PIN_KEY) !== pinSimpan) throw new Error('PIN guru salah atau sesi habis.');
         if (action === 'tambahWaktu') {
@@ -2142,9 +2199,11 @@
     function bukaSiswa() { showView('siswa'); }
     function bukaGuru() {
         if (sessionStorage.getItem(PIN_KEY) && db.settings.scriptId) { masukPanelGuru(); return; }
-        $('g-url').value = db.settings.scriptId ? scriptUrl(db.settings.scriptId) : '';
+        const perangkatSiswa = modeSiswa();
+        $('g-url').value = !perangkatSiswa && db.settings.scriptId ? scriptUrl(db.settings.scriptId) : '';
         $('g-pin').value = '';
-        try { $('g-email').value = localStorage.getItem(APP.slug + '_email') || ''; } catch (e) {}
+        $('g-email').value = '';
+        if (!perangkatSiswa) { try { $('g-email').value = localStorage.getItem(APP.slug + '_email') || ''; } catch (e) {} }
         showView('login');
     }
     async function loginGuru() {
@@ -2491,6 +2550,7 @@
         const now = Date.now();
         attempt = { kode: u.kode, judul: u.judul, nama, absen, jk, mulai: now, akhir: jadwalMs ? akhirJadwal : now + u.durasi * 60000, durasi: u.durasi, jadwal: u.jadwal || '', paket: pkL, soal, jawaban: {}, idx: 0, kam: u.kamera ? { detik: u.kamera_detik || 60, wajib: !!u.kamera_wajib } : null, suara: u.suara ? { interval: u.suara_interval || 60, lama: u.suara_lama || 10, wajib: !!u.suara_wajib } : null };
         saveAttempt();
+        recallApi('catatMasuk', { kode: u.kode, nama, absen, jk, paket: pkL }).catch(() => {});   // guru melihat siapa yang masuk dan jam berapa (Pantau Langsung)
         tampilUjian();
     }
 
@@ -3261,6 +3321,17 @@ service cloud.firestore {
     match /extra_time/{id} {
       allow get: if true;
       allow list, write: if guru();
+    }
+
+    // Catatan siapa masuk ruang soal: siswa hanya boleh menambah, guru yang membaca.
+    match /masuk/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['kode','absen','nama','jk','paket','waktu'])
+        && request.resource.data.kode is string
+        && id.matches(request.resource.data.kode + '__.*')
+        && request.resource.data.nama is string && request.resource.data.nama.size() <= 70
+        && request.resource.data.absen is string && request.resource.data.absen.size() > 0 && request.resource.data.absen.size() <= 10
+        && exists(/databases/$(database)/documents/ujian/$(request.resource.data.kode));
+      allow read, update, delete: if guru();
     }
 
     match /{other=**} {
@@ -4886,6 +4957,19 @@ service cloud.firestore {
             const hasil = (r.hasil || []).map(h => terapkanPenalti(parseJK(h), penalti));
             const arsip = await arsipBaca(kode);
 
+            // Catatan masuk ruang soal: satu baris per siswa (absen), berisi masuk pertama, terakhir, dan jumlah masuk
+            const masukMap = {}; let masukGalat = '';
+            try {
+                const m = await recallApi('daftarMasuk', { kode });
+                (m.daftar || []).forEach(x => {
+                    const ab = normAbsen(x.absen), t = Date.parse(x.waktu) || 0, o = masukMap[ab];
+                    if (!o) masukMap[ab] = { absen: x.absen, nama: x.nama, jk: x.jk, paket: x.paket, pertama: t, terakhir: t, n: 1 };
+                    else { o.n++; if (t < o.pertama) o.pertama = t; if (t > o.terakhir) { o.terakhir = t; o.paket = x.paket || o.paket; } }
+                });
+            } catch (e) { masukGalat = e && e.message ? e.message : 'gagal membaca'; }
+            const jamTeks = t => t ? new Date(t).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+            const lamaTeks = t => { const mnt = Math.max(0, Math.floor((Date.now() - t) / 60000)); return mnt < 1 ? 'baru saja' : mnt < 60 ? mnt + ' mnt lalu' : Math.floor(mnt / 60) + ' j ' + (mnt % 60) + ' mnt lalu'; };
+
             // Daftar siswa resmi dari ujian (bila ada)
             const daftarSiswa = (Array.isArray(ujian.siswa) ? ujian.siswa : []).map(x => ({ absen: x.absen ?? x.a ?? x.no ?? '', nama: x.nama ?? x.n ?? '', jk: x.jk ?? x.j ?? '' }));
             // Set absen siswa yang sudah mengumpulkan
@@ -4907,19 +4991,29 @@ service cloud.firestore {
                 }
             });
 
-            // 2) Siswa dari daftar resmi yang belum ada di hasil
+            // 2) Sedang mengerjakan: sudah tercatat masuk, belum mengumpulkan (atau sedang mengerjakan ulang setelah izin perbaikan)
+            const barisKerja = [];
+            Object.keys(masukMap).forEach(ab => {
+                const m = masukMap[ab], h = sudahMap[ab];
+                if (!h || (h.menunggu_perbaikan && m.terakhir > (Date.parse(h.waktu) || 0))) barisKerja.push(m);
+            });
+            const kerjaSet = new Set(barisKerja.map(m => normAbsen(m.absen)));
+            for (let i = barisMenunggu.length - 1; i >= 0; i--) if (kerjaSet.has(normAbsen(barisMenunggu[i].absen))) barisMenunggu.splice(i, 1);
+
+            // 3) Siswa dari daftar resmi yang belum masuk sama sekali
             if (daftarSiswa.length) {
                 daftarSiswa.forEach(s => {
                     const ab = normAbsen(s.absen);
-                    if (!sudahMap[ab]) barisBelum.push(s);
+                    if (!sudahMap[ab] && !kerjaSet.has(ab)) barisBelum.push(s);
                 });
             }
 
-            ptData = { barisSudah, barisMenunggu, barisBelum, ujian };
+            ptData = { barisSudah, barisMenunggu, barisBelum, barisKerja, ujian };
 
             // Ringkasan
             ring.classList.remove('hidden');
-            $('pt-n-daftar').textContent = daftarSiswa.length || (barisSudah.length + barisBelum.length);
+            $('pt-n-daftar').textContent = daftarSiswa.length || (barisSudah.length + barisBelum.length + barisKerja.length);
+            $('pt-n-kerja').textContent = barisKerja.length;
             $('pt-n-selesai').textContent = barisSudah.length;
             $('pt-n-belum').textContent = barisBelum.length;
             $('pt-n-keluar').textContent = barisSudah.filter(h => (h.keluar || 0) >= 2).length + barisMenunggu.filter(h => (h.keluar || 0) >= 2).length;
@@ -4933,6 +5027,34 @@ service cloud.firestore {
             const thS = 'bg-slate-950 text-slate-400 font-bold text-[11px] uppercase tracking-wide px-3 py-3 text-left';
             let html = '';
 
+            if (masukGalat) {
+                html += `<div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 text-[11px] text-amber-300"><i class="fas fa-triangle-exclamation mr-1.5"></i>Catatan jam masuk belum bisa dibaca (${esc(masukGalat)}). Untuk Firebase, pasang Rules blok <b>masuk</b> (menu Panduan, bagian Catat siapa masuk ruang soal), lalu Publish.</div>`;
+            }
+
+            // Sedang mengerjakan
+            if (barisKerja.length) {
+                barisKerja.sort((a, b) => Number(a.absen) - Number(b.absen));
+                html += `<div class="bg-slate-900 border border-sky-500/30 rounded-2xl overflow-hidden">
+                    <div class="px-4 py-3 border-b border-sky-500/20 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block animate-pulse"></span>
+                        <span class="text-sm font-bold text-slate-100">Sedang Mengerjakan</span>
+                        <span class="ml-auto text-xs font-black text-sky-400">${barisKerja.length} siswa</span>
+                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-xs">
+                    <thead><tr><th class="${thS}">No</th><th class="${thS}">Nama</th><th class="${thS} text-center">JK</th><th class="${thS} text-center">Jam Masuk</th><th class="${thS} text-center">Sudah Berjalan</th><th class="${thS} text-center">Paket</th><th class="${thS} text-right">Aksi</th></tr></thead>
+                    <tbody class="divide-y divide-slate-800">
+                    ${barisKerja.map(m => `<tr class="hover:bg-slate-800/60">
+                        <td class="px-3 py-2.5 text-slate-400">${esc(String(m.absen))}</td>
+                        <td class="px-3 py-2.5 font-semibold text-slate-100 whitespace-nowrap">${esc(m.nama || '')}${m.n > 1 ? ` <span class="text-[10px] font-bold text-amber-300" title="Masuk ruang soal ${m.n} kali. Terakhir ${jamTeks(m.terakhir)}">masuk ulang ${m.n}×</span>` : ''}</td>
+                        <td class="px-3 py-2.5 text-center">${badgeJK(m.jk || '')}</td>
+                        <td class="px-3 py-2.5 text-center font-bold text-sky-300">${jamTeks(m.pertama)}</td>
+                        <td class="px-3 py-2.5 text-center text-[10px] text-slate-400">${lamaTeks(m.pertama)}</td>
+                        <td class="px-3 py-2.5 text-center text-slate-400">${esc(m.paket || '—')}</td>
+                        <td class="px-3 py-2.5 text-right whitespace-nowrap">${xtBadge(kode, m.absen)}<button onclick="tambahWaktuSiswa('${esc(kode)}','${encodeURIComponent(String(m.absen))}')" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition" title="Tambah waktu"><i class="fas fa-clock mr-1"></i>+ Waktu</button></td>
+                    </tr>`).join('')}
+                    </tbody></table></div></div>`;
+            }
+
             // Sudah selesai
             if (barisSudah.length) {
                 barisSudah.sort((a, b) => Number(a.absen) - Number(b.absen));
@@ -4945,7 +5067,7 @@ service cloud.firestore {
                     <div class="overflow-x-auto"><table class="w-full text-xs">
                     <thead><tr>
                         <th class="${thS}">No</th><th class="${thS}">Nama</th><th class="${thS} text-center">JK</th>
-                        <th class="${thS} text-center">Nilai</th><th class="${thS} text-center">Keluar Halaman</th><th class="${thS} text-center">Waktu Kumpul</th><th class="${thS}"></th>
+                        <th class="${thS} text-center">Nilai</th><th class="${thS} text-center">Keluar Halaman</th><th class="${thS} text-center">Jam Masuk</th><th class="${thS} text-center">Waktu Kumpul</th><th class="${thS}"></th>
                     </tr></thead>
                     <tbody class="divide-y divide-slate-800">
                     ${barisSudah.map(h => {
@@ -4957,6 +5079,7 @@ service cloud.firestore {
                             <td class="px-3 py-2.5 text-center">${badgeJK(h.jk)}</td>
                             <td class="px-3 py-2.5 text-center font-black text-accent-400">${h.nilai_akhir !== null && h.nilai_akhir !== undefined ? fmtNilai(h.nilai_akhir) : '<span class="text-slate-500 text-[10px]">Esai</span>'}</td>
                             <td class="px-3 py-2.5 text-center font-bold ${keluarBanyak ? 'text-red-400' : 'text-slate-400'}">${h.keluar || 0}×${keluarBanyak ? ' <i class="fas fa-triangle-exclamation text-[10px]"></i>' : ''}</td>
+                            <td class="px-3 py-2.5 text-center text-[10px] text-slate-400">${masukMap[normAbsen(h.absen)] ? jamTeks(masukMap[normAbsen(h.absen)].pertama) : '—'}</td>
                             <td class="px-3 py-2.5 text-center text-[10px] text-slate-400">${tglKumpul}</td>
                             <td class="px-3 py-2.5 text-right"><span class="text-[10px] text-slate-600 italic">Sudah selesai</span></td>
                         </tr>`;
@@ -5004,7 +5127,7 @@ service cloud.firestore {
                         <td class="px-3 py-2.5 text-right whitespace-nowrap">${xtBadge(kode, s.absen)}<button onclick="tambahWaktuSiswa('${esc(kode)}','${encodeURIComponent(String(s.absen))}')" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition" title="Tambah waktu untuk siswa ini"><i class="fas fa-clock mr-1"></i>+ Waktu</button></td>
                     </tr>`).join('')}
                     </tbody></table></div></div>`;
-            } else if (!daftarSiswa.length && !barisSudah.length && !barisMenunggu.length) {
+            } else if (!daftarSiswa.length && !barisSudah.length && !barisMenunggu.length && !barisKerja.length) {
                 html = '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center"><p class="text-sm font-bold text-slate-400">Belum ada data siswa</p><p class="text-[11px] text-slate-500 mt-1">Ujian mungkin belum ada peserta yang masuk.</p></div>';
             } else if (!daftarSiswa.length) {
                 // ada hasil tapi tidak ada daftar siswa resmi — tidak bisa tahu siapa belum masuk
@@ -5352,8 +5475,22 @@ service cloud.firestore {
        INISIALISASI
        ============================================================ */
     function tick() { $('live-clock').textContent = new Date().toLocaleTimeString('en-GB'); }
+    /* Tautan siswa (berisi ?s= atau ?kode=) menandai perangkat sebagai perangkat siswa: tombol "Saya Guru" disembunyikan dan
+       email/konfigurasi guru tidak diisi otomatis. Guru membukanya kembali dengan tautan ?guru=1, atau ketuk logo 5 kali. */
+    const modeSiswa = () => { try { return localStorage.getItem(SISWA_KEY) === '1'; } catch (e) { return false; } };
+    function terapkanModeSiswa() { const b = $('btn-guru-landing'); if (b) b.classList.toggle('hidden', modeSiswa()); }
+    let _logoTap = 0, _logoT = 0;
+    function logoGuruTap() {
+        const n = Date.now(); _logoTap = n - _logoT < 1500 ? _logoTap + 1 : 1; _logoT = n;
+        if (_logoTap >= 5) { _logoTap = 0; const b = $('btn-guru-landing'); if (b) b.classList.remove('hidden'); }
+    }
     function bacaTautan() {
         const p = new URLSearchParams(location.search);
+        try {
+            if (p.get('guru') === '1') localStorage.removeItem(SISWA_KEY);
+            else if ((p.get('s') || p.get('kode')) && !sessionStorage.getItem(PIN_KEY)) localStorage.setItem(SISWA_KEY, '1');
+        } catch (e) {}
+        terapkanModeSiswa();
         const s = extractId(p.get('s'));
         if (s && s !== db.settings.scriptId) { db.settings.scriptId = s; saveDB(); }
         return (p.get('kode') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
