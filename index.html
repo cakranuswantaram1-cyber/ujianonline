@@ -1046,6 +1046,7 @@
     const KELUAR_KEY = APP.slug + '_keluar'; // permintaan keluar ujian (mode lokal)
     const REMEDIAL_KEY = APP.slug + '_remedial'; // permintaan remedial siswa (mode lokal)
     const RECALL_KEY = APP.slug + '_recall'; // attempt yang menunggu acc guru untuk lanjut
+    const GURU_KEY   = APP.slug + '_perangkatguru'; // perangkat ini pernah dipakai masuk sebagai guru: tidak pernah dianggap perangkat siswa
     const SISWA_KEY  = APP.slug + '_modesiswa'; // perangkat ini dibuka lewat tautan siswa: menu guru disembunyikan
     const MASUK_KEY  = APP.slug + '_masuk';  // catatan siapa masuk ruang soal (mode lokal)
     const WAKTU_KEY  = APP.slug + '_xt_';    // tambah waktu per siswa: prefix + kode + '_' + absen
@@ -2224,6 +2225,8 @@
         } catch (e) { Swal.close(); galat(e, 'Gagal terhubung'); }
     }
     function masukPanelGuru() {
+        try { localStorage.setItem(GURU_KEY, '1'); localStorage.removeItem(SISWA_KEY); } catch (e) {}
+        terapkanModeSiswa();
         showView('guru');
         let tab = 'dashboard';
         try { tab = localStorage.getItem(APP.slug + '_tab') || 'dashboard'; } catch (e) {}
@@ -5477,7 +5480,7 @@ service cloud.firestore {
     function tick() { $('live-clock').textContent = new Date().toLocaleTimeString('en-GB'); }
     /* Tautan siswa (berisi ?s= atau ?kode=) menandai perangkat sebagai perangkat siswa: tombol "Saya Guru" disembunyikan dan
        email/konfigurasi guru tidak diisi otomatis. Guru membukanya kembali dengan tautan ?guru=1, atau ketuk logo 5 kali. */
-    const modeSiswa = () => { try { return localStorage.getItem(SISWA_KEY) === '1'; } catch (e) { return false; } };
+    const modeSiswa = () => { try { return localStorage.getItem(SISWA_KEY) === '1' && localStorage.getItem(GURU_KEY) !== '1'; } catch (e) { return false; } };
     function terapkanModeSiswa() { const b = $('btn-guru-landing'); if (b) b.classList.toggle('hidden', modeSiswa()); }
     let _logoTap = 0, _logoT = 0;
     function logoGuruTap() {
@@ -5488,7 +5491,7 @@ service cloud.firestore {
         const p = new URLSearchParams(location.search);
         try {
             if (p.get('guru') === '1') localStorage.removeItem(SISWA_KEY);
-            else if ((p.get('s') || p.get('kode')) && !sessionStorage.getItem(PIN_KEY)) localStorage.setItem(SISWA_KEY, '1');
+            else if ((p.get('s') || p.get('kode')) && !sessionStorage.getItem(PIN_KEY) && localStorage.getItem(GURU_KEY) !== '1') localStorage.setItem(SISWA_KEY, '1');
         } catch (e) {}
         terapkanModeSiswa();
         const s = extractId(p.get('s'));
