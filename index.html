@@ -3190,11 +3190,18 @@
         hasilKode = $('h-kode').value;
         if (!hasilKode) return;
         $('h-tabel').innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</div>';
-        try { hasilData = await ambilHasil(hasilKode); renderTabelHasil(); }
+        try { hasilData = await ambilHasil(hasilKode); await hasilMuatPermintaan(); renderTabelHasil(); }
         catch (e) { $('h-tabel').innerHTML = pesanGalat(e); }
     }
+    // Permintaan remedial dari siswa yang menunggu ACC guru (tampil sebagai penanda di tabel Hasil & Nilai)
+    let hasilRemed = [];
+    async function hasilMuatPermintaan() {
+        try { const r = await recallApi('daftarRecall', { kode: hasilKode }); hasilRemed = (r.daftar || []).filter(x => x.tipe === 'remedial' && (!x.status || x.status === 'menunggu')); }
+        catch (e) { hasilRemed = []; }
+    }
+    const hasilMinta = h => hasilRemed.find(x => String(x.hasilId) === String(h.id) || normAbsen(x.absen) === normAbsen(h.absen));
     function renderTabelHasil() {
-        const d = hasilData, hs = d.hasil.slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id'));
+        const d = hasilData, hs = d.hasil.slice().sort((a, b) => (hasilMinta(b) ? 1 : 0) - (hasilMinta(a) ? 1 : 0) || String(a.nama).localeCompare(String(b.nama), 'id'));
         const akhir = hs.filter(h => h.nilai_akhir !== null).map(h => h.nilai_akhir);
         const rata = akhir.length ? akhir.reduce((a, b) => a + b, 0) / akhir.length : null;
         $('h-stats').innerHTML =
@@ -3217,11 +3224,15 @@
             if (n <= 5) return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30" title="Keluar ${n}× dari halaman ujian">${n}×</span>`;
             return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30" title="Keluar ${n}× dari halaman ujian — perlu diperhatikan">${n}× ⚠️</span>`;
         };
-        $('h-tabel').innerHTML = `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs">
+        const peminta = hs.filter(hasilMinta);
+        const bannerRemed = peminta.length
+            ? `<div class="mb-3 rounded-2xl border border-amber-500/50 bg-amber-500/10 p-4"><p class="text-sm font-black text-amber-300"><i class="fas fa-bell fa-shake mr-2"></i>${peminta.length} siswa meminta remedial</p><p class="text-xs text-amber-200 mt-1">${peminta.map(h => '<b>' + esc(h.nama) + '</b> (absen ' + esc(h.absen) + ')').join(', ')}</p><p class="text-[11px] text-slate-400 mt-1">Barisnya ditandai kuning dan ada di urutan teratas. Tekan <b class="text-slate-200">ACC Remedial</b> pada baris itu untuk menyetujui.</p></div>`
+            : `<div class="mb-3 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-[11px] text-slate-500"><i class="fas fa-circle-check mr-2 text-slate-600"></i>Tidak ada permintaan remedial saat ini.</div>`;
+        $('h-tabel').innerHTML = bannerRemed + `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs">
             <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider"><tr>
                 <th class="px-4 py-3 text-left">Nama</th><th class="px-3 py-3 text-center">Absen</th><th class="px-3 py-3 text-center">JK</th><th class="px-3 py-3 text-center">Nilai PG</th><th class="px-3 py-3 text-center">Esai</th><th class="px-3 py-3 text-center">Nilai Akhir</th><th class="px-3 py-3 text-center" title="Berapa kali siswa keluar/pindah dari halaman ujian">Keluar</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
-            <tbody class="divide-y divide-slate-800 bg-slate-900">${hs.map(h => `<tr class="hover:bg-slate-800/60">
-                <td class="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}${paketBadge(h.absen, d.ujian)}</td>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${hs.map(h => `<tr class="${hasilMinta(h) ? 'bg-amber-500/10 hover:bg-amber-500/20' : 'hover:bg-slate-800/60'}">
+                <td class="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}${paketBadge(h.absen, d.ujian)}${hasilMinta(h) ? '<span class="ml-2 text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-black animate-pulse"><i class="fas fa-hand mr-1"></i>Minta remedial</span>' : ''}</td>
                 <td class="px-3 py-3 text-center text-slate-400">${esc(h.absen)}</td>
                 <td class="px-3 py-3 text-center">${badgeJK(h.jk)}</td>
                 <td class="px-3 py-3 text-center text-slate-300">${fmtNilai(h.nilai_pg)}</td>
@@ -3234,7 +3245,7 @@
                     ${d.ujian && d.ujian.kamera ? `<button onclick="lihatFoto('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Lihat foto kamera"><i class="fas fa-camera"></i></button>` : ''}
                     <button onclick="detailSiswa('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Detail / nilai esai"><i class="fas fa-eye"></i></button>
                     <button onclick="rvBuka('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Review jawaban benar/salah"><i class="fas fa-list-check"></i></button>
-                    <button onclick="resetSiswa('${esc(h.id)}')" class="bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition ml-1" title="ACC remedial: nilai lama disimpan, nilai tertinggi yang dipakai"><i class="fas fa-rotate-left mr-1"></i>ACC Remedial</button>
+                    <button onclick="resetSiswa('${esc(h.id)}')" class="${hasilMinta(h) ? 'bg-amber-500 hover:bg-amber-400 text-black animate-pulse' : 'bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white'} text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition ml-1" title="ACC remedial: nilai lama disimpan, nilai tertinggi yang dipakai"><i class="fas fa-rotate-left mr-1"></i>ACC Remedial</button>
                     <button onclick="hapusNilai('${esc(h.id)}')" class="bg-slate-800 hover:bg-red-600 text-red-300 hover:text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition ml-1" title="Hapus nilai ujian siswa ini sampai bersih"><i class="fas fa-trash-can mr-1"></i>Hapus Nilai</button>`}
                 </td></tr>`).join('')}</tbody></table></div>`;
     }
@@ -3473,8 +3484,10 @@ service cloud.firestore {
         try {
             try { await arsipApi('hapusKey', hasilKode, { key: arsipKey(h) }); } catch (e) { /* tidak ada nilai lama */ }
             try { await nilaiApi('tarik', { ids: [h.id] }); } catch (e) { /* nilai belum pernah dirilis atau Rules nilai belum ada */ }
+            const mt = hasilMinta(h);
             if (!h.menunggu_perbaikan) await api('resetStudent', { id });
-            Swal.close(); toast('Nilai ' + h.nama + ' dihapus', 'success'); muatHasil();
+            if (mt) { try { await recallApi('tolakLanjut', { hasilId: mt.hasilId }); } catch (e) {} }
+            Swal.close(); toast('Nilai ' + h.nama + ' dihapus', 'success'); muatHasil(); cekNotif();
         } catch (e) { Swal.close(); galat(e, 'Gagal menghapus nilai'); }
     }
     async function resetSiswa(id) {
@@ -3488,7 +3501,10 @@ service cloud.firestore {
         loading('Menyimpan...');
         try {
             if (adaNilai && !h.dari_arsip) await arsipApi('simpan', hasilKode, { key: arsipKey(h), entri: { id: h.id, nama: h.nama, absen: h.absen, jk: h.jk || '', nilai_akhir: h.nilai_akhir, nilai_pg: h.nilai_pg ?? null, benar: h.benar ?? null, jumlah_pg: h.jumlah_pg ?? null, waktu: h.waktu || '' } });
-            await api('resetStudent', { id }); Swal.close(); toast('Siswa diizinkan perbaikan. Nilai lama tersimpan.'); muatHasil();
+            const mt = hasilMinta(h);
+            await api('resetStudent', { id });
+            if (mt) { try { await recallApi('tolakLanjut', { hasilId: mt.hasilId }); } catch (e) {} }
+            Swal.close(); toast('Siswa diizinkan perbaikan. Nilai lama tersimpan.'); muatHasil(); cekNotif();
         } catch (e) { Swal.close(); galat(e); }
     }
 
@@ -4954,11 +4970,26 @@ service cloud.firestore {
     // Lencana notifikasi di menu Rilis Nilai (ACC): jumlah permintaan siswa dari ujian yang sedang dibuka
     async function cekNotif() {
         const btn = $('btn-rilis'); if (!btn || !sessionStorage.getItem(PIN_KEY)) return;
-        let n = 0;
+        let n = 0, nRem = 0;
         try {
             const buka = (cache.ujian || []).filter(u => u.status === 'buka').slice(0, 15);
-            const rs = await Promise.all(buka.map(u => recallApi('daftarRecall', { kode: u.kode }).then(r => (r.daftar || []).length).catch(() => 0)));
-            n = rs.reduce((a, b) => a + b, 0);
+            const rs = await Promise.all(buka.map(u => recallApi('daftarRecall', { kode: u.kode }).then(r => r.daftar || []).catch(() => [])));
+            n = rs.reduce((a, b) => a + b.length, 0);
+            nRem = rs.reduce((a, b) => a + b.filter(x => x.tipe === 'remedial' && (!x.status || x.status === 'menunggu')).length, 0);
+        } catch (e) {}
+        const bh = $('btn-hasil');
+        if (bh) {
+            let br = $('badge-remed');
+            if (!br) { br = document.createElement('span'); br.id = 'badge-remed'; br.className = 'ml-auto text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-black hidden animate-pulse'; br.title = 'Siswa meminta remedial'; bh.appendChild(br); }
+            br.textContent = nRem; br.classList.toggle('hidden', !nRem);
+        }
+        try {
+            const tabH = $('tab-hasil-view');
+            if (tabH && !tabH.classList.contains('hidden') && hasilData && hasilKode) {
+                const lama = hasilRemed.map(x => x.hasilId).sort().join('|');
+                await hasilMuatPermintaan();
+                if (hasilRemed.map(x => x.hasilId).sort().join('|') !== lama) renderTabelHasil();
+            }
         } catch (e) {}
         let bd = $('badge-rilis');
         if (!bd) { bd = document.createElement('span'); bd.id = 'badge-rilis'; bd.className = 'ml-auto text-[10px] font-black px-2 py-0.5 rounded-full bg-sky-500 text-white hidden'; btn.appendChild(bd); }
