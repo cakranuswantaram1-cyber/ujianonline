@@ -3229,12 +3229,13 @@
                 <td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(h.nilai_akhir)}${h.nilai_lama !== undefined && !h.menunggu_perbaikan ? `<div class="text-[10px] font-bold text-sky-300" title="Nilai yang dipakai adalah yang tertinggi">${h.dari_arsip ? 'Dipakai nilai lama' : (h.nilai_baru === null || h.nilai_baru === undefined ? 'Nilai baru belum ada' : 'Dipakai nilai baru')} · lama ${fmtNilai(h.nilai_lama)}, baru ${fmtNilai(h.nilai_baru)}</div>` : ''}${h.potongan > 0 ? `<div class="text-[10px] font-bold text-red-400" title="Nilai sebelum pengurangan: ${fmtNilai(h.nilai_akhir_asli)}">−${fmtNilai(h.potongan)}</div>` : ''}</td>
                 <td class="px-3 py-3 text-center">${badgeKeluar(h.keluar)}</td>
                 <td class="px-3 py-3 text-right whitespace-nowrap">
-                    ${h.menunggu_perbaikan ? '<span class="text-[10px] text-slate-500">Belum mengerjakan ulang</span>' : `
+                    ${h.menunggu_perbaikan ? `<span class="text-[10px] text-slate-500 mr-2">Belum mengerjakan ulang</span><button onclick="hapusNilai('${esc(h.id)}')" class="bg-slate-800 hover:bg-red-600 text-red-300 hover:text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition" title="Hapus nilai lama siswa ini"><i class="fas fa-trash-can mr-1"></i>Hapus Nilai</button>` : `
                     ${d.ujian && d.ujian.suara ? `<button onclick="lihatSuara('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Dengarkan rekaman suara"><i class="fas fa-microphone"></i></button>` : ''}
                     ${d.ujian && d.ujian.kamera ? `<button onclick="lihatFoto('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Lihat foto kamera"><i class="fas fa-camera"></i></button>` : ''}
                     <button onclick="detailSiswa('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Detail / nilai esai"><i class="fas fa-eye"></i></button>
                     <button onclick="rvBuka('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Review jawaban benar/salah"><i class="fas fa-list-check"></i></button>
-                    <button onclick="resetSiswa('${esc(h.id)}')" class="text-slate-600 hover:text-sky-400 px-2" title="Izinkan perbaikan: nilai lama disimpan, nilai tertinggi yang dipakai"><i class="fas fa-rotate-left"></i></button>`}
+                    <button onclick="resetSiswa('${esc(h.id)}')" class="bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition ml-1" title="ACC remedial: nilai lama disimpan, nilai tertinggi yang dipakai"><i class="fas fa-rotate-left mr-1"></i>ACC Remedial</button>
+                    <button onclick="hapusNilai('${esc(h.id)}')" class="bg-slate-800 hover:bg-red-600 text-red-300 hover:text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition ml-1" title="Hapus nilai ujian siswa ini sampai bersih"><i class="fas fa-trash-can mr-1"></i>Hapus Nilai</button>`}
                 </td></tr>`).join('')}</tbody></table></div>`;
     }
     async function lihatFoto(id) {
@@ -3458,6 +3459,23 @@ service cloud.firestore {
                 try { return await api('gradeEssay', { id, skor }); }
                 catch (e) { Swal.showValidationMessage(e.message); return false; }
             } }).then(r => { if (r.isConfirmed) { toast('Nilai tersimpan'); muatHasil(); } });
+    }
+    // Hapus nilai ujian satu siswa sampai bersih (terpisah dari ACC remedial): jawaban, nilai lama remedial, nilai yang sudah dirilis,
+    // tanda sudah mengumpulkan, tambahan waktu, dan catatan masuk. Siswa boleh mengerjakan dari awal.
+    async function hapusNilai(id) {
+        const h = hasilData.hasil.find(x => x.id === id); if (!h) return;
+        const ada = h.nilai_akhir !== null && h.nilai_akhir !== undefined && h.nilai_akhir !== '';
+        const ket = 'Semua data ujian <b>' + esc(h.nama) + '</b> (absen ' + esc(h.absen) + ') dihapus' + (ada ? ', termasuk nilai <b>' + fmtNilai(h.nilai_akhir) + '</b>' : '') + ': jawaban, nilai lama remedial, dan nilai yang sudah dirilis ke siswa.'
+            + '<br><br>Siswa bisa mengerjakan ujian ini dari awal. <b>Tidak bisa dikembalikan.</b> Untuk memberi kesempatan perbaikan dengan nilai lama tetap tersimpan, pakai tombol ACC Remedial.';
+        const r = await Swal.fire({ icon: 'warning', title: 'Hapus nilai ' + h.nama + '?', html: '<p class="text-sm text-left">' + ket + '</p>', showCancelButton: true, confirmButtonText: 'Ya, hapus nilai', cancelButtonText: 'Batal', confirmButtonColor: '#dc2626', cancelButtonColor: '#334155' });
+        if (!r.isConfirmed) return;
+        loading('Menghapus nilai...');
+        try {
+            try { await arsipApi('hapusKey', hasilKode, { key: arsipKey(h) }); } catch (e) { /* tidak ada nilai lama */ }
+            try { await nilaiApi('tarik', { ids: [h.id] }); } catch (e) { /* nilai belum pernah dirilis atau Rules nilai belum ada */ }
+            if (!h.menunggu_perbaikan) await api('resetStudent', { id });
+            Swal.close(); toast('Nilai ' + h.nama + ' dihapus', 'success'); muatHasil();
+        } catch (e) { Swal.close(); galat(e, 'Gagal menghapus nilai'); }
     }
     async function resetSiswa(id) {
         const h = hasilData.hasil.find(x => x.id === id);
@@ -4210,12 +4228,14 @@ service cloud.firestore {
             const sn = await fs.getDoc(r), cur = sn.exists() ? (sn.data().arsip || {}) : {};
             if (aksi === 'baca') return cur;
             if (aksi === 'simpan') { cur[data.key] = data.entri; await fs.setDoc(r, { arsip: cur }); return cur; }
+            if (aksi === 'hapusKey') { delete cur[data.key]; await fs.setDoc(r, { arsip: cur }); return cur; }
             if (aksi === 'hapus') { await fs.deleteDoc(r); return {}; }
         }
         // Mode Lokal & Google Sheets: simpan di perangkat guru
         db.arsip = db.arsip || {};
         if (aksi === 'baca') return db.arsip[kode] || {};
         if (aksi === 'simpan') { (db.arsip[kode] = db.arsip[kode] || {})[data.key] = data.entri; saveDB(); return db.arsip[kode]; }
+        if (aksi === 'hapusKey') { if (db.arsip[kode]) delete db.arsip[kode][data.key]; saveDB(); return db.arsip[kode] || {}; }
         if (aksi === 'hapus') { delete db.arsip[kode]; saveDB(); return {}; }
     }
     const arsipBaca = kode => fbT(arsipApi('baca', kode)).catch(() => ({}));   // gagal baca: tampilkan nilai apa adanya
