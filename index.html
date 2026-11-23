@@ -385,28 +385,36 @@
                     <!-- MENU:BEGIN (satu tombol per tab; id harus "btn-<tab>") -->
                     <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-chart-pie w-5 text-center"></i><span>Dashboard</span></button>
                     <div class="my-2 border-t border-slate-800"></div>
-                    <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Ujian</div>
+                    <div class="px-3 pt-2 pb-1 flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-wider"><i class="fas fa-file-pen w-5 text-center text-accent-400/70"></i><span>1. Siapkan Ujian</span></div>
                     <button onclick="switchTab('ujian')" id="btn-ujian" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-file-pen w-5 text-center"></i><span>Kelola Ujian</span></button>
+                    <button onclick="switchTab('bank')" id="btn-bank" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-box-archive w-5 text-center"></i><span>Bank Soal</span></button>
+                    <div class="my-2 border-t border-slate-800"></div>
+                    <div class="px-3 pt-2 pb-1 flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-wider"><i class="fas fa-satellite-dish w-5 text-center text-accent-400/70"></i><span>2. Saat Ujian Berlangsung</span></div>
+                    <button onclick="switchTab('pantau')" id="btn-pantau" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-satellite-dish w-5 text-center"></i><span>Pantau Langsung</span><span id="badge-pantau" class="ml-auto text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-white hidden">0</span></button>
+                    <div class="my-2 border-t border-slate-800"></div>
+                    <div class="px-3 pt-2 pb-1 flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-wider"><i class="fas fa-ranking-star w-5 text-center text-accent-400/70"></i><span>3. Nilai &amp; Hasil</span></div>
                     <button onclick="switchTab('hasil')" id="btn-hasil" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-ranking-star w-5 text-center"></i><span>Hasil &amp; Nilai</span></button>
                     <button onclick="switchTab('review')" id="btn-review" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-list-check w-5 text-center"></i><span>Review Jawaban</span></button>
                     <button onclick="switchTab('rilis')" id="btn-rilis" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-bullhorn w-5 text-center"></i><span>Rilis Nilai (ACC)</span></button>
-                    <button onclick="switchTab('adu')" id="btn-adu" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-trophy w-5 text-center"></i><span>Adu L vs P</span></button>
-                    <button onclick="switchTab('tim')" id="btn-tim" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-people-group w-5 text-center"></i><span>Kuis Langsung L vs P</span></button>
-                    <button onclick="switchTab('bank')" id="btn-bank" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-box-archive w-5 text-center"></i><span>Bank Soal</span></button>
+                    <button onclick="switchTab('leger')" id="btn-leger" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-table-list w-5 text-center"></i><span>Leger Nilai</span></button>
+                    <div class="my-2 border-t border-slate-800"></div>
+                    <div class="px-3 pt-2 pb-1 flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-wider"><i class="fas fa-chart-line w-5 text-center text-accent-400/70"></i><span>4. Analisis &amp; Remedial</span></div>
                     <button onclick="switchTab('analisis')" id="btn-analisis" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-chart-line w-5 text-center"></i><span>Analisis &amp; Remedial</span></button>
                     <button onclick="switchTab('butir')" id="btn-butir" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-magnifying-glass-chart w-5 text-center"></i><span>Analisis Butir Soal</span></button>
                     <button onclick="switchTab('riwremedial')" id="btn-riwremedial" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-clock-rotate-left w-5 text-center"></i><span>Riwayat Remedial</span></button>
-                    <button onclick="switchTab('leger')" id="btn-leger" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-table-list w-5 text-center"></i><span>Leger Nilai</span></button>
-                    <button onclick="switchTab('pantau')" id="btn-pantau" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-satellite-dish w-5 text-center"></i><span>Pantau Langsung</span><span id="badge-pantau" class="ml-auto text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-white hidden">0</span></button>
-                    <button onclick="timProyektor()" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-tv w-5 text-center"></i><span>Papan Skor Layar</span></button>
                     <div class="my-2 border-t border-slate-800"></div>
-                    <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Kelas</div>
+                    <div class="px-3 pt-2 pb-1 flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-wider"><i class="fas fa-people-group w-5 text-center text-accent-400/70"></i><span>Kuis Seru L vs P</span></div>
+                    <button onclick="switchTab('tim')" id="btn-tim" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-people-group w-5 text-center"></i><span>Kuis Langsung L vs P</span></button>
+                    <button onclick="timProyektor()" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-tv w-5 text-center"></i><span>Papan Skor Layar</span></button>
+                    <button onclick="switchTab('adu')" id="btn-adu" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-trophy w-5 text-center"></i><span>Adu L vs P</span></button>
+                    <div class="my-2 border-t border-slate-800"></div>
+                    <div class="px-3 pt-2 pb-1 flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-wider"><i class="fas fa-people-roof w-5 text-center text-accent-400/70"></i><span>Kelas</span></div>
                     <button onclick="switchTab('roster')" id="btn-roster" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-user-group w-5 text-center"></i><span>Data Siswa</span></button>
                     <button onclick="switchTab('akun')" id="btn-akun" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-id-card w-5 text-center"></i><span>Bagikan Akun Siswa</span></button>
                     <button onclick="switchTab('absensi')" id="btn-absensi" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-clipboard-user w-5 text-center"></i><span>Absensi</span></button>
                     <button onclick="switchTab('pengumuman')" id="btn-pengumuman" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-bell w-5 text-center"></i><span>Pengumuman</span></button>
                     <div class="my-2 border-t border-slate-800"></div>
-                    <div class="px-3 py-1 text-[10px] uppercase font-black text-slate-600 tracking-wider">Sistem</div>
+                    <div class="px-3 pt-2 pb-1 flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-wider"><i class="fas fa-gear w-5 text-center text-accent-400/70"></i><span>Sistem</span></div>
                     <button onclick="switchTab('pengaturan')" id="btn-pengaturan" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-gear w-5 text-center"></i><span>Pengaturan</span></button>
                     <button onclick="switchTab('panduan')" id="btn-panduan" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-circle-question w-5 text-center"></i><span>Panduan</span></button>
                     <!-- MENU:END -->
@@ -733,9 +741,18 @@
                             <p class="text-[11px] text-slate-400">Pilih warna utama aplikasi di perangkat ini.</p>
                             <div class="flex flex-wrap gap-3"><button onclick="pilihWarna('zamrud')" title="Zamrud" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(16 185 129)"></button><button onclick="pilihWarna('biru')" title="Biru" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(14 165 233)"></button><button onclick="pilihWarna('ungu')" title="Ungu" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(139 92 246)"></button><button onclick="pilihWarna('mawar')" title="Mawar" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(244 63 94)"></button><button onclick="pilihWarna('jingga')" title="Jingga" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(245 158 11)"></button><button onclick="pilihWarna('sian')" title="Sian" class="w-10 h-10 rounded-full border-2 border-slate-700 hover:scale-110 transition" style="background:rgb(6 182 212)"></button></div>
                         </div>
+                        <div class="bg-slate-900 p-5 rounded-2xl border border-accent-500/30 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-cloud-arrow-up text-accent-400 mr-2"></i>Pindah HP / Laptop (lewat Firebase)</h3>
+                            <p class="text-[11px] text-slate-400">Data Siswa, Absensi, KKM, dan Bank Soal tersimpan di perangkat yang dipakai, bukan di Firebase. Karena itu perangkat baru terlihat kosong. Di perangkat lama tekan <b class="text-slate-200">Kirim ke Cloud</b>. Di perangkat baru, login guru lalu tekan <b class="text-slate-200">Ambil dari Cloud</b>. Hanya guru yang bisa membacanya.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="sinkronKirim()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-cloud-arrow-up mr-1.5"></i>Kirim ke Cloud</button>
+                                <button onclick="sinkronAmbil()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-cloud-arrow-down mr-1.5"></i>Ambil dari Cloud</button>
+                            </div>
+                            <p class="text-[11px] text-slate-500">Kirim menimpa data di cloud, Ambil menimpa data di perangkat ini. Lakukan Kirim setiap selesai mengubah data siswa atau soal. Perlu Rules <span class="font-mono">sinkron</span> (menu Panduan).</p>
+                        </div>
                         <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
                             <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-shield-halved text-accent-400 mr-2"></i>Cadangan Data</h3>
-                            <p class="text-[11px] text-slate-400">Simpan kuis langsung, bank soal, dan data ujian mode lokal ke satu file. Pulihkan kapan saja, misalnya saat ganti HP atau browser dibersihkan.</p>
+                            <p class="text-[11px] text-slate-400">Simpan Data Siswa, Absensi, KKM, kuis langsung, bank soal, dan data ujian mode lokal ke satu file. Pulihkan kapan saja, misalnya saat ganti HP atau browser dibersihkan.</p>
                             <div class="flex flex-wrap gap-2">
                                 <button onclick="cadangUnduh()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-download mr-1.5"></i>Unduh Cadangan</button>
                                 <button onclick="$('c-file').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-upload mr-1.5"></i>Pulihkan dari File</button>
@@ -968,6 +985,20 @@
     &amp;&amp; request.resource.data.absen is string &amp;&amp; request.resource.data.absen.size() &gt; 0 &amp;&amp; request.resource.data.absen.size() &lt;= 10
     &amp;&amp; exists(/databases/$(database)/documents/ujian/$(request.resource.data.kode));
   allow read, update, delete:
+    if request.auth != null
+    &amp;&amp; request.auth.token.email == "EMAIL_GURU@gmail.com";
+}</pre>
+                        </details>
+                        <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <summary class="text-sm font-bold text-slate-100 cursor-pointer"><i class="fas fa-cloud-arrow-up text-accent-400 mr-2"></i>Pindah HP / laptop (Firebase)</summary>
+                            <ol class="mt-3 space-y-1.5 text-[12px] text-slate-400 list-decimal pl-5">
+                                <li>Tambahkan blok Rules di bawah ini di dalam <span class="font-mono text-slate-300">match /databases/{database}/documents</span>, lalu Publish. Fungsi <span class="font-mono text-slate-300">guru()</span> sudah ada bila Anda memakai Rules lengkap dari menu ini.</li>
+                                <li>Di perangkat lama: <b class="text-slate-200">Pengaturan</b>, tekan <b class="text-slate-200">Kirim ke Cloud</b>.</li>
+                                <li>Di perangkat baru: login guru, <b class="text-slate-200">Pengaturan</b>, tekan <b class="text-slate-200">Ambil dari Cloud</b>.</li>
+                                <li>Yang dibawa: Data Siswa, Absensi, KKM, dan Bank Soal. Ujian dan nilai sudah ada di Firebase sehingga otomatis terlihat.</li>
+                            </ol>
+                            <pre class="mt-2 bg-slate-950 border border-slate-700 rounded-xl p-3 text-[11px] text-slate-300 overflow-x-auto">match /sinkron/{id} {
+  allow read, write:
     if request.auth != null
     &amp;&amp; request.auth.token.email == "EMAIL_GURU@gmail.com";
 }</pre>
@@ -3346,6 +3377,11 @@ service cloud.firestore {
       allow list, write: if guru();
     }
 
+    // Sinkron data guru antar perangkat (Data Siswa, Absensi, KKM, Bank Soal): hanya guru.
+    match /sinkron/{id} {
+      allow read, write: if guru();
+    }
+
     // Catatan siapa masuk ruang soal: siswa hanya boleh menambah, guru yang membaca.
     match /masuk/{id} {
       allow create: if request.resource.data.keys().hasOnly(['kode','absen','nama','jk','paket','waktu'])
@@ -3952,8 +3988,51 @@ service cloud.firestore {
     const WARNA = {'zamrud': ['52 211 153', '16 185 129', '5 150 105', '4 120 87'], 'biru': ['56 189 248', '14 165 233', '2 132 199', '3 105 161'], 'ungu': ['167 139 250', '139 92 246', '124 58 237', '109 40 217'], 'mawar': ['251 113 133', '244 63 94', '225 29 72', '190 18 60'], 'jingga': ['251 191 36', '245 158 11', '217 119 6', '180 83 9'], 'sian': ['34 211 238', '6 182 212', '8 145 178', '14 116 144']};
     function terapkanWarna(k) { const w = WARNA[k] || WARNA.zamrud, r = document.documentElement.style; ['--a400', '--a500', '--a600', '--a700'].forEach((v, i) => r.setProperty(v, w[i])); }
     function pilihWarna(k) { db.settings.warna = k; saveDB(); terapkanWarna(k); toast('Warna diganti'); }
+    /* ---------- Sinkron antar perangkat (Firebase, koleksi "sinkron", khusus guru) ---------- */
+    async function sinkronInti(aksi) {
+        const id = db.settings.scriptId;
+        if (!fbAktif(id)) throw new Error('Fitur ini hanya untuk koneksi Firebase. Untuk Mode Lokal atau Google Sheets, pakai Unduh Cadangan.');
+        const C = await fbInit(id), fs = C.fs, D = C.db;
+        await C.auth.authStateReady();
+        if (!C.auth.currentUser) throw new Error('Sesi guru habis. Masuk ulang sebagai guru.');
+        const KUNCI = { roster: ROS_KEY, absensi: ABSN_KEY, kkm: ANA_KEY, bank: BANK_KEY };
+        if (aksi === 'kirim') {
+            let n = 0;
+            for (const [nama, key] of Object.entries(KUNCI)) {
+                const raw = localStorage.getItem(key); if (raw === null) continue;
+                if (raw.length > 600000) throw new Error('Data "' + nama + '" terlalu besar untuk satu dokumen Firebase. Pakai Unduh Cadangan untuk data ini.');
+                await fs.setDoc(fs.doc(D, 'sinkron', nama), { isi: raw, waktu: new Date().toISOString() }); n++;
+            }
+            return { n };
+        }
+        const ambil = [];
+        for (const [nama, key] of Object.entries(KUNCI)) {
+            const sn = await fs.getDoc(fs.doc(D, 'sinkron', nama));
+            if (sn.exists() && typeof sn.data().isi === 'string') ambil.push({ nama, key, isi: sn.data().isi, waktu: sn.data().waktu || '' });
+        }
+        if (!ambil.length) throw new Error('Belum ada data di cloud. Di perangkat lama, tekan Kirim ke Cloud dulu.');
+        ambil.forEach(x => { try { JSON.parse(x.isi); } catch (e) { throw new Error('Data "' + x.nama + '" di cloud rusak.'); } });
+        ambil.forEach(x => localStorage.setItem(x.key, x.isi));
+        return { n: ambil.length, waktu: ambil.map(x => x.waktu).sort().pop() };
+    }
+    const sinkronApi = aksi => fbT(sinkronInti(aksi), 60000).catch(e => { throw (e && e.code === 'permission-denied') ? new Error('Ditolak Firebase. Pasang Rules blok "sinkron" (menu Panduan), lalu Publish.') : fbErr(e); });
+    async function sinkronKirim() {
+        if (!await konfirmasi('Kirim data ke cloud?', 'Data Siswa, Absensi, KKM, dan Bank Soal di perangkat ini menimpa data yang sudah ada di cloud.', 'Ya, kirim')) return;
+        loading('Mengirim data...');
+        try { const r = await sinkronApi('kirim'); Swal.close(); toast(r.n + ' kelompok data terkirim ke cloud', 'success'); }
+        catch (e) { Swal.close(); galat(e, 'Gagal mengirim'); }
+    }
+    async function sinkronAmbil() {
+        if (!await konfirmasi('Ambil data dari cloud?', 'Data Siswa, Absensi, KKM, dan Bank Soal di perangkat ini diganti dengan data dari cloud. Data yang belum dikirim dari perangkat ini akan hilang.', 'Ya, ambil')) return;
+        loading('Mengambil data...');
+        try {
+            const r = await sinkronApi('ambil'); Swal.close();
+            await Swal.fire({ icon: 'success', title: 'Data diambil', text: r.n + ' kelompok data dipulihkan' + (r.waktu ? ' (terakhir dikirim ' + new Date(r.waktu).toLocaleString('id-ID') + ')' : '') + '.', confirmButtonColor: '#059669' });
+            location.reload();
+        } catch (e) { Swal.close(); galat(e, 'Gagal mengambil'); }
+    }
     function cadangUnduh() {
-        const data = { app: APP.slug, versi: APP.version, tgl: new Date().toISOString(), pengaturan: { nama: db.settings.nama, warna: db.settings.warna || '' }, tim: timBaca(), bank: bankBaca(), lokal: localStorage.getItem(LK_KEY) ? lkBaca() : null };
+        const data = { app: APP.slug, versi: APP.version, tgl: new Date().toISOString(), pengaturan: { nama: db.settings.nama, warna: db.settings.warna || '' }, tim: timBaca(), bank: bankBaca(), lokal: localStorage.getItem(LK_KEY) ? lkBaca() : null, ekstra: { roster: localStorage.getItem(ROS_KEY), absensi: localStorage.getItem(ABSN_KEY), kkm: localStorage.getItem(ANA_KEY) } };
         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
         a.download = 'cadangan-ujian-kelas-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     }
@@ -3963,8 +4042,8 @@ service cloud.firestore {
         r.onload = async () => {
             let d; try { d = JSON.parse(r.result); } catch (e) { return galat(new Error('File bukan cadangan yang valid'), 'Gagal membaca'); }
             if (!d || d.app !== APP.slug || !d.tim || !Array.isArray(d.bank)) return galat(new Error('File ini bukan cadangan aplikasi Ujian Kelas.'), 'Gagal membaca');
-            if (!await konfirmasi('Pulihkan data?', 'Kuis langsung, bank soal' + (d.lokal ? ', dan data ujian mode lokal' : '') + ' di perangkat ini akan diganti isi cadangan.', 'Ya, pulihkan')) return;
-            try { timTulis(d.tim); bankTulis(d.bank); if (d.lokal) lkTulis(d.lokal); } catch (e) { return galat(e); }
+            if (!await konfirmasi('Pulihkan data?', 'Data siswa, absensi, kuis langsung, bank soal' + (d.lokal ? ', dan data ujian mode lokal' : '') + ' di perangkat ini akan diganti isi cadangan.', 'Ya, pulihkan')) return;
+            try { timTulis(d.tim); bankTulis(d.bank); if (d.lokal) lkTulis(d.lokal); if (d.ekstra) { [['roster', ROS_KEY], ['absensi', ABSN_KEY], ['kkm', ANA_KEY]].forEach(([n, k]) => { if (typeof d.ekstra[n] === 'string') localStorage.setItem(k, d.ekstra[n]); }); } } catch (e) { return galat(e); }
             if (d.pengaturan) { db.settings.nama = d.pengaturan.nama || db.settings.nama; db.settings.warna = d.pengaturan.warna || ''; saveDB(); }
             await Swal.fire({ icon: 'success', title: 'Data dipulihkan', confirmButtonColor: '#059669' }); location.reload();
         };
