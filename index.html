@@ -669,6 +669,26 @@
                             <button onclick="bankHapusKat()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition" title="Hapus kategori"><i class="fas fa-folder-minus mr-1.5"></i>Hapus Kategori</button>
                             <button onclick="bankEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor / Cadangan</button>
                         </div>
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-slate-100"><i class="fas fa-list-check text-accent-400 mr-2"></i>Kelola Soal Satu per Satu</h3>
+                            <p class="text-[11px] text-slate-400">Centang soal yang dipilih, lalu pakai atau hapus sekaligus. Ketuk teks soal untuk melihat pilihan jawabannya. Ikon pensil untuk mengedit, ikon tempat sampah untuk menghapus. Pilihan kategori di atas memfilter daftar ini.</p>
+                            <div class="flex flex-wrap gap-3 items-center">
+                                <input id="b-cari" oninput="renderBank()" class="field flex-1 min-w-[10rem]" placeholder="Cari teks soal atau pilihan..." autocomplete="off">
+                                <select id="b-jenis" onchange="renderBank()" class="field !w-auto"><option value="">Semua jenis</option><option value="PG">Pilihan ganda</option><option value="ESAI">Esai</option></select>
+                            </div>
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <button onclick="bankPilihTampil(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-square-check mr-1.5"></i>Centang Semua yang Tampil</button>
+                                <button onclick="bankPilihTampil(false)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition"><i class="fas fa-square mr-1.5"></i>Kosongkan Centang</button>
+                                <span id="b-sel-info" class="text-[11px] font-semibold text-slate-400"></span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="bankPakai('soal')" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition"><i class="fas fa-play mr-1.5"></i>Pakai di Kuis Langsung</button>
+                                <button onclick="bankPakaiUjian()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition"><i class="fas fa-file-circle-plus mr-1.5"></i>Pakai di Ujian Baru</button>
+                                <button onclick="bankPindahKat()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2.5 rounded-xl transition"><i class="fas fa-folder-open mr-1.5"></i>Pindah Kategori</button>
+                                <button onclick="bankEksporTerpilih()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Terpilih</button>
+                                <button onclick="bankHapusTerpilih()" class="col-span-2 bg-slate-800 hover:bg-red-600 text-red-300 hover:text-white text-xs font-bold px-3 py-2.5 rounded-xl transition"><i class="fas fa-trash-can mr-1.5"></i>Hapus Soal yang Dicentang</button>
+                            </div>
+                        </div>
                         <div id="b-list"></div>
                     </section>
 
@@ -3792,17 +3812,31 @@ service cloud.firestore {
         $('b-kat-list').innerHTML = kat.map(k => `<option value="${esc(k)}">`).join('');
         sel.innerHTML = `<option value="__semua__">Semua kategori (${b.length} soal)</option>` + kat.map(k => `<option value="${esc(k)}">${esc(k)} (${b.filter(q => q.kategori === k).length})</option>`).join('');
         if ([...sel.options].some(o => o.value === lama)) sel.value = lama;
-        const list = sel.value === '__semua__' ? b : b.filter(q => q.kategori === sel.value);
-        $('b-list').innerHTML = !list.length ? '<div class="text-center py-14 text-slate-500"><i class="fas fa-box-open text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">Bank soal masih kosong</p><p class="text-xs mt-1">Isi kategori di atas, lalu impor file atau tambah soal manual.</p></div>'
-            : `<div class="rounded-2xl border border-slate-800 overflow-hidden divide-y divide-slate-800 bg-slate-900">${list.map(q => `<div class="flex items-start gap-3 p-3"><div class="min-w-0 flex-1"><p class="text-[10px] font-bold uppercase tracking-wider"><span class="text-accent-400">${esc(q.kategori)}</span> <span class="text-slate-500">&bull; ${q.jenis === 'PG' ? 'Pilihan ganda' : 'Esai'}${q.kunci ? ' &bull; Kunci: ' + esc(q.kunci.slice(0, 30)) : ''}</span></p><p class="text-sm text-slate-200 mt-1 break-words" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(q.soal)}</p></div><button onclick="bankHapus('${q.id}')" class="text-slate-600 hover:text-red-400 p-2 shrink-0" title="Hapus"><i class="fas fa-trash-can"></i></button></div>`).join('')}</div>`;
+        let list = sel.value === '__semua__' ? b : b.filter(q => q.kategori === sel.value);
+        const jn = ($('b-jenis') || {}).value || '', cari = String(($('b-cari') || {}).value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        if (jn) list = list.filter(q => q.jenis === jn);
+        if (cari) list = list.filter(q => [q.soal, q.a, q.b, q.c, q.d, q.e].join(' ').toLowerCase().includes(cari));
+        const idAda = new Set(b.map(q => q.id));
+        bankSoalPilih = new Set([...bankSoalPilih].filter(id => idAda.has(id)));
+        bankTampilIds = list.map(q => q.id);
+        $('b-sel-info').textContent = bankSoalPilih.size + ' soal dicentang \u2022 ' + list.length + ' soal tampil';
+        $('b-list').innerHTML = !b.length ? '<div class="text-center py-14 text-slate-500"><i class="fas fa-box-open text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">Bank soal masih kosong</p><p class="text-xs mt-1">Isi kategori di atas, lalu impor file atau tambah soal manual.</p></div>'
+            : !list.length ? '<div class="text-center py-10 text-slate-500"><p class="text-sm font-semibold">Tidak ada soal yang cocok</p><p class="text-xs mt-1">Ubah kategori, jenis, atau kata pencarian.</p></div>'
+            : `<div class="rounded-2xl border border-slate-800 overflow-hidden divide-y divide-slate-800 bg-slate-900">${list.map(q => {
+                const on = bankSoalPilih.has(q.id), buka = bankBukaSet.has(q.id);
+                const opsi = buka && q.jenis === 'PG' ? `<span class="block mt-2 space-y-1">${['a', 'b', 'c', 'd', 'e'].filter(k => q[k]).map(k => `<span class="block text-xs break-words ${q.kunci === k.toUpperCase() ? 'text-accent-400 font-bold' : 'text-slate-400'}">${k.toUpperCase()}. ${esc(q[k])}</span>`).join('')}</span>` : (buka && q.kunci ? `<span class="block mt-2 text-xs text-accent-400 break-words">Jawaban acuan: ${esc(q.kunci)}</span>` : '');
+                return `<div class="flex items-start gap-3 p-3 ${on ? 'bg-accent-500/10' : ''}"><input type="checkbox" class="accent-emerald-500 w-5 h-5 shrink-0 mt-0.5" ${on ? 'checked' : ''} onchange="bankToggle('${q.id}', this.checked)"><button onclick="bankBuka('${q.id}')" class="min-w-0 flex-1 text-left"><span class="block text-[10px] font-bold uppercase tracking-wider"><span class="text-accent-400">${esc(q.kategori)}</span> <span class="text-slate-500">&bull; ${q.jenis === 'PG' ? 'Pilihan ganda' : 'Esai'}${q.jenis === 'PG' && q.kunci ? ' &bull; Kunci: ' + esc(q.kunci.slice(0, 30)) : ''}</span></span><span class="block text-sm text-slate-200 mt-1 break-words" style="${buka ? 'white-space:pre-wrap' : 'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden'}">${esc(q.soal)}</span>${opsi}</button><button onclick="bankEdit('${q.id}')" class="text-slate-500 hover:text-sky-400 p-2 shrink-0" title="Edit soal"><i class="fas fa-pen"></i></button><button onclick="bankHapus('${q.id}')" class="text-slate-600 hover:text-red-400 p-2 shrink-0" title="Hapus"><i class="fas fa-trash-can"></i></button></div>`;
+            }).join('')}</div>`;
     }
-    let bankPilih = new Set(), bankKatList = [];
+    let bankPilih = new Set(), bankKatList = [], bankSoalPilih = new Set(), bankBukaSet = new Set(), bankTampilIds = [];
     function bankCek(i, on) { const k = bankKatList[i]; if (on) bankPilih.add(k); else bankPilih.delete(k); renderBank(); }
     function bankPilihSemua(on) { bankPilih = on ? new Set(bankKatList) : new Set(); renderBank(); }
     function bankLihat(i) { $('b-filter').value = bankKatList[i]; renderBank(); $('b-list').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    async function bankPakai() {
-        const pil = bankBaca().filter(q => bankPilih.has(q.kategori));
-        if (!pil.length) return toast('Centang dulu kategori yang mau dipakai', 'info');
+    async function bankPakai(sumber) {
+        const dariSoal = sumber === 'soal';
+        const pil = bankBaca().filter(q => dariSoal ? bankSoalPilih.has(q.id) : bankPilih.has(q.kategori));
+        if (!pil.length) return toast(dariSoal ? 'Centang dulu soal yang mau dipakai' : 'Centang dulu kategori yang mau dipakai', 'info');
+        const namaDefault = dariSoal ? ([...new Set(pil.map(q => q.kategori))].join(' + ') + ' (pilihan)') : [...bankPilih].join(' + ');
         let qs = $('b-acak').checked ? acakArray(pil) : pil; const n = Number($('b-jml').value) || 0; if (n > 0) qs = qs.slice(0, n);
         const soal = qs.map(q => ({ jenis: q.jenis, soal: q.soal, a: q.a, b: q.b, c: q.c, d: q.d, e: q.e, kunci: q.kunci }));
         const d = timBaca(); let s = d.sesi.find(x => x.id === d.aktif);
@@ -3812,7 +3846,7 @@ service cloud.firestore {
         }
         if (!s) {
             const r = await Swal.fire({ title: 'Mulai Kuis Baru', showCancelButton: true, confirmButtonText: 'Mulai', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
-                html: `<div class="text-left space-y-2 text-xs"><input id="pn-nama" class="field" placeholder="Nama kuis" value="${esc([...bankPilih].join(' + '))}"><label class="block text-slate-400 font-semibold">Poin per soal<input id="pn-poin" type="number" min="1" value="10" class="field mt-1"></label></div>`,
+                html: `<div class="text-left space-y-2 text-xs"><input id="pn-nama" class="field" placeholder="Nama kuis" value="${esc(namaDefault)}"><label class="block text-slate-400 font-semibold">Poin per soal<input id="pn-poin" type="number" min="1" value="10" class="field mt-1"></label></div>`,
                 preConfirm: () => { const nama = document.getElementById('pn-nama').value.trim(); if (!nama) { Swal.showValidationMessage('Nama kuis wajib diisi'); return false; } return { nama, poin: Number(document.getElementById('pn-poin').value) > 0 ? Number(document.getElementById('pn-poin').value) : 1 }; } });
             if (!r.isConfirmed) return;
             const id = Date.now().toString(36), dd = timBaca();
@@ -3821,9 +3855,66 @@ service cloud.firestore {
         }
         timView = 'soal'; timBank(soal); switchTab('tim');
     }
+    const soalBankKeAplikasi = q => ({ jenis: q.jenis, soal: q.soal, a: q.a, b: q.b, c: q.c, d: q.d, e: q.e, kunci: q.kunci });
+    function bankToggle(id, on) { if (on) bankSoalPilih.add(id); else bankSoalPilih.delete(id); renderBank(); }
+    function bankPilihTampil(on) { bankTampilIds.forEach(id => { if (on) bankSoalPilih.add(id); else bankSoalPilih.delete(id); }); renderBank(); }
+    function bankBuka(id) { if (bankBukaSet.has(id)) bankBukaSet.delete(id); else bankBukaSet.add(id); renderBank(); }
+    const bankTerpilih = () => bankBaca().filter(q => bankSoalPilih.has(q.id));
+    async function bankEdit(id) {
+        const b = bankBaca(), q = b.find(x => x.id === id); if (!q) return;
+        const kat = [...new Set(b.map(x => x.kategori))];
+        const r = await Swal.fire({ title: 'Edit Soal', width: 560, showCancelButton: true, confirmButtonText: 'Simpan Perubahan', cancelButtonText: 'Batal', confirmButtonColor: '#059669', cancelButtonColor: '#334155',
+            html: `<div class="text-left space-y-2 text-xs"><input id="e-kat" list="e-kat-list" class="field" placeholder="Kategori" value="${esc(q.kategori)}" autocomplete="off"><datalist id="e-kat-list">${kat.map(k => `<option value="${esc(k)}">`).join('')}</datalist>
+                <select id="e-jenis" class="field"><option value="PG" ${q.jenis === 'PG' ? 'selected' : ''}>Pilihan Ganda</option><option value="ESAI" ${q.jenis === 'ESAI' ? 'selected' : ''}>Esai</option></select>
+                <textarea id="e-soal" rows="4" class="field" placeholder="Teks soal">${esc(q.soal)}</textarea>
+                ${['a', 'b', 'c', 'd', 'e'].map(c => `<input id="e-${c}" class="field" placeholder="Pilihan ${c.toUpperCase()}${c > 'b' ? ' (opsional)' : ''}" value="${esc(q[c] || '')}">`).join('')}
+                <input id="e-kunci" class="field" placeholder="Kunci (huruf A-E) atau jawaban acuan untuk esai" value="${esc(q.kunci || '')}"></div>`,
+            preConfirm: () => {
+                const g = k => document.getElementById('e-' + k).value.trim(), jenis = g('jenis');
+                const n = { kategori: g('kat'), jenis, soal: g('soal'), a: g('a'), b: g('b'), c: g('c'), d: g('d'), e: g('e'), kunci: g('kunci') };
+                if (!n.kategori) { Swal.showValidationMessage('Kategori wajib diisi'); return false; }
+                if (!n.soal) { Swal.showValidationMessage('Teks soal wajib diisi'); return false; }
+                if (jenis === 'PG') {
+                    n.kunci = n.kunci.charAt(0).toUpperCase();
+                    if (['a', 'b', 'c', 'd', 'e'].filter(k => n[k]).length < 2) { Swal.showValidationMessage('Pilihan ganda butuh minimal 2 pilihan'); return false; }
+                    if (!n.kunci || !n[n.kunci.toLowerCase()]) { Swal.showValidationMessage('Kunci harus huruf dari pilihan yang terisi'); return false; }
+                } else n.a = n.b = n.c = n.d = n.e = '';
+                const kembar = b.find(x => x.id !== id && bankKey(x) === bankKey(n));
+                if (kembar) { Swal.showValidationMessage('Soal yang sama sudah ada di kategori ini'); return false; }
+                return n;
+            } });
+        if (!r.isConfirmed) return;
+        bankTulis(b.map(x => x.id === id ? Object.assign({}, x, r.value) : x));
+        $('b-filter').value = r.value.kategori; renderBank(); toast('Soal diperbarui', 'success');
+    }
+    async function bankHapusTerpilih() {
+        const n = bankSoalPilih.size; if (!n) return toast('Centang dulu soal yang mau dihapus', 'info');
+        if (!await konfirmasi('Hapus ' + n + ' soal yang dicentang?', 'Soal dihapus dari bank dan tidak bisa dikembalikan. Disarankan Ekspor / Cadangan dulu.', 'Ya, hapus')) return;
+        bankTulis(bankBaca().filter(q => !bankSoalPilih.has(q.id))); bankSoalPilih = new Set(); renderBank(); toast(n + ' soal dihapus');
+    }
+    async function bankPindahKat() {
+        const n = bankSoalPilih.size; if (!n) return toast('Centang dulu soal yang mau dipindah', 'info');
+        const kat = await tanyaKategori(n + ' soal akan dipindah ke kategori ini. Pilih yang sudah ada atau ketik nama baru.'); if (!kat) return;
+        const ada = new Set(), baru = bankBaca().map(q => bankSoalPilih.has(q.id) ? Object.assign({}, q, { kategori: kat }) : q);
+        const unik = baru.filter(q => { const k = bankKey(q); if (ada.has(k)) return false; ada.add(k); return true; });
+        bankTulis(unik); bankSoalPilih = new Set(); $('b-filter').value = kat; renderBank();
+        toast(n + ' soal dipindah ke "' + kat + '"' + (baru.length - unik.length ? ', ' + (baru.length - unik.length) + ' duplikat digabung' : ''), 'success');
+    }
+    function bankEksporTerpilih() {
+        const b = bankTerpilih(); if (!b.length) return toast('Centang dulu soal yang mau diekspor', 'info');
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([BANK_F].concat(b.map(q => BANK_F.map(f => q[f])))), 'Soal');
+        XLSX.writeFile(wb, 'bank-soal-terpilih.xlsx');
+    }
+    function bankPakaiUjian() {
+        const b = bankTerpilih(); if (!b.length) return toast('Centang dulu soal yang mau dipakai', 'info');
+        soalImpor = { soal: b.map(q => Object.assign(soalBankKeAplikasi(q), { bobot: '', kategori: q.kategori })), galat: [], namaFile: 'Bank Soal (' + b.length + ' soal dicentang)' };
+        switchTab('ujian'); renderPreview();
+        toast(b.length + ' soal dari bank siap dipakai. Lengkapi judul, kode, dan durasi, lalu Simpan Ujian.', 'success');
+    }
     async function bankHapus(id) {
         if (!await konfirmasi('Hapus soal ini dari bank?', '', 'Ya, hapus')) return;
-        bankTulis(bankBaca().filter(q => q.id !== id)); renderBank();
+        bankSoalPilih.delete(id); bankTulis(bankBaca().filter(q => q.id !== id)); renderBank();
     }
     async function bankHapusKat() {
         const k = $('b-filter').value; if (k === '__semua__') return toast('Pilih satu kategori dulu', 'info');
