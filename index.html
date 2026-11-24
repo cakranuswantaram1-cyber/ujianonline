@@ -2992,7 +2992,9 @@
             ['jenis: tulis PG (pilihan ganda) atau ESAI. Bila kosong, baris dianggap PG jika ada pilihan jawaban.'],
             ['soal: teks pertanyaan.'],
             ['a sampai e: pilihan jawaban (minimal a dan b). Kolom e boleh dikosongkan. Kosongkan semua untuk ESAI.'],
-            ['kunci: untuk PG isi huruf jawaban benar (A sampai E). Untuk ESAI isi kunci jawaban berupa kalimat atau poin-poin; hanya terlihat guru dan tampil di samping jawaban siswa saat menilai esai (boleh dikosongkan).'],
+            ['kunci: untuk PG isi huruf jawaban benar (A sampai E). Untuk ESAI isi kunci jawaban; hanya terlihat guru dan tampil di samping jawaban siswa saat menilai esai (boleh dikosongkan). Aplikasi memberi SARAN nilai esai dari kunci ini, guru yang menyetujui.'],
+            ['Kunci esai jawaban singkat: tulis apa adanya, mis. 17 Agustus 1945. Jawaban siswa harus memuat semuanya (tanggal 17/08/1945 juga dikenali), hasilnya benar atau salah.'],
+            ['Kunci esai beberapa poin: pisahkan dengan titik koma atau baris baru, sinonim dengan tanda |, mis. air; karbon dioksida; cahaya matahari | sinar matahari; klorofil. Nilai saran sebanding dengan poin yang disebut siswa.'],
             ['bobot: nilai soal (boleh kosong). Standar: PG = 1, ESAI = 5.'],
             ['Data soal dibaca dari lembar pertama (Soal). Jangan ubah nama kolom di baris pertama.']
         ];
@@ -3454,10 +3456,112 @@ service cloud.firestore {
         setTimeout(() => URL.revokeObjectURL(a.href), 2000);
         toast('firestore.rules diunduh');
     }
+    /* ---------- Saran nilai esai dari kunci jawaban (hanya saran; guru yang menyetujui) ----------
+       Format kunci:
+         - Jawaban singkat (mis. "17 Agustus 1945"): jawaban siswa harus memuat semuanya, jadi hasilnya benar (penuh) atau salah (0).
+         - Beberapa poin: pisahkan dengan titik koma atau baris baru. Alternatif kata/sinonim pisahkan dengan |
+           contoh: air; karbon dioksida; cahaya matahari | sinar matahari; klorofil | zat hijau daun
+         - Kalimat panjang tanpa pemisah: kata penting diambil otomatis, nilai sebanding dengan persen yang disebut siswa. */
+    const ES_STOP = new Set('yang dan di ke dari pada untuk dengan atau adalah ialah itu ini dalam oleh sebagai karena agar supaya juga akan telah sudah bisa dapat lebih sangat para suatu sebuah ada tidak bukan nya jika maka saat ketika sehingga serta hingga namun tetapi tapi hanya saja lah kah pun si sang kita kami mereka dia ia'.split(' '));
+    const ES_BULAN = ['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
+    const ES_SING = { jan: 0, feb: 1, mar: 2, apr: 3, jun: 5, jul: 6, agu: 7, agt: 7, agust: 7, sep: 8, sept: 8, okt: 9, nov: 10, nop: 10, des: 11 };
+    function esToken(s) {
+        s = String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        // tanggal angka 17/08/1945 atau 17-8-1945 menjadi "17 agustus 1945"
+        s = s.replace(/\b(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{4})\b/g, (m, d, mo, y) => +mo >= 1 && +mo <= 12 ? d + ' ' + ES_BULAN[+mo - 1] + ' ' + y : m);
+        const t = s.match(/[a-z0-9]+/g) || [];
+        return t.map((x, i) => (x in ES_SING && i > 0 && /^\d{1,2}$/.test(t[i - 1])) ? ES_BULAN[ES_SING[x]] : x.replace(/^0+(?=\d)/, ''));
+    }
+    const esIsi = t => { const r = t.filter(x => !ES_STOP.has(x)); return r.length ? r : t; };
+    function esStem(t) {
+        if (/\d/.test(t) || t.length < 5) return t;
+        const x = t.replace(/(kan|an|nya|lah|kah|i)$/, '').replace(/^(meng|meny|mem|men|me|peng|peny|pem|pen|per|ber|ter|di|ke|se)/, '');
+        return x.length >= 3 ? x : t;
+    }
+    function esLev(a, b) {
+        if (Math.abs(a.length - b.length) > 1) return 9;
+        const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+        for (let j = 1; j <= b.length; j++) d[0][j] = j;
+        for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+            d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        return d[a.length][b.length];
+    }
+    // true = sama, 'mirip' = beda satu huruf (salah ketik; hanya untuk kata biasa, angka harus persis)
+    function esSama(a, b) {
+        if (a === b) return true;
+        if (/\d/.test(a) || /\d/.test(b)) return false;
+        const sa = esStem(a), sb = esStem(b);
+        if (sa === sb) return true;
+        return sa.length >= 5 && sb.length >= 5 && esLev(sa, sb) <= 1 ? 'mirip' : false;
+    }
+    // cari satu token kunci di antara token siswa; kembalikan true / 'mirip' / false
+    function esAda(k, S) {
+        let mirip = false;
+        for (const s of S) { const r = esSama(k, s); if (r === true) return true; if (r === 'mirip') mirip = true; }
+        return mirip ? 'mirip' : false;
+    }
+    function esPecahKunci(kunci) {
+        let p = String(kunci ?? '').split(/[;\n\r]+/);
+        if (p.length === 1 && p[0].includes(',')) {
+            const c = p[0].split(',');
+            if (c.length >= 3 && c.every(x => esIsi(esToken(x)).length <= 3)) p = c;
+        }
+        return p.map(x => x.replace(/^\s*(\d+[.)]|[-•*])\s+/, '').trim()).filter(x => esToken(x).length);
+    }
+    // Hitung saran. Hasil: { mode, rasio, saran, butir:[{label, nilai(0..1), mirip}] } atau null bila kunci kosong.
+    function esaiSaranHitung(kunci, jawaban, bobot) {
+        const poin = esPecahKunci(kunci);
+        if (!poin.length) return null;
+        const S = esIsi(esToken(jawaban));
+        const singkat = poin.length === 1 && !poin[0].includes('|') && esIsi(esToken(poin[0])).length <= 4;
+        const butir = poin.map(p => {
+            let best = { nilai: 0, mirip: false };
+            p.split('|').forEach(alt => {
+                const K = esIsi(esToken(alt)); if (!K.length) return;
+                const r = K.map(k => esAda(k, S)), n = r.filter(Boolean).length;
+                let nilai;
+                if (K.length <= 4) nilai = n === K.length ? 1 : 0;           // frasa pendek: harus lengkap
+                else nilai = n / K.length;                                     // kalimat panjang: sebanding
+                if (nilai > best.nilai) best = { nilai, mirip: r.includes('mirip') && nilai > 0 };
+            });
+            return { label: p.split('|')[0].trim(), nilai: best.nilai, mirip: best.mirip };
+        });
+        const rasio = butir.reduce((a, b) => a + b.nilai, 0) / butir.length;
+        const saran = Math.min(bobot, Math.round(rasio * bobot * 2) / 2);
+        return { mode: singkat ? 'singkat' : 'poin', rasio, saran, butir };
+    }
+    let _esCtx = null;
+    function esaiSaranTampil(no) {
+        const box = $('sg-' + no); if (!box || !_esCtx) return;
+        const s = _esCtx.es.find(x => x.no === no), kj = $('kj-' + no);
+        const kunci = kj ? kj.value : (s.kunci || ''), jaw = String(_esCtx.h.jawaban[no] || '');
+        const r = esaiSaranHitung(kunci, jaw, s.bobot);
+        if (!r) { box.innerHTML = '<p class="text-[11px] text-slate-500"><i class="fas fa-wand-magic-sparkles mr-1"></i>Saran nilai belum tersedia karena kunci jawaban masih kosong.</p>'; return; }
+        _esCtx.saran[no] = r.saran;
+        const chip = b => {
+            const penuh = b.nilai >= 0.999, nol = b.nilai === 0;
+            const w = penuh ? 'emerald' : nol ? 'rose' : 'amber', ik = penuh ? 'fa-check' : nol ? 'fa-xmark' : 'fa-minus';
+            return `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold bg-${w}-500/10 border-${w}-500/40 text-${w}-300"><i class="fas ${ik}"></i>${esc(b.label)}${!penuh && !nol ? ' (' + Math.round(b.nilai * 100) + '%)' : ''}${b.mirip ? ' <span class="font-normal opacity-80">mirip, cek salah ketik</span>' : ''}</span>`;
+        };
+        const ket = r.mode === 'singkat' ? 'Jawaban singkat: harus sama persis dengan kunci (benar atau salah).' : 'Dihitung dari poin kunci yang disebut siswa.';
+        box.innerHTML = `<div class="rounded-lg border border-violet-500/30 bg-violet-500/5 p-2.5 space-y-2">
+            <div class="flex flex-wrap items-center gap-2"><p class="text-[10px] uppercase font-bold text-violet-300"><i class="fas fa-wand-magic-sparkles mr-1"></i>Saran aplikasi</p>
+                <span class="text-sm font-black text-violet-200">${fmtNilai(r.saran)} <span class="text-[10px] font-semibold text-slate-400">dari ${fmtNilai(s.bobot)}</span></span>
+                <button type="button" onclick="esaiPakai(${no})" class="ml-auto bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition"><i class="fas fa-arrow-down mr-1"></i>Pakai saran</button></div>
+            <div class="flex flex-wrap gap-1.5">${r.butir.map(chip).join('')}</div>
+            <p class="text-[10px] text-slate-500">${ket} Ini hanya saran, nilai akhir tetap Anda yang menentukan.</p></div>`;
+    }
+    function esaiPakai(no) { const el = $('sk-' + no); if (el && _esCtx && _esCtx.saran[no] !== undefined) el.value = _esCtx.saran[no]; }
+    function esaiPakaiSemua() {
+        if (!_esCtx) return;
+        let n = 0; _esCtx.es.forEach(s => { esaiSaranTampil(s.no); if (_esCtx.saran[s.no] !== undefined) { esaiPakai(s.no); n++; } });
+        toast(n ? 'Saran diisikan ke ' + n + ' soal. Periksa lalu simpan.' : 'Belum ada kunci jawaban untuk dihitung', n ? 'success' : 'info');
+    }
     async function detailSiswa(id) {
         const h = hasilData.hasil.find(x => x.id === id);
         if (!h) return;
         const es = hasilData.soal.filter(s => s.jenis === 'ESAI');
+        _esCtx = { h, es, saran: {} };
         const keluarN = Number(h.keluar) || 0;
         const keluarWarna = keluarN === 0 ? 'text-slate-400' : keluarN <= 2 ? 'text-emerald-400' : keluarN <= 5 ? 'text-amber-400' : 'text-red-400';
         const keluarKet = keluarN === 0 ? 'Tidak pernah keluar' : keluarN <= 2 ? 'Wajar' : keluarN <= 5 ? 'Perlu diperhatikan' : 'Mencurigakan ⚠️';
@@ -3470,10 +3574,11 @@ service cloud.firestore {
             </div>
             <p class="text-slate-500">Dikumpulkan ${fmtWaktu(h.waktu)}</p>`;
         if (!es.length) html += '<p class="text-slate-400">Ujian ini tidak memiliki soal esai.</p>';
+        else html += '<div class="flex flex-wrap items-center gap-2"><button type="button" onclick="esaiPakaiSemua()" class="bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold px-3 py-2 rounded-lg transition"><i class="fas fa-wand-magic-sparkles mr-1.5"></i>Isi semua nilai esai dengan saran</button><span class="text-[11px] text-slate-500">Saran dihitung otomatis dari kunci jawaban. Anda yang menentukan nilai akhir.</span></div>';
         const kunciBisaDiubah = dukungSiswa();
         es.forEach(s => {
             const kunciIsi = kunciBisaDiubah
-                ? `<textarea id="kj-${s.no}" rows="5" class="field mt-1" placeholder="Belum ada kunci jawaban. Ketik di sini, akan tersimpan untuk semua siswa.">${esc(s.kunci || '')}</textarea>`
+                ? `<textarea id="kj-${s.no}" rows="5" class="field mt-1" oninput="esaiSaranTampil(${s.no})" placeholder="Belum ada kunci jawaban. Ketik di sini, akan tersimpan untuk semua siswa. Jawaban singkat: tulis apa adanya (mis. 17 Agustus 1945). Beberapa poin: pisahkan dengan titik koma, sinonim dengan | (mis. air; cahaya matahari | sinar matahari).">${esc(s.kunci || '')}</textarea>`
                 : `<p class="text-slate-100 mt-1 whitespace-pre-wrap">${s.kunci ? esc(s.kunci) : '<span class="text-slate-500">(belum ada kunci jawaban)</span>'}</p>`;
             html += `<div class="bg-slate-950 border border-slate-700 rounded-xl p-3">
                 <p class="text-[10px] uppercase font-bold text-slate-500">Soal ${s.no} &bull; nilai maks ${s.bobot}</p>
@@ -3485,12 +3590,14 @@ service cloud.firestore {
                         <p class="text-[10px] uppercase font-bold text-sky-400"><i class="fas fa-user-pen mr-1"></i>Jawaban siswa</p>
                         <p class="text-slate-100 mt-1 whitespace-pre-wrap">${esc(h.jawaban[s.no] || '(tidak dijawab)')}</p></div>
                 </div>
+                <div id="sg-${s.no}" class="mt-3"></div>
                 <label class="block mt-3 text-slate-400 font-semibold">Nilai (0 sampai ${s.bobot})
                     <input id="sk-${s.no}" type="number" min="0" max="${s.bobot}" step="0.5" value="${h.skor[s.no] ?? ''}" class="field mt-1"></label></div>`;
         });
         html += '</div>';
         let kunciGagal = '';
         await Swal.fire({ title: esc(h.nama), html, width: 860, showConfirmButton: es.length > 0, confirmButtonText: 'Simpan Nilai Esai',
+            didOpen: () => es.forEach(s => esaiSaranTampil(s.no)),
             showCancelButton: true, cancelButtonText: 'Tutup', confirmButtonColor: '#059669', cancelButtonColor: '#334155', showLoaderOnConfirm: true,
             preConfirm: async () => {
                 const skor = {};
