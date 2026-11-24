@@ -552,7 +552,7 @@
                                 <p class="text-[11px] text-slate-500">Hanya untuk koneksi Firebase. Klip kecil (sekitar 20-60 KB) dikirim berkelompok dan didengar lewat tombol mikrofon di <b class="text-slate-300">Hasil &amp; Nilai</b>. Perlu Rules suara, lihat menu Panduan. Beri tahu siswa dan wali murid, dan hapus rekaman setelah ujian dinilai.</p>
                             </div>
                             <div class="bg-slate-950 border border-dashed border-slate-700 rounded-xl p-4 space-y-3">
-                                <p class="text-[11px] text-slate-400">Impor soal dari file <b class="text-slate-200">Excel (.xlsx)</b> atau <b class="text-slate-200">CSV</b>. Kolom: jenis, soal, a, b, c, d, e, kunci, bobot.</p>
+                                <p class="text-[11px] text-slate-400">Impor soal dari file <b class="text-slate-200">Excel (.xlsx)</b> atau <b class="text-slate-200">CSV</b>. Kolom: jenis, soal, a, b, c, d, e, kunci (huruf untuk PG, kunci jawaban untuk esai), bobot.</p>
                                 <div class="flex flex-wrap gap-2">
                                     <button onclick="document.getElementById('f-file').click()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-import mr-1.5"></i>Pilih File Soal</button>
                                     <button onclick="unduhTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-download mr-1.5"></i>Unduh Template</button>
@@ -910,7 +910,7 @@
                                 <li>Buka <b class="text-slate-200">Kelola Ujian</b>, isi judul dan durasi, lalu impor soal dari Excel/CSV (atau pakai Bank Soal). Unduh template bila perlu.</li>
                                 <li>Simpan ujian. Ujian baru berstatus <b class="text-slate-200">Tutup</b>; buka saat kelas siap dimulai.</li>
                                 <li>Bagikan tautan siswa dari Pengaturan atau dari kartu ujian. Siswa masuk dengan <b class="text-slate-200">kode ujian, nomor absen, dan satu kata dari nama</b> (depan, tengah, atau belakang). Absen dan nama harus sama dengan menu Data Siswa; bila beda, siswa tidak bisa masuk. Daftar siswa disalin ke ujian saat <b class="text-slate-200">Simpan Ujian</b> dan setiap kali ujian <b class="text-slate-200">Dibuka</b>, jadi isi Data Siswa dulu (lengkap dengan absen dan L/P). Berlaku untuk Firebase dan Mode Lokal; ujian tanpa daftar siswa memakai login lama.</li>
-                                <li>Lihat nilai di <b class="text-slate-200">Hasil &amp; Nilai</b>. Soal esai dinilai lewat ikon mata; ikon putar-balik memberi izin perbaikan: nilai lama disimpan, siswa boleh mengerjakan ulang, dan nilai yang dipakai adalah yang paling besar. Siswa yang sudah mengumpulkan tidak bisa masuk ke soal lagi; ia bisa menekan Ajukan Remedial, lalu permintaannya muncul di menu Rilis Nilai (ACC) dan di lencana menu. Setelah Anda ACC, ia bisa ujian lagi, berapa kali pun, dan nilai tertinggi yang dipakai.</li>
+                                <li>Lihat nilai di <b class="text-slate-200">Hasil &amp; Nilai</b>. Soal esai dinilai lewat ikon mata (kunci jawaban esai tampil di samping jawaban siswa dan bisa diisi atau diubah di situ); ikon putar-balik memberi izin perbaikan: nilai lama disimpan, siswa boleh mengerjakan ulang, dan nilai yang dipakai adalah yang paling besar. Siswa yang sudah mengumpulkan tidak bisa masuk ke soal lagi; ia bisa menekan Ajukan Remedial, lalu permintaannya muncul di menu Rilis Nilai (ACC) dan di lencana menu. Setelah Anda ACC, ia bisa ujian lagi, berapa kali pun, dan nilai tertinggi yang dipakai.</li>
                             </ol>
                         </details>
                         <details class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
@@ -1454,11 +1454,12 @@
                     const k = t(q.kunci, 1).toUpperCase(), ix = LABEL.indexOf(k);
                     if (ix < 0 || !op[ix]) throw new Error('Soal nomor ' + no + ': kunci jawaban tidak cocok dengan pilihan yang ada.');
                     kunci[no] = k;
-                }
+                } else { const kj = t(q.kunci, 5000); if (kj) kunci[no] = kj; }   // kunci jawaban esai (teks), hanya guru yang bisa membaca
                 let bobot = Number(q.bobot); if (!(bobot > 0)) bobot = jenis === 'PG' ? 1 : 5;
                 return { no, jenis, soal: teks, bobot, opsi: jenis === 'PG' ? op.map((x, j) => x ? { k: LABEL[j], t: x } : null).filter(Boolean) : [] };
             });
             if (JSON.stringify(items).length > 900000) throw new Error('Soal terlalu besar untuk satu ujian. Kurangi jumlah atau panjang soal.');
+            if (JSON.stringify(kunci).length > 900000) throw new Error('Kunci jawaban terlalu panjang untuk satu ujian. Perpendek kunci jawaban esai.');
             const pg = items.filter(q => q.jenis === 'PG').length;
             // Kode yang sama diganti total; nilai lama ikut dihapus karena tidak cocok lagi dengan soal baru.
             await fbHapusHasil(C, kode);
@@ -1506,6 +1507,20 @@
                 await Promise.all(hs.docs.filter(d => !adaS.has(d.id)).map(d => fs.setDoc(ref('sudah', d.id), { kode, waktu: new Date().toISOString() })));
             } catch (e) { rulesSudahGagal = true; }
             return { ok: true, rules_sudah_gagal: rulesSudahGagal, ujian: us.data(), soal: items.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot, opsi: q.opsi || [], kunci: kunci[q.no] || '' })), hasil };
+        }
+
+        if (action === 'setKunciEsai') {
+            const kode = lkKode(b.kode), ss = await fs.getDoc(ref('soal', kode));
+            if (!ss.exists()) throw new Error('Ujian tidak ditemukan.');
+            const ks = await fs.getDoc(ref('kunci', kode)), k = Object.assign({}, ks.exists() ? (ks.data().k || {}) : {}), masuk = b.kunci || {};
+            (ss.data().items || []).filter(q => q.jenis === 'ESAI').forEach(q => {
+                if (!(q.no in masuk)) return;
+                const v = String(masuk[q.no] ?? '').trim().slice(0, 5000);
+                if (v) k[q.no] = v; else delete k[q.no];
+            });
+            if (JSON.stringify(k).length > 900000) throw new Error('Kunci jawaban terlalu panjang untuk satu ujian.');
+            await fs.setDoc(ref('kunci', kode), { k });
+            return { ok: true };
         }
 
         if (action === 'gradeEssay') {
@@ -1885,7 +1900,7 @@
                     kunci = t(q.kunci, 1).toUpperCase();
                     const ix = LABEL.indexOf(kunci);
                     if (ix < 0 || !op[ix]) throw new Error('Soal nomor ' + no + ': kunci jawaban tidak cocok dengan pilihan yang ada.');
-                }
+                } else kunci = t(q.kunci, 5000);   // kunci jawaban esai (teks)
                 let bobot = Number(q.bobot); if (!(bobot > 0)) bobot = jenis === 'PG' ? 1 : 5;
                 return { kode, no, jenis, soal: teks, a: op[0], b: op[1], c: op[2], d: op[3], e: op[4], kunci, bobot };
             });
@@ -1918,6 +1933,13 @@
             if (!ex) throw new Error('Ujian tidak ditemukan.');
             return { ok: true, ujian: ex.ujian, soal: ex.soal.map(q => ({ no: q.no, jenis: q.jenis, soal: q.soal, bobot: q.bobot, opsi: q.opsi || [], kunci: q.kunci || '' })),
                 hasil: d.hasil.filter(h => h.kode === ex.ujian.kode) };
+        }
+
+        if (action === 'setKunciEsai') {
+            const kode = lkKode(b.kode), masuk = b.kunci || {};
+            d.soal.filter(q => q.kode === kode && q.jenis === 'ESAI').forEach(q => { if (q.no in masuk) q.kunci = String(masuk[q.no] ?? '').trim().slice(0, 5000); });
+            lkTulis(d);
+            return { ok: true };
         }
 
         if (action === 'gradeEssay') {
@@ -2963,14 +2985,14 @@
             ['jenis', 'soal', 'a', 'b', 'c', 'd', 'e', 'kunci', 'bobot'],
             ['PG', 'Ibu kota Indonesia adalah ...', 'Surabaya', 'Jakarta', 'Bandung', 'Medan', '', 'B', 1],
             ['PG', 'Hasil dari 7 x 8 adalah ...', '54', '56', '58', '64', '', 'B', 1],
-            ['ESAI', 'Jelaskan secara singkat proses fotosintesis.', '', '', '', '', '', '', 5]
+            ['ESAI', 'Jelaskan secara singkat proses fotosintesis.', '', '', '', '', '', 'Tumbuhan hijau mengubah air dan karbon dioksida menjadi gula dan oksigen dengan bantuan cahaya matahari di klorofil.', 5]
         ];
         const petunjuk = [
             ['PETUNJUK PENGISIAN'],
             ['jenis: tulis PG (pilihan ganda) atau ESAI. Bila kosong, baris dianggap PG jika ada pilihan jawaban.'],
             ['soal: teks pertanyaan.'],
             ['a sampai e: pilihan jawaban (minimal a dan b). Kolom e boleh dikosongkan. Kosongkan semua untuk ESAI.'],
-            ['kunci: huruf jawaban benar (A sampai E). Kosongkan untuk ESAI.'],
+            ['kunci: untuk PG isi huruf jawaban benar (A sampai E). Untuk ESAI isi kunci jawaban berupa kalimat atau poin-poin; hanya terlihat guru dan tampil di samping jawaban siswa saat menilai esai (boleh dikosongkan).'],
             ['bobot: nilai soal (boleh kosong). Standar: PG = 1, ESAI = 5.'],
             ['Data soal dibaca dari lembar pertama (Soal). Jangan ubah nama kolom di baris pertama.']
         ];
@@ -3448,17 +3470,27 @@ service cloud.firestore {
             </div>
             <p class="text-slate-500">Dikumpulkan ${fmtWaktu(h.waktu)}</p>`;
         if (!es.length) html += '<p class="text-slate-400">Ujian ini tidak memiliki soal esai.</p>';
+        const kunciBisaDiubah = dukungSiswa();
         es.forEach(s => {
+            const kunciIsi = kunciBisaDiubah
+                ? `<textarea id="kj-${s.no}" rows="5" class="field mt-1" placeholder="Belum ada kunci jawaban. Ketik di sini, akan tersimpan untuk semua siswa.">${esc(s.kunci || '')}</textarea>`
+                : `<p class="text-slate-100 mt-1 whitespace-pre-wrap">${s.kunci ? esc(s.kunci) : '<span class="text-slate-500">(belum ada kunci jawaban)</span>'}</p>`;
             html += `<div class="bg-slate-950 border border-slate-700 rounded-xl p-3">
                 <p class="text-[10px] uppercase font-bold text-slate-500">Soal ${s.no} &bull; nilai maks ${s.bobot}</p>
                 <p class="text-slate-200 mt-1 whitespace-pre-wrap">${esc(s.soal)}</p>
-                <p class="text-[10px] uppercase font-bold text-slate-500 mt-3">Jawaban siswa</p>
-                <p class="text-slate-100 mt-1 whitespace-pre-wrap">${esc(h.jawaban[s.no] || '(tidak dijawab)')}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                    <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-2.5">
+                        <p class="text-[10px] uppercase font-bold text-emerald-400"><i class="fas fa-lightbulb mr-1"></i>Kunci jawaban</p>${kunciIsi}</div>
+                    <div class="rounded-lg border border-sky-500/30 bg-sky-500/5 p-2.5">
+                        <p class="text-[10px] uppercase font-bold text-sky-400"><i class="fas fa-user-pen mr-1"></i>Jawaban siswa</p>
+                        <p class="text-slate-100 mt-1 whitespace-pre-wrap">${esc(h.jawaban[s.no] || '(tidak dijawab)')}</p></div>
+                </div>
                 <label class="block mt-3 text-slate-400 font-semibold">Nilai (0 sampai ${s.bobot})
                     <input id="sk-${s.no}" type="number" min="0" max="${s.bobot}" step="0.5" value="${h.skor[s.no] ?? ''}" class="field mt-1"></label></div>`;
         });
         html += '</div>';
-        await Swal.fire({ title: esc(h.nama), html, width: 640, showConfirmButton: es.length > 0, confirmButtonText: 'Simpan Nilai Esai',
+        let kunciGagal = '';
+        await Swal.fire({ title: esc(h.nama), html, width: 860, showConfirmButton: es.length > 0, confirmButtonText: 'Simpan Nilai Esai',
             showCancelButton: true, cancelButtonText: 'Tutup', confirmButtonColor: '#059669', cancelButtonColor: '#334155', showLoaderOnConfirm: true,
             preConfirm: async () => {
                 const skor = {};
@@ -3467,9 +3499,18 @@ service cloud.firestore {
                     if (isNaN(v) || v < 0 || v > s.bobot) { Swal.showValidationMessage(`Nilai soal ${s.no} harus antara 0 dan ${s.bobot}`); return false; }
                     skor[s.no] = v;
                 }
+                // Kunci yang diketik/diubah di layar ini ikut disimpan ke ujian (tidak menghalangi penyimpanan nilai bila gagal)
+                const kunciBaru = {};
+                if (kunciBisaDiubah) es.forEach(s => { const el = $('kj-' + s.no); if (el && el.value.trim() !== String(s.kunci || '').trim()) kunciBaru[s.no] = el.value.trim(); });
+                if (Object.keys(kunciBaru).length) {
+                    try {
+                        await api('setKunciEsai', { kode: (hasilData.ujian && hasilData.ujian.kode) || hasilKode, kunci: kunciBaru });
+                        es.forEach(s => { if (s.no in kunciBaru) s.kunci = kunciBaru[s.no]; });
+                    } catch (e) { kunciGagal = e.message; }
+                }
                 try { return await api('gradeEssay', { id, skor }); }
                 catch (e) { Swal.showValidationMessage(e.message); return false; }
-            } }).then(r => { if (r.isConfirmed) { toast('Nilai tersimpan'); muatHasil(); } });
+            } }).then(r => { if (r.isConfirmed) { toast('Nilai tersimpan'); if (kunciGagal) setTimeout(() => toast('Kunci jawaban belum tersimpan: ' + kunciGagal, 'warning'), 2800); muatHasil(); } });
     }
     // Hapus nilai ujian satu siswa sampai bersih (terpisah dari ACC remedial): jawaban, nilai lama remedial, nilai yang sudah dirilis,
     // tanda sudah mengumpulkan, tambahan waktu, dan catatan masuk. Siswa boleh mengerjakan dari awal.
@@ -3938,7 +3979,7 @@ service cloud.firestore {
                 <select id="e-jenis" class="field"><option value="PG" ${q.jenis === 'PG' ? 'selected' : ''}>Pilihan Ganda</option><option value="ESAI" ${q.jenis === 'ESAI' ? 'selected' : ''}>Esai</option></select>
                 <textarea id="e-soal" rows="4" class="field" placeholder="Teks soal">${esc(q.soal)}</textarea>
                 ${['a', 'b', 'c', 'd', 'e'].map(c => `<input id="e-${c}" class="field" placeholder="Pilihan ${c.toUpperCase()}${c > 'b' ? ' (opsional)' : ''}" value="${esc(q[c] || '')}">`).join('')}
-                <input id="e-kunci" class="field" placeholder="Kunci (huruf A-E) atau jawaban acuan untuk esai" value="${esc(q.kunci || '')}"></div>`,
+                <textarea id="e-kunci" rows="3" class="field" placeholder="Pilihan ganda: huruf kunci (A-E). Esai: kunci jawaban lengkap untuk pendamping saat menilai.">${esc(q.kunci || '')}</textarea></div>`,
             preConfirm: () => {
                 const g = k => document.getElementById('e-' + k).value.trim(), jenis = g('jenis');
                 const n = { kategori: g('kat'), jenis, soal: g('soal'), a: g('a'), b: g('b'), c: g('c'), d: g('d'), e: g('e'), kunci: g('kunci') };
