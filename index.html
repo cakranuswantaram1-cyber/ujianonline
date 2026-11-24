@@ -2670,6 +2670,56 @@
     }
     const terjawab = q => { const v = attempt.jawaban[q.no]; return v !== undefined && String(v).trim() !== ''; };
 
+    // ===== Suara pembaca soal (Text-to-Speech bawaan browser) =====
+    const TTS_ADA = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    const TTS_KEY = APP.slug + '_suara_soal';
+    let ttsAktif = true; try { ttsAktif = localStorage.getItem(TTS_KEY) !== '0'; } catch (e) {}
+    let ttsTerakhir = -1, ttsBicara = false;
+    function ttsSuara() {
+        const v = speechSynthesis.getVoices();
+        return v.find(x => /^id[-_]ID/i.test(x.lang)) || v.find(x => /^(id|in|ms)/i.test(x.lang)) || null;
+    }
+    function ttsPotong(teks) {
+        const bagian = String(teks).replace(/[ \t]+/g, ' ').split(/(?<=[.!?;:\n])\s*/).filter(x => x.trim());
+        const hasil = []; let cur = '';
+        bagian.forEach(b => { if ((cur + ' ' + b).length > 170 && cur) { hasil.push(cur); cur = b; } else cur = (cur ? cur + ' ' : '') + b; });
+        if (cur) hasil.push(cur);
+        return hasil;
+    }
+    function ttsBerhenti() {
+        if (!TTS_ADA) return;
+        try { speechSynthesis.cancel(); } catch (e) {}
+        ttsBicara = false; ttsUiBtn();
+    }
+    function ttsUiBtn() {
+        const b = $('u-tts-baca'); if (!b) return;
+        b.innerHTML = ttsBicara ? '<i class="fas fa-stop mr-1.5"></i>Berhenti' : '<i class="fas fa-volume-high mr-1.5"></i>Bacakan';
+    }
+    function ttsBacaSoal() {
+        if (!TTS_ADA || !attempt) return;
+        const q = attempt.soal[attempt.idx]; if (!q) return;
+        try { speechSynthesis.cancel(); } catch (e) {}
+        let teks = 'Soal nomor ' + (attempt.idx + 1) + '. ' + q.soal;
+        if (q.jenis === 'PG') q.opsi.forEach((o, i) => { teks += '\n' + LABEL[i] + '. ' + o.t + '.'; });
+        const bagian = ttsPotong(teks), suara = ttsSuara();
+        ttsBicara = true; ttsUiBtn();
+        bagian.forEach((b, i) => {
+            const u = new SpeechSynthesisUtterance(b);
+            u.lang = suara ? suara.lang : 'id-ID'; if (suara) u.voice = suara; u.rate = 0.95;
+            if (i === bagian.length - 1) { u.onend = u.onerror = () => { ttsBicara = false; ttsUiBtn(); }; }
+            speechSynthesis.speak(u);
+        });
+    }
+    function ttsBacaKlik() { if (ttsBicara) ttsBerhenti(); else ttsBacaSoal(); }
+    function ttsToggle() {
+        ttsAktif = !ttsAktif;
+        try { localStorage.setItem(TTS_KEY, ttsAktif ? '1' : '0'); } catch (e) {}
+        if (!ttsAktif) ttsBerhenti();
+        renderSoal();
+        if (ttsAktif) { ttsTerakhir = attempt.idx; ttsBacaSoal(); }
+    }
+    if (TTS_ADA) { try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => {}; } catch (e) {} window.addEventListener('pagehide', ttsBerhenti); }
+
     function renderSoal() {
         const q = attempt.soal[attempt.idx];
         const n = attempt.soal.length;
@@ -2691,8 +2741,18 @@
                 <span class="text-[10px] uppercase font-bold tracking-wider text-accent-400">Soal ${attempt.idx + 1} dari ${n}</span>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${q.jenis === 'PG' ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'}">${q.jenis === 'PG' ? 'Pilihan Ganda' : 'Esai'}</span>
             </div>
+            ${TTS_ADA ? `<div class="flex items-center justify-between gap-2 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2">
+                <button id="u-tts-baca" onclick="ttsBacaKlik()" class="bg-accent-600 hover:bg-accent-500 text-white text-[11px] font-bold px-3 py-2 rounded-lg transition"><i class="fas fa-volume-high mr-1.5"></i>Bacakan</button>
+                <button onclick="ttsToggle()" role="switch" aria-checked="${ttsAktif}" class="flex items-center gap-2 text-[11px] font-bold ${ttsAktif ? 'text-accent-400' : 'text-slate-500'}">
+                    <span>Suara ${ttsAktif ? 'Aktif' : 'Nonaktif'}</span>
+                    <span class="w-9 h-5 rounded-full p-0.5 flex ${ttsAktif ? 'bg-accent-600 justify-end' : 'bg-slate-700 justify-start'} transition"><span class="w-4 h-4 rounded-full bg-white"></span></span>
+                </button></div>` : ''}
             <p class="text-sm text-slate-100 whitespace-pre-wrap break-words leading-relaxed">${esc(q.soal)}</p>
             ${isi}</div>`;
+        if (TTS_ADA) {
+            if (ttsTerakhir !== attempt.idx) { ttsTerakhir = attempt.idx; ttsBerhenti(); if (ttsAktif) ttsBacaSoal(); }
+            else ttsUiBtn();
+        }
         $('u-prev').disabled = attempt.idx === 0;
         $('u-prev').classList.toggle('opacity-40', attempt.idx === 0);
         $('u-next').disabled = attempt.idx === n - 1;
@@ -2724,7 +2784,7 @@
             const ok = await konfirmasi('Kumpulkan sekarang?', kosong ? `Masih ada ${kosong} soal yang belum dijawab. Setelah dikumpulkan, jawaban tidak bisa diubah.` : 'Setelah dikumpulkan, jawaban tidak bisa diubah.', 'Ya, kumpulkan');
             if (!ok) return;
         }
-        submitting = true;
+        submitting = true; if (TTS_ADA) { ttsBerhenti(); ttsTerakhir = -1; }
         clearInterval(timerId);
         if (attempt.kam) { kamJepret(); clearInterval(kamTimer); kamTimer = null; }
         clearInterval(sugTimer); sugTimer = null;
@@ -2917,7 +2977,7 @@
         st.innerHTML = '<i class="fas fa-hourglass-half mr-1.5 text-amber-400"></i>Permintaan sedang <b class="text-amber-300">menunggu persetujuan guru</b>. Minta guru buka menu <b>Rilis Nilai (ACC)</b> lalu klik <b>ACC Lanjut</b>.<br><br><span class="text-red-300 font-bold"><i class="fas fa-triangle-exclamation mr-1"></i>Jangan tutup browser ini!</span> Setelah guru ACC, refresh halaman ini untuk melanjutkan.';
         toast('Permintaan terkirim. Tunggu guru menyetujui, lalu refresh halaman.', 'info');
     }
-    function selesaiUjian() { try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} pilihJK(''); kamTutup(); showView('landing'); }
+    function selesaiUjian() { if (TTS_ADA) { ttsBerhenti(); ttsTerakhir = -1; } try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} pilihJK(''); kamTutup(); showView('landing'); }
 
     /* ============================================================
        GURU: DATA UJIAN
