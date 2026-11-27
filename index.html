@@ -402,6 +402,7 @@
                     <button onclick="switchTab('analisis')" id="btn-analisis" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-chart-line w-5 text-center"></i><span>Analisis &amp; Remedial</span></button>
                     <button onclick="switchTab('butir')" id="btn-butir" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-magnifying-glass-chart w-5 text-center"></i><span>Analisis Butir Soal</span></button>
                     <button onclick="switchTab('riwremedial')" id="btn-riwremedial" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-clock-rotate-left w-5 text-center"></i><span>Riwayat Remedial</span></button>
+                    <button onclick="switchTab('aturanremed')" id="btn-aturanremed" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-sliders w-5 text-center"></i><span>Aturan Remedial</span></button>
                     <div class="my-2 border-t border-slate-800"></div>
                     <div class="px-3 pt-2 pb-1 flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-wider"><i class="fas fa-people-group w-5 text-center text-accent-400/70"></i><span>Kuis Seru L vs P</span></div>
                     <button onclick="switchTab('tim')" id="btn-tim" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-people-group w-5 text-center"></i><span>Kuis Langsung L vs P</span></button>
@@ -788,6 +789,32 @@
                         <div id="riw-isi"></div>
                     </section>
 
+                    <!-- TAB: Aturan Remedial -->
+                    <section id="tab-aturanremed-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-4">
+                            <div class="flex flex-wrap items-end gap-4">
+                                <label class="text-[11px] font-semibold text-slate-400 block">KKM
+                                    <input id="rem-kkm" type="number" min="1" max="100" class="field !w-24 text-center block mt-1" onchange="remSimpanKkm()"></label>
+                                <label class="text-[11px] font-semibold text-slate-400 block">Maksimal remedial per siswa
+                                    <input id="rem-maks" type="number" min="0" max="20" class="field !w-24 text-center block mt-1" onchange="remSimpanMaks()"></label>
+                                <p class="text-[11px] text-slate-500 flex-1 min-w-[12rem]">Isi 0 bila tidak dibatasi. KKM yang sama dipakai di menu Analisis &amp; Remedial.</p>
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-semibold text-slate-400 mb-2">Aturan umum untuk siswa dengan nilai di bawah KKM</p>
+                                <div id="rem-mode" class="grid sm:grid-cols-2 gap-3"></div>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <div class="flex flex-wrap items-center gap-3 mb-3">
+                                <h3 class="text-sm font-bold text-slate-100 flex-1"><i class="fas fa-list-check text-accent-400 mr-2"></i>Aturan per ujian</h3>
+                                <button onclick="remProsesManual()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-bolt mr-1.5"></i>Proses Sekarang</button>
+                            </div>
+                            <div id="rem-kuis"></div>
+                            <p id="rem-log" class="text-[11px] text-slate-500 mt-3"></p>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Pada mode <b class="text-slate-200">Langsung</b>, siswa yang nilainya di bawah KKM otomatis dibuka remedialnya tanpa menunggu ACC dan tanpa perlu mengajukan. Nilai lama tetap disimpan dan nilai yang dipakai adalah yang paling besar. Pemeriksaan berjalan tiap 30 detik selama aplikasi guru terbuka dan sudah masuk sebagai guru. Siswa yang nilainya sudah di atas KKM dan ingin menaikkan nilai tetap harus mengajukan remedial, lalu guru menyetujuinya lewat tombol ACC Remedial di Hasil &amp; Nilai atau di Rilis Nilai (ACC). Esai yang belum dinilai belum diproses. Pada mode <b class="text-slate-200">Harus ACC guru</b>, alurnya sama seperti biasa: siswa mengajukan, guru menyetujui di Rilis Nilai atau Hasil &amp; Nilai.</p>
+                    </section>
+
                     <!-- TAB: Pantau Langsung -->
                     <section id="tab-pantau-view" class="tab-content hidden space-y-4">
                         <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
@@ -1089,7 +1116,7 @@
     // Opsional: isi ID/alamat skrip di sini bila ingin tertanam permanen di aplikasi (tanpa tautan ?s=).
     const SCRIPT_DEFAULT = '';
     const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
-    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', riwremedial: 'Riwayat Remedial', leger: 'Leger Nilai', butir: 'Analisis Butir Soal', pantau: 'Pantau Langsung', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', pengumuman: 'Pengumuman', panduan: 'Panduan', pengaturan: 'Pengaturan' };
+    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', riwremedial: 'Riwayat Remedial', aturanremed: 'Aturan Remedial', leger: 'Leger Nilai', butir: 'Analisis Butir Soal', pantau: 'Pantau Langsung', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', pengumuman: 'Pengumuman', panduan: 'Panduan', pengaturan: 'Pengaturan' };
     const SCREENS = ['landing', 'siswa', 'tunggu', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
@@ -2256,6 +2283,7 @@
         if (id === 'rilis') renderRilis(true);
         if (id === 'analisis') renderAnalisis(true);
         if (id === 'riwremedial') renderRiwRemedial();
+        if (id === 'aturanremed') renderAturanRemed();
         if (id === 'leger') renderLeger(true);
         if (id === 'butir') renderButir(true);
         if (id === 'pantau') { pantauIsiKuis().then(() => pantauMuat()); }
@@ -4762,6 +4790,90 @@ service cloud.firestore {
     const tulisJson = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast('Penyimpanan penuh atau diblokir browser', 'error'); return false; } };
     const kosongBox = (ikon, judul, teks) => `<div class="text-center py-16 text-slate-500"><i class="fas ${ikon} text-4xl mb-3 opacity-40"></i><p class="text-sm font-semibold">${esc(judul)}</p>${teks ? `<p class="text-xs mt-1">${teks}</p>` : ''}</div>`;
     const thTabel = 'bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider';
+
+    /* ---------- Aturan Remedial: KKM + mode langsung / harus ACC guru ---------- */
+    const REMATUR_KEY = APP.slug + '_rematuran', REMHIT_KEY = APP.slug + '_remhitung';
+    let remJalan = false, remLog = '';
+    const remAtur = () => {
+        const a = bacaJson(REMATUR_KEY, {}) || {}, m = Number(a.maks);
+        return { mode: a.mode === 'langsung' ? 'langsung' : 'acc', maks: Number.isFinite(m) && m >= 0 ? Math.round(m) : 3, kuis: (a.kuis && typeof a.kuis === 'object') ? a.kuis : {}};
+    };
+    const remModeKuis = kode => { const a = remAtur(), o = a.kuis[kode]; return o === 'langsung' || o === 'acc' ? o : a.mode; };
+    function remSimpanKkm() {
+        const n = Number($('rem-kkm').value);
+        if (!(n > 0 && n <= 100)) { $('rem-kkm').value = anaKkm(); return toast('KKM harus antara 1 dan 100', 'info'); }
+        if (tulisJson(ANA_KEY, n)) { if (anaData) renderAnaHasil(); toast('KKM disimpan'); }
+    }
+    function remSimpanMaks() {
+        const n = Math.round(Number($('rem-maks').value));
+        if (!(n >= 0 && n <= 20)) { $('rem-maks').value = remAtur().maks; return toast('Isi angka 0 sampai 20', 'info'); }
+        const a = remAtur(); a.maks = n; if (tulisJson(REMATUR_KEY, a)) toast('Batas remedial disimpan');
+    }
+    function remSetMode(m) {
+        const a = remAtur(); a.mode = m === 'langsung' ? 'langsung' : 'acc';
+        if (tulisJson(REMATUR_KEY, a)) { renderAturanRemed(); toast(a.mode === 'langsung' ? 'Mode Langsung aktif' : 'Mode Harus ACC guru aktif'); if (a.mode === 'langsung') remProses(); }
+    }
+    function remSetKuis(kode, v) {
+        const a = remAtur(); if (v === 'langsung' || v === 'acc') a.kuis[kode] = v; else delete a.kuis[kode];
+        if (tulisJson(REMATUR_KEY, a)) { renderAturanRemed(); if (remModeKuis(kode) === 'langsung') remProses(); }
+    }
+    async function renderAturanRemed() {
+        $('rem-kkm').value = anaKkm(); const a = remAtur(); $('rem-maks').value = a.maks;
+        const kartu = (m, ikon, judul, teks) => `<button onclick="remSetMode('${m}')" class="text-left rounded-2xl border p-4 transition ${a.mode === m ? 'border-accent-500 bg-accent-500/10' : 'border-slate-800 bg-slate-950 hover:border-slate-600'}"><p class="text-sm font-black ${a.mode === m ? 'text-accent-400' : 'text-slate-200'}"><i class="fas ${ikon} mr-2"></i>${judul}${a.mode === m ? ' <span class="text-[10px] font-bold ml-1">(aktif)</span>' : ''}</p><p class="text-[11px] text-slate-400 mt-1">${teks}</p></button>`;
+        $('rem-mode').innerHTML = kartu('langsung', 'fa-bolt', 'Langsung', 'Nilai di bawah KKM otomatis boleh remedial. Tanpa pengajuan dan tanpa ACC guru.')
+            + kartu('acc', 'fa-user-check', 'Harus ACC guru', 'Siswa mengajukan remedial, lalu guru yang menyetujui. Sama seperti sebelumnya.');
+        $('rem-log').textContent = remLog;
+        const box = $('rem-kuis'); let list;
+        try { list = await muatUjian(false); } catch (e) { box.innerHTML = pesanGalat(e); return; }
+        if (!list.length) { box.innerHTML = kosongBox('fa-inbox', 'Belum ada ujian'); return; }
+        box.innerHTML = `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs"><thead class="${thTabel}"><tr><th class="px-4 py-3 text-left">Ujian online</th><th class="px-3 py-3">Status</th><th class="px-3 py-3 text-left">Aturan remedial</th></tr></thead><tbody class="divide-y divide-slate-800 bg-slate-900">${list.map(u => {
+            const o = a.kuis[u.kode] === 'langsung' || a.kuis[u.kode] === 'acc' ? a.kuis[u.kode] : '';
+            return `<tr class="hover:bg-slate-800/60"><td class="px-4 py-3 font-semibold text-slate-100">${esc(u.judul)} <span class="text-[10px] text-slate-500">(${esc(u.kode)})</span></td><td class="px-3 py-3 text-center text-slate-400">${u.status === 'buka' ? 'Dibuka' : 'Ditutup'}</td><td class="px-3 py-3"><select data-kode="${esc(u.kode)}" onchange="remSetKuis(this.dataset.kode, this.value)" class="field !py-1.5 text-xs"><option value=""${o === '' ? ' selected' : ''}>Ikut aturan umum (${a.mode === 'langsung' ? 'Langsung' : 'Harus ACC'})</option><option value="langsung"${o === 'langsung' ? ' selected' : ''}>Langsung</option><option value="acc"${o === 'acc' ? ' selected' : ''}>Harus ACC guru</option></select></td></tr>`;
+        }).join('')}</tbody></table></div><p class="text-[11px] text-slate-500 mt-2">Mode Langsung hanya berjalan untuk ujian yang berstatus Dibuka. Ujian yang Ditutup tidak diproses dan tidak diubah; setelah Anda membukanya lagi di Kelola Ujian, siswa di bawah KKM otomatis diproses pada pemeriksaan berikutnya.</p>`;
+    }
+    // Buka remedial otomatis untuk siswa di bawah KKM (langkahnya sama dengan tombol ACC Remedial)
+    async function remProses() {
+        if (remJalan || !sessionStorage.getItem(PIN_KEY)) return 0;
+        const at = remAtur();
+        if (at.mode !== 'langsung' && !Object.values(at.kuis).includes('langsung')) return 0;
+        remJalan = true; let total = 0;
+        try {
+            const list = await muatUjian(false), kkm = anaKkm();
+            const buka = (list || []).filter(u => u.status === 'buka' && remModeKuis(u.kode) === 'langsung').slice(0, 40);
+            for (const u of buka) {
+                let d; try { d = await ambilHasil(u.kode); } catch (e) { continue; }
+                let minta = []; try { minta = ((await recallApi('daftarRecall', { kode: u.kode })).daftar || []).filter(x => x.tipe === 'remedial'); } catch (e) {}
+                for (const h of d.hasil) {
+                    if (h.menunggu_perbaikan || nilaiKosong(h) || !(Number(h.nilai_akhir) < kkm)) continue;
+                    const hit = bacaJson(REMHIT_KEY, {}), kh = u.kode + '|' + arsipKey(h), n = Number(hit[kh] || 0);
+                    if (at.maks > 0 && n >= at.maks) continue;
+                    try {
+                        if (!h.dari_arsip) await arsipApi('simpan', u.kode, { key: arsipKey(h), entri: { id: h.id, nama: h.nama, absen: h.absen, jk: h.jk || '', nilai_akhir: h.nilai_akhir, nilai_pg: h.nilai_pg ?? null, benar: h.benar ?? null, jumlah_pg: h.jumlah_pg ?? null, waktu: h.waktu || '' } });
+                        await api('resetStudent', { id: h.id });
+                        const mt = minta.find(x => String(x.hasilId) === String(h.id)); if (mt) { try { await recallApi('tolakLanjut', { hasilId: mt.hasilId }); } catch (e) {} }
+                        hit[kh] = n + 1; tulisJson(REMHIT_KEY, hit); total++;
+                    } catch (e) { /* lewati siswa ini, dicoba lagi pada pemeriksaan berikutnya */ }
+                }
+            }
+            if (total) {
+                remLog = 'Terakhir: ' + total + ' siswa dibuka remedialnya otomatis (' + new Date().toLocaleTimeString('id-ID') + ').';
+                toast(total + ' siswa di bawah KKM otomatis boleh remedial');
+                try { const th = $('tab-hasil-view'); if (th && !th.classList.contains('hidden')) muatHasil(); } catch (e) {}
+                try { cekNotif(); } catch (e) {}
+                try { const ta = $('tab-aturanremed-view'); if (ta && !ta.classList.contains('hidden')) $('rem-log').textContent = remLog; } catch (e) {}
+            }
+        } catch (e) { /* abaikan, dicoba lagi pada pemeriksaan berikutnya */ }
+        remJalan = false; return total;
+    }
+    async function remProsesManual() {
+        const at = remAtur();
+        if (at.mode !== 'langsung' && !Object.values(at.kuis).includes('langsung')) return toast('Belum ada ujian dengan mode Langsung', 'info');
+        loading('Memeriksa nilai siswa...');
+        const n = await remProses(); Swal.close();
+        toast(n ? n + ' siswa dibuka remedialnya' : 'Tidak ada siswa di bawah KKM yang perlu diproses', n ? 'success' : 'info');
+    }
+    setInterval(() => { if (!document.hidden) remProses(); }, 30000);
+    setTimeout(remProses, 9000);
 
     /* ---------- Analisis & Remedial ---------- */
     const anaCache = {};
