@@ -400,6 +400,7 @@
                     <div class="my-2 border-t border-slate-800"></div>
                     <div class="px-3 pt-2 pb-1 flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-wider"><i class="fas fa-chart-line w-5 text-center text-accent-400/70"></i><span>4. Analisis &amp; Remedial</span></div>
                     <button onclick="switchTab('analisis')" id="btn-analisis" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-chart-line w-5 text-center"></i><span>Analisis &amp; Remedial</span></button>
+                    <button onclick="switchTab('pantaurem')" id="btn-pantaurem" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-user-clock w-5 text-center"></i><span>Pantau Remedial</span><span class="ml-auto flex items-center gap-1"><span id="badge-pr-baru" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-white hidden animate-pulse" title="Siswa yang baru selesai mengerjakan remedial">0</span><span id="badge-pr-bawah" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-500 text-white hidden" title="Siswa masih di bawah KKM">0</span></span></button>
                     <button onclick="switchTab('butir')" id="btn-butir" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-magnifying-glass-chart w-5 text-center"></i><span>Analisis Butir Soal</span></button>
                     <button onclick="switchTab('riwremedial')" id="btn-riwremedial" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-clock-rotate-left w-5 text-center"></i><span>Riwayat Remedial</span></button>
                     <button onclick="switchTab('aturanremed')" id="btn-aturanremed" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-800 hover:text-accent-400 transition"><i class="fas fa-sliders w-5 text-center"></i><span>Aturan Remedial</span></button>
@@ -778,6 +779,30 @@
                         <div id="ana-isi"></div>
                     </section>
 
+                    <!-- TAB: Pantau Remedial (siswa di bawah KKM) -->
+                    <section id="tab-pantaurem-view" class="tab-content hidden space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
+                            <select id="pr-kuis" onchange="prGambar()" class="field flex-1 min-w-[12rem]"></select>
+                            <select id="pr-status" onchange="prGambar()" class="field min-w-[11rem]">
+                                <option value="">Semua status</option>
+                                <option value="minta">Mengajukan remedial</option>
+                                <option value="belum">Belum remedial</option>
+                                <option value="dibuka">Remedial dibuka, belum mengerjakan</option>
+                                <option value="esai">Remedial dikerjakan, esai belum dinilai</option>
+                                <option value="masih">Sudah remedial, masih di bawah KKM</option>
+                                <option value="tuntas">Sudah remedial, tuntas</option>
+                            </select>
+                            <input id="pr-cari" oninput="prGambar()" class="field min-w-[9rem]" placeholder="Cari nama / absen" autocomplete="off">
+                            <label class="flex items-center gap-2 text-[11px] font-semibold text-slate-400">KKM
+                                <input id="pr-kkm" type="number" min="1" max="100" class="field !w-20 text-center" onchange="prSimpanKkm()"></label>
+                            <button onclick="renderPantauRem(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-rotate mr-1.5"></i>Muat Ulang</button>
+                            <button onclick="prSalin()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-copy mr-1.5"></i>Salin Daftar</button>
+                            <button onclick="prEkspor()" class="bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i class="fas fa-file-excel mr-1.5"></i>Ekspor Excel</button>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Semua siswa yang <b class="text-slate-200">nilai pertamanya di bawah KKM</b>, dari semua ujian: siapa namanya, dapat berapa, apakah sudah remedial, nilai remedialnya, dan nilai yang dipakai (yang tertinggi). Lencana <b class="text-rose-400">merah</b> di menu = siswa yang masih di bawah KKM. Lencana <b class="text-emerald-400">hijau</b> = siswa yang baru selesai remedial dan belum Anda lihat di sini. Diperbarui otomatis tiap 2 menit.</p>
+                        <div id="pr-isi"></div>
+                    </section>
+
                     <!-- TAB: Riwayat Remedial -->
                     <section id="tab-riwremedial-view" class="tab-content hidden space-y-4">
                         <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-3 items-center">
@@ -1116,7 +1141,7 @@
     // Opsional: isi ID/alamat skrip di sini bila ingin tertanam permanen di aplikasi (tanpa tautan ?s=).
     const SCRIPT_DEFAULT = '';
     const DEFAULT_DB = { settings: { nama: 'Ujian Online Kelas', scriptId: '' } };
-    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', riwremedial: 'Riwayat Remedial', aturanremed: 'Aturan Remedial', leger: 'Leger Nilai', butir: 'Analisis Butir Soal', pantau: 'Pantau Langsung', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', pengumuman: 'Pengumuman', panduan: 'Panduan', pengaturan: 'Pengaturan' };
+    const TABS = { dashboard: 'Dashboard', ujian: 'Kelola Ujian', hasil: 'Hasil & Nilai', review: 'Review Jawaban', rilis: 'Rilis Nilai (ACC)', adu: 'Adu Laki-laki vs Perempuan', tim: 'Kuis Langsung L vs P', bank: 'Bank Soal', analisis: 'Analisis & Remedial', pantaurem: 'Pantau Remedial (Di Bawah KKM)', riwremedial: 'Riwayat Remedial', aturanremed: 'Aturan Remedial', leger: 'Leger Nilai', butir: 'Analisis Butir Soal', pantau: 'Pantau Langsung', roster: 'Data Siswa', akun: 'Bagikan Akun Siswa', absensi: 'Absensi', pengumuman: 'Pengumuman', panduan: 'Panduan', pengaturan: 'Pengaturan' };
     const SCREENS = ['landing', 'siswa', 'tunggu', 'ujian', 'hasil', 'nilai', 'login', 'guru'];
     const LABEL = ['A', 'B', 'C', 'D', 'E'];
     const PIN_KEY = APP.slug + '_pin';
@@ -2282,6 +2307,7 @@
         if (id === 'bank') renderBank();
         if (id === 'rilis') renderRilis(true);
         if (id === 'analisis') renderAnalisis(true);
+        if (id === 'pantaurem') renderPantauRem(true);
         if (id === 'riwremedial') renderRiwRemedial();
         if (id === 'aturanremed') renderAturanRemed();
         if (id === 'leger') renderLeger(true);
@@ -3467,7 +3493,9 @@
     }
     const hasilMinta = h => hasilRemed.find(x => String(x.hasilId) === String(h.id) || normAbsen(x.absen) === normAbsen(h.absen));
     function renderTabelHasil() {
-        const d = hasilData, hs = d.hasil.slice().sort((a, b) => (hasilMinta(b) ? 1 : 0) - (hasilMinta(a) ? 1 : 0) || String(a.nama).localeCompare(String(b.nama), 'id'));
+        const hsWaktuMs = h => Date.parse(h.waktu) || 0;
+        const d = hasilData, hs = d.hasil.slice().sort((a, b) => (hasilMinta(b) ? 1 : 0) - (hasilMinta(a) ? 1 : 0) || hsWaktuMs(b) - hsWaktuMs(a) || String(a.nama).localeCompare(String(b.nama), 'id'));
+        const fmtKumpul = h => { const t = new Date(h.waktu); return isNaN(t) ? '<span class="text-slate-600">—</span>' : '<span class="text-slate-200 font-semibold">' + t.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span><br><span class="text-slate-400">pukul ' + t.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':') + '</span>'; };
         const akhir = hs.filter(h => h.nilai_akhir !== null).map(h => h.nilai_akhir);
         const rata = akhir.length ? akhir.reduce((a, b) => a + b, 0) / akhir.length : null;
         $('h-stats').innerHTML =
@@ -3496,7 +3524,7 @@
             : `<div class="mb-3 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-[11px] text-slate-500"><i class="fas fa-circle-check mr-2 text-slate-600"></i>Tidak ada permintaan remedial saat ini.</div>`;
         $('h-tabel').innerHTML = bannerRemed + `<div class="overflow-x-auto rounded-2xl border border-slate-800"><table class="w-full text-xs">
             <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider"><tr>
-                <th class="px-4 py-3 text-left">Nama</th><th class="px-3 py-3 text-center">Absen</th><th class="px-3 py-3 text-center">JK</th><th class="px-3 py-3 text-center">Nilai PG</th><th class="px-3 py-3 text-center">Esai</th><th class="px-3 py-3 text-center">Nilai Akhir</th><th class="px-3 py-3 text-center" title="Berapa kali siswa keluar/pindah dari halaman ujian">Keluar</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
+                <th class="px-4 py-3 text-left">Nama</th><th class="px-3 py-3 text-center">Absen</th><th class="px-3 py-3 text-center">JK</th><th class="px-3 py-3 text-center">Nilai PG</th><th class="px-3 py-3 text-center">Esai</th><th class="px-3 py-3 text-center">Nilai Akhir</th><th class="px-3 py-3 text-center" title="Berapa kali siswa keluar/pindah dari halaman ujian">Keluar</th><th class="px-3 py-3 text-center" title="Kapan siswa selesai dan mengumpulkan jawaban">Dikumpulkan</th><th class="px-3 py-3 text-right">Aksi</th></tr></thead>
             <tbody class="divide-y divide-slate-800 bg-slate-900">${hs.map(h => `<tr class="${hasilMinta(h) ? 'bg-amber-500/10 hover:bg-amber-500/20' : 'hover:bg-slate-800/60'}">
                 <td class="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(h.nama)}${paketBadge(h.absen, d.ujian)}${hasilMinta(h) ? '<span class="ml-2 text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-black animate-pulse"><i class="fas fa-hand mr-1"></i>Minta remedial</span>' : ''}</td>
                 <td class="px-3 py-3 text-center text-slate-400">${esc(h.absen)}</td>
@@ -3505,6 +3533,7 @@
                 <td class="px-3 py-3 text-center">${h.menunggu_perbaikan ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">Menunggu perbaikan</span>' : badge(h)}</td>
                 <td class="px-3 py-3 text-center font-black text-accent-400 text-sm">${fmtNilai(h.nilai_akhir)}${h.nilai_lama !== undefined && !h.menunggu_perbaikan ? `<div class="text-[10px] font-bold text-sky-300" title="Nilai yang dipakai adalah yang tertinggi">${h.dari_arsip ? 'Dipakai nilai lama' : (h.nilai_baru === null || h.nilai_baru === undefined ? 'Nilai baru belum ada' : 'Dipakai nilai baru')} · lama ${fmtNilai(h.nilai_lama)}, baru ${fmtNilai(h.nilai_baru)}</div>` : ''}${h.potongan > 0 ? `<div class="text-[10px] font-bold text-red-400" title="Nilai sebelum pengurangan: ${fmtNilai(h.nilai_akhir_asli)}">−${fmtNilai(h.potongan)}</div>` : ''}</td>
                 <td class="px-3 py-3 text-center">${badgeKeluar(h.keluar)}</td>
+                <td class="px-3 py-3 text-center text-[10px] leading-tight whitespace-nowrap">${fmtKumpul(h)}</td>
                 <td class="px-3 py-3 text-right whitespace-nowrap">
                     ${h.menunggu_perbaikan ? `<span class="text-[10px] text-slate-500 mr-2">Belum mengerjakan ulang</span><button onclick="hapusNilai('${esc(h.id)}')" class="bg-slate-800 hover:bg-red-600 text-red-300 hover:text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition" title="Hapus nilai lama siswa ini"><i class="fas fa-trash-can mr-1"></i>Hapus Nilai</button>` : `
                     ${d.ujian && d.ujian.suara ? `<button onclick="lihatSuara('${esc(h.id)}')" class="text-slate-400 hover:text-accent-400 px-2" title="Dengarkan rekaman suara"><i class="fas fa-microphone"></i></button>` : ''}
@@ -4945,6 +4974,177 @@ service cloud.firestore {
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ring), 'Ringkasan');
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Nilai Siswa');
         XLSX.writeFile(wb, 'analisis-remedial.xlsx');
+    }
+
+
+    /* ---------- Pantau Remedial: siswa di bawah KKM, nilai, dan status remedialnya ---------- */
+    const PR_SEEN_KEY = APP.slug + '_prseen';
+    let prData = null, prWaktu = 0, prJalan = false, prAwal = true, prBaruLalu = 0;
+    const PR_STATUS = {
+        minta:  ['Mengajukan remedial (menunggu ACC)', 'bg-amber-500/15 text-amber-400 border border-amber-500/30', 1],
+        belum:  ['Belum remedial', 'bg-rose-500/15 text-rose-400 border border-rose-500/30', 0],
+        dibuka: ['Remedial dibuka, belum mengerjakan', 'bg-sky-500/15 text-sky-400 border border-sky-500/30', 2],
+        esai:   ['Remedial dikerjakan, esai belum dinilai', 'bg-violet-500/15 text-violet-400 border border-violet-500/30', 4],
+        masih:  ['Sudah remedial, masih di bawah KKM', 'bg-orange-500/15 text-orange-400 border border-orange-500/30', 3],
+        tuntas: ['Sudah remedial, tuntas', 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30', 5]
+    };
+    const prTgl = iso => { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+    const prSeen = () => { const s = bacaJson(PR_SEEN_KEY, []); return new Set(Array.isArray(s) ? s : []); };
+    function prSimpanKkm() {
+        const n = Number($('pr-kkm').value);
+        if (!(n > 0 && n <= 100)) { $('pr-kkm').value = anaKkm(); return toast('KKM harus antara 1 dan 100', 'info'); }
+        if (tulisJson(ANA_KEY, n)) { toast('KKM disimpan'); renderPantauRem(true); }
+    }
+    async function prHitung(paksa) {
+        if (prJalan) return prData;
+        if (!paksa && prData && Date.now() - prWaktu < 90000) return prData;
+        prJalan = true;
+        try {
+            const list = await muatUjian(false), kkm = anaKkm(), hit = bacaJson(REMHIT_KEY, {}), ros = rosBaca(), rows = [];
+            for (const u of (list || []).slice(0, 40)) {
+                let d; try { d = await ambilHasil(u.kode); } catch (e) { continue; }
+                let ars = {}; try { ars = await arsipBaca(u.kode); } catch (e) {}
+                let minta = []; try { minta = ((await recallApi('daftarRecall', { kode: u.kode })).daftar || []).filter(x => x.tipe === 'remedial' && (!x.status || x.status === 'menunggu')); } catch (e) {}
+                for (const h of d.hasil) {
+                    const key = arsipKey(h), a = ars[key] || null;
+                    const adaArsip = h.nilai_lama !== undefined && h.nilai_lama !== null;
+                    const pertama = adaArsip ? Number(h.nilai_lama) : (nilaiKosong(h) ? null : Number(h.nilai_akhir));
+                    if (pertama === null || isNaN(pertama) || !(pertama < kkm)) continue;
+                    const sudah = adaArsip && !h.menunggu_perbaikan;
+                    const baruRaw = sudah ? h.nilai_baru : null;
+                    const nilaiBaru = (baruRaw === null || baruRaw === undefined || baruRaw === '') ? null : Number(baruRaw);
+                    const dipakai = sudah && nilaiBaru !== null ? Math.max(pertama, nilaiBaru) : pertama;
+                    const adaMinta = minta.some(x => String(x.hasilId) === String(h.id));
+                    let st;
+                    if (sudah) st = nilaiBaru === null ? 'esai' : (dipakai >= kkm ? 'tuntas' : 'masih');
+                    else if (adaArsip) st = 'dibuka';
+                    else st = adaMinta ? 'minta' : 'belum';
+                    const rs = ros.find(s => lkNorm(s.nama) === lkNorm(h.nama) && (!s.absen || !h.absen || String(s.absen).trim() === String(h.absen).trim())) || ros.find(s => lkNorm(s.nama) === lkNorm(h.nama));
+                    rows.push({
+                        sk: u.kode + '|' + key + '|' + (sudah ? (h.waktu || '') : ''),
+                        kode: u.kode, ujian: u.judul, nama: h.nama, absen: h.absen || '', jk: h.jk || '', kelas: rs ? rosKelasNama(rs) : '',
+                        pertama, waktuPertama: adaArsip ? (a && a.waktu) || '' : (h.waktu || ''),
+                        benarPertama: adaArsip ? (a ? a.benar : null) : h.benar, totalPertama: adaArsip ? (a ? a.jumlah_pg : null) : h.jumlah_pg, pgPertama: adaArsip ? (a ? a.nilai_pg : null) : h.nilai_pg,
+                        nilaiBaru, waktuBaru: sudah ? (h.waktu || '') : '', benarBaru: sudah ? h.benar : null, totalBaru: sudah ? h.jumlah_pg : null, pgBaru: sudah ? h.nilai_pg : null,
+                        esai: sudah ? (h.status_esai || '') : '', keluar: sudah ? h.keluar : null,
+                        dipakai, st, sudah, kali: Math.max(Number(hit[u.kode + '|' + key] || 0), adaArsip ? 1 : 0), kkm
+                    });
+                }
+            }
+            rows.sort((a, b) => PR_STATUS[a.st][2] - PR_STATUS[b.st][2] || a.dipakai - b.dipakai || a.nama.localeCompare(b.nama, 'id'));
+            prData = { rows, kkm }; prWaktu = Date.now();
+            prBadge();
+            return prData;
+        } finally { prJalan = false; }
+    }
+    function prBadge() {
+        if (!prData) return;
+        const seen = prSeen(), masih = prData.rows.filter(r => ['minta', 'belum', 'dibuka', 'masih', 'esai'].includes(r.st)).length;
+        const baru = prData.rows.filter(r => r.sudah && !seen.has(r.sk)).length;
+        const bb = $('badge-pr-bawah'), bn = $('badge-pr-baru');
+        if (bb) { bb.textContent = masih; bb.classList.toggle('hidden', !masih); bb.title = masih + ' siswa masih di bawah KKM'; }
+        if (bn) { bn.textContent = baru; bn.classList.toggle('hidden', !baru); bn.title = baru + ' siswa baru selesai remedial'; }
+        if (!prAwal && baru > prBaruLalu) toast((baru - prBaruLalu) + ' siswa baru selesai mengerjakan remedial', 'info');
+        prBaruLalu = baru; prAwal = false;
+    }
+    async function prCek() {
+        if (!sessionStorage.getItem(PIN_KEY) || document.hidden) return;
+        try { await prHitung(false); const t = $('tab-pantaurem-view'); if (t && !t.classList.contains('hidden') && !prJalan) prGambar(); } catch (e) {}
+    }
+    setInterval(prCek, 120000);
+    setTimeout(prCek, 7000);
+    async function renderPantauRem(paksa) {
+        const box = $('pr-isi'); $('pr-kkm').value = anaKkm();
+        box.innerHTML = '<div class="text-center py-10 text-slate-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i>Memeriksa nilai semua ujian...</div>';
+        try { await prHitung(!!paksa); } catch (e) { box.innerHTML = pesanGalat(e); return; }
+        const sel = $('pr-kuis'), lama = sel.value;
+        sel.innerHTML = '<option value="">Semua ujian</option>' + (cache.ujian || []).map(u => `<option value="${esc(u.kode)}">${esc(u.judul)} (${esc(u.kode)})</option>`).join('');
+        if ([...sel.options].some(o => o.value === lama)) sel.value = lama;
+        const seen = prSeen();
+        prData.rows.forEach(r => { r.baru = r.sudah && !seen.has(r.sk); });
+        prGambar();
+        // tandai sudah dilihat (lencana hijau hilang, baris tetap bertanda BARU sampai muat ulang)
+        const semua = new Set([...seen, ...prData.rows.filter(r => r.sudah).map(r => r.sk)]);
+        tulisJson(PR_SEEN_KEY, [...semua].slice(-1500));
+        prBaruLalu = 0; prBadge();
+    }
+    const prFiltered = () => {
+        if (!prData) return [];
+        const k = $('pr-kuis').value, s = $('pr-status').value, c = lkNorm($('pr-cari').value);
+        return prData.rows.filter(r => (!k || r.kode === k) && (!s || r.st === s) && (!c || lkNorm(r.nama).includes(c) || String(r.absen).includes(c)));
+    };
+    function prGambar() {
+        const box = $('pr-isi'); if (!prData) return;
+        const rows = prFiltered(), kkm = prData.kkm, hit = st => rows.filter(r => r.st === st).length;
+        if (!prData.rows.length) { box.innerHTML = kosongBox('fa-circle-check', 'Tidak ada siswa di bawah KKM ' + kkm, 'Semua nilai yang masuk sudah mencapai KKM.'); return; }
+        const cards = `<div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            ${statCard('fa-triangle-exclamation', 'Nilai Pertama < KKM ' + kkm, rows.length, 'rose')}
+            ${statCard('fa-user-xmark', 'Belum Remedial', hit('belum'), 'rose')}
+            ${statCard('fa-hourglass-half', 'Menunggu / Dibuka', hit('minta') + hit('dibuka') + hit('esai'), 'amber')}
+            ${statCard('fa-circle-check', 'Remedial Tuntas', hit('tuntas'), 'accent')}
+            ${statCard('fa-rotate-left', 'Remedial Masih < KKM', hit('masih'), 'sky')}</div>`;
+        const th = 'px-3 py-3 text-center whitespace-nowrap';
+        const sel = (n, x) => n === null || n === undefined || n === '' ? '<span class="text-slate-600">—</span>' : fmtNilai(n);
+        const body = rows.map(r => {
+            const i = prData.rows.indexOf(r), s = PR_STATUS[r.st];
+            const naik = r.nilaiBaru === null ? '<span class="text-slate-600">—</span>' : `<span class="font-black ${r.nilaiBaru - r.pertama >= 0 ? 'text-emerald-400' : 'text-red-400'}">${r.nilaiBaru - r.pertama >= 0 ? '+' : ''}${fmtNilai(r.nilaiBaru - r.pertama)}</span>`;
+            return `<tr class="hover:bg-slate-800/60 ${r.baru ? 'bg-emerald-500/5' : ''}">
+                <td class="px-3 py-3 font-semibold text-slate-100 whitespace-nowrap">${esc(r.nama)}${r.baru ? ' <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white">BARU</span>' : ''}</td>
+                <td class="${th} text-slate-400">${esc(r.absen) || '—'}</td><td class="${th}">${badgeJK(r.jk)}</td><td class="${th} text-slate-400">${esc(r.kelas) || '—'}</td>
+                <td class="px-3 py-3 text-slate-300">${esc(r.ujian)} <span class="text-[10px] text-slate-500">(${esc(r.kode)})</span></td>
+                <td class="${th} font-black text-rose-400 text-sm">${fmtNilai(r.pertama)}</td>
+                <td class="${th} text-slate-400">${fmtNilai(kkm - r.pertama)}</td>
+                <td class="${th} font-black text-slate-200 text-sm">${sel(r.nilaiBaru)}</td>
+                <td class="${th}">${naik}</td>
+                <td class="${th} font-black text-sm ${r.dipakai >= kkm ? 'text-emerald-400' : 'text-amber-400'}">${fmtNilai(r.dipakai)}</td>
+                <td class="px-3 py-3 whitespace-nowrap"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${s[1]}">${s[0]}</span></td>
+                <td class="${th} text-slate-400">${r.kali}x</td>
+                <td class="${th} text-[10px] text-slate-500">${prTgl(r.waktuBaru)}</td>
+                <td class="${th}"><button onclick="prDetail(${i})" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition">Detail</button></td></tr>`;
+        }).join('');
+        box.innerHTML = cards + (rows.length ? `<div class="overflow-x-auto rounded-2xl border border-slate-800 mt-4"><table class="w-full text-xs"><thead class="${thTabel}"><tr>
+            <th class="${th} !text-left">Nama</th><th class="${th}">Absen</th><th class="${th}">JK</th><th class="${th}">Kelas</th><th class="${th} !text-left">Ujian</th>
+            <th class="${th}">Nilai Pertama</th><th class="${th}">Kurang dari KKM</th><th class="${th}">Nilai Remedial</th><th class="${th}">Naik/Turun</th><th class="${th}">Nilai Dipakai</th>
+            <th class="${th} !text-left">Status</th><th class="${th}">Remedial</th><th class="${th}">Selesai Remedial</th><th class="${th}">Aksi</th></tr></thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-900">${body}</tbody></table></div>`
+            : kosongBox('fa-filter', 'Tidak ada data untuk filter ini'));
+    }
+    function prDetail(i) {
+        const r = prData && prData.rows[i]; if (!r) return;
+        const s = PR_STATUS[r.st], b = (x, y) => (x === null || x === undefined || x === '') ? '—' : x + (y !== null && y !== undefined && y !== '' ? ' dari ' + y : '');
+        const baris = (k, v) => `<tr><td style="padding:4px 10px 4px 0;opacity:.65;white-space:nowrap">${k}</td><td style="padding:4px 0;font-weight:600">${v}</td></tr>`;
+        Swal.fire({ title: esc(r.nama), confirmButtonText: 'Tutup', confirmButtonColor: '#059669', width: 560,
+            html: `<div style="text-align:left;font-size:13px"><table style="width:100%">
+                ${baris('Absen / JK / Kelas', esc(r.absen || '—') + ' / ' + (r.jk || '—') + ' / ' + esc(r.kelas || '—'))}
+                ${baris('Ujian', esc(r.ujian) + ' (' + esc(r.kode) + ')')}
+                ${baris('KKM', r.kkm)}
+                ${baris('Status', s[0])}
+                <tr><td colspan="2" style="padding-top:10px;font-weight:800">Ujian pertama</td></tr>
+                ${baris('Nilai akhir', fmtNilai(r.pertama) + ' (kurang ' + fmtNilai(r.kkm - r.pertama) + ' dari KKM)')}
+                ${baris('Nilai pilihan ganda', fmtNilai(r.pgPertama))}
+                ${baris('Jawaban benar', b(r.benarPertama, r.totalPertama))}
+                ${baris('Waktu mengumpulkan', prTgl(r.waktuPertama))}
+                <tr><td colspan="2" style="padding-top:10px;font-weight:800">Remedial</td></tr>
+                ${baris('Remedial dibuka', r.kali + ' kali')}
+                ${baris('Nilai remedial', r.sudah ? (r.nilaiBaru === null ? 'Belum ada (esai belum dinilai)' : fmtNilai(r.nilaiBaru)) : 'Belum mengerjakan')}
+                ${r.sudah ? baris('Nilai pilihan ganda', fmtNilai(r.pgBaru)) + baris('Jawaban benar', b(r.benarBaru, r.totalBaru)) + baris('Keluar halaman ujian', r.keluar === null || r.keluar === undefined ? '—' : r.keluar + ' kali') + baris('Waktu mengumpulkan', prTgl(r.waktuBaru)) : ''}
+                ${baris('Nilai yang dipakai', '<b>' + fmtNilai(r.dipakai) + '</b>')}
+                </table></div>` });
+    }
+    function prSalin() {
+        const rows = prFiltered().filter(r => r.st !== 'tuntas'); if (!rows.length) return toast('Tidak ada siswa yang perlu dicatat', 'info');
+        const t = 'Siswa di bawah KKM ' + (prData ? prData.kkm : '') + '\n' + rows.map((r, i) => `${i + 1}. ${r.nama}${r.absen ? ' (absen ' + r.absen + ')' : ''} - ${r.ujian}: ${fmtNilai(r.pertama)}${r.nilaiBaru !== null ? ', remedial ' + fmtNilai(r.nilaiBaru) : ''} - ${PR_STATUS[r.st][0]}`).join('\n');
+        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Daftar disalin'), () => { Swal.fire({ title: 'Salin manual', html: `<textarea readonly style="width:100%;height:220px;font-size:12px">${esc(t)}</textarea>`, confirmButtonColor: '#059669' }); });
+    }
+    function prEkspor() {
+        const rows = prFiltered(); if (!rows.length) return toast('Belum ada data untuk diekspor', 'info');
+        const kkm = prData.kkm, hasil = [['Nama', 'Absen', 'JK', 'Kelas', 'Ujian', 'Kode', 'KKM', 'Nilai Pertama', 'Kurang dari KKM', 'Waktu Ujian Pertama', 'Jml Remedial Dibuka', 'Nilai Remedial', 'Naik/Turun', 'Benar (Remedial)', 'Keluar Halaman', 'Waktu Selesai Remedial', 'Nilai Dipakai', 'Status']];
+        rows.forEach(r => hasil.push([r.nama, r.absen, r.jk, r.kelas, r.ujian, r.kode, kkm, r.pertama, Math.round((kkm - r.pertama) * 10) / 10, prTgl(r.waktuPertama), r.kali, r.nilaiBaru === null ? '' : r.nilaiBaru, r.nilaiBaru === null ? '' : Math.round((r.nilaiBaru - r.pertama) * 10) / 10, r.sudah ? (r.benarBaru ?? '') + (r.totalBaru ? '/' + r.totalBaru : '') : '', r.keluar ?? '', prTgl(r.waktuBaru), r.dipakai, PR_STATUS[r.st][0]]));
+        const ring = [['Keterangan', 'Jumlah'], ['KKM', kkm]].concat(Object.keys(PR_STATUS).map(k => [PR_STATUS[k][0], rows.filter(r => r.st === k).length])).concat([['Total siswa di bawah KKM (nilai pertama)', rows.length]]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ring), 'Ringkasan');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hasil), 'Pantau Remedial');
+        XLSX.writeFile(wb, 'pantau-remedial.xlsx');
     }
 
     /* ---------- Data Siswa ---------- */
